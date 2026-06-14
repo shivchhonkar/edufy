@@ -11,11 +11,11 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@Shribi Edufy/types": "*",
-    "@Shribi Edufy/utils": "*",
-    "@Shribi Edufy/ui": "*",
-    "@Shribi Edufy/database": "*",
-    "@Shribi Edufy/auth": "*",
+    "@edulakhya/types": "*",
+    "@edulakhya/utils": "*",
+    "@edulakhya/ui": "*",
+    "@edulakhya/database": "*",
+    "@edulakhya/auth": "*",
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.3.1",
     "jsonwebtoken": "^9.0.2",
