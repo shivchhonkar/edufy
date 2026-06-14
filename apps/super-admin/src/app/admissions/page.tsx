@@ -19,6 +19,10 @@ import {
 } from '@/features/admissions/utils/inquiry-labels';
 import {
   FiAlertCircle,
+  FiBarChart2,
+  FiChevronDown,
+  FiChevronRight,
+  FiChevronUp,
   FiClipboard,
   FiPlus,
   FiRefreshCw,
@@ -52,6 +56,8 @@ export default function AdmissionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<InquiryStatus>>(new Set());
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -150,6 +156,17 @@ export default function AdmissionsPage() {
 
   const needsStudentConversion = (inquiry: Inquiry) =>
     inquiry.status === 'registered' && !inquiry.converted_student_id;
+
+  const isColumnCollapsed = (status: InquiryStatus) => collapsedColumns.has(status);
+
+  const toggleColumnCollapse = (status: InquiryStatus) => {
+    setCollapsedColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
 
   const renderCard = (inquiry: Inquiry, options?: { showStatusBadge?: boolean }) => {
     const isTerminal = TERMINAL_STATUSES.includes(inquiry.status);
@@ -252,23 +269,48 @@ export default function AdmissionsPage() {
         </div>
 
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white border rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase">Active leads</p>
-              <p className="text-xl text-gray-900">{stats.active}</p>
-            </div>
-            <div className="bg-white border rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase">Follow-up today</p>
-              <p className="text-xl text-amber-600">{stats.follow_up_today}</p>
-            </div>
-            <div className="bg-white border rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase">New this week</p>
-              <p className="text-xl text-blue-600">{stats.new_this_week}</p>
-            </div>
-            <div className="bg-white border rounded-lg p-4">
-              <p className="text-xs text-gray-500 uppercase">Total inquiries</p>
-              <p className="text-xl text-gray-900">{stats.total}</p>
-            </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setStatsExpanded((prev) => !prev)}
+              aria-expanded={statsExpanded}
+              className="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-sm text-gray-700 transition-colors"
+            >
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-medium text-gray-900 flex items-center gap-1.5">
+                  <FiBarChart2 size={15} className="text-primary-600" />
+                  Statistics
+                </span>
+                {!statsExpanded && (
+                  <span className="text-xs text-gray-500">
+                    {stats.active} active · {stats.follow_up_today} follow-up today ·{' '}
+                    {stats.new_this_week} new this week · {stats.total} total
+                  </span>
+                )}
+              </span>
+              {statsExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+            </button>
+
+            {statsExpanded && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                <div className="bg-white border rounded-lg p-4">
+                  <p className="text-xs text-gray-500 uppercase">Active leads</p>
+                  <p className="text-xl text-gray-900">{stats.active}</p>
+                </div>
+                <div className="bg-white border rounded-lg p-4">
+                  <p className="text-xs text-gray-500 uppercase">Follow-up today</p>
+                  <p className="text-xl text-amber-600">{stats.follow_up_today}</p>
+                </div>
+                <div className="bg-white border rounded-lg p-4">
+                  <p className="text-xs text-gray-500 uppercase">New this week</p>
+                  <p className="text-xl text-blue-600">{stats.new_this_week}</p>
+                </div>
+                <div className="bg-white border rounded-lg p-4">
+                  <p className="text-xs text-gray-500 uppercase">Total inquiries</p>
+                  <p className="text-xl text-gray-900">{stats.total}</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -320,11 +362,17 @@ export default function AdmissionsPage() {
           <p className="text-sm text-gray-500">Loading inquiries...</p>
         ) : viewMode === 'board' && !statusFilter ? (
           <div className="w-full max-w-full min-w-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              {PIPELINE_STATUSES.map((status) => (
+            <div className="flex flex-wrap gap-3 items-start">
+              {PIPELINE_STATUSES.map((status) => {
+                const isCollapsed = isColumnCollapsed(status);
+                const count = boardColumns[status]?.length || 0;
+
+                return (
                 <div
                   key={status}
-                  className={`min-w-0 bg-gray-50 rounded-lg p-3 ${status === 'registered' ? 'overflow-visible' : ''}`}
+                  className={`min-w-0 bg-gray-50 rounded-lg p-3 transition-all ${
+                    isCollapsed ? 'w-[8.75rem] shrink-0' : 'flex-1 min-w-[11rem]'
+                  } ${status === 'registered' ? 'overflow-visible' : ''}`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -332,69 +380,121 @@ export default function AdmissionsPage() {
                     if (id) handleStatusDrop(id, status);
                   }}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-semibold text-gray-700">
-                        {STATUS_LABELS[status]}
-                      </h3>
-                      {status === 'registered' &&
-                        (boardColumns.registered?.some(needsStudentConversion) ?? false) && (
-                          <span className="relative shrink-0 group/register">
-                            <FiAlertCircle
-                              className="text-amber-600"
-                              size={14}
-                              aria-label="Conversion pending"
-                            />
-                            <span
-                              role="tooltip"
-                              className="absolute right-full top-1/2 z-50 mr-2 w-max max-w-[240px] -translate-y-1/2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800 shadow-lg opacity-0 pointer-events-none transition-opacity group-hover/register:opacity-100"
-                            >
-                              Registered leads still need to be converted to students
+                  <button
+                    type="button"
+                    onClick={() => toggleColumnCollapse(status)}
+                    aria-expanded={!isCollapsed}
+                    className="w-full flex items-start justify-between gap-1 mb-2 rounded-md hover:bg-gray-100/80 px-1 py-1 -mx-1 transition-colors text-left"
+                  >
+                    <div className="flex items-start gap-1 min-w-0">
+                      {isCollapsed ? (
+                        <FiChevronRight size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <FiChevronDown size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-700 leading-tight">
+                          {STATUS_LABELS[status]}
+                        </h3>
+                        {status === 'registered' &&
+                          (boardColumns.registered?.some(needsStudentConversion) ?? false) && (
+                            <span className="relative inline-flex shrink-0 group/register mt-1">
+                              <FiAlertCircle
+                                className="text-amber-600"
+                                size={14}
+                                aria-label="Conversion pending"
+                              />
+                              <span
+                                role="tooltip"
+                                className="absolute left-0 top-full z-50 mt-1 w-max max-w-[240px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800 shadow-lg opacity-0 pointer-events-none transition-opacity group-hover/register:opacity-100"
+                              >
+                                Registered leads still need to be converted to students
+                              </span>
                             </span>
-                          </span>
-                        )}
+                          )}
+                      </div>
                     </div>
-                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                      {boardColumns[status]?.length || 0}
+                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
+                      {count}
                     </span>
-                  </div>
-                  <div className="space-y-2 min-h-[120px]">
-                    {(boardColumns[status] || []).map((inquiry) => renderCard(inquiry))}
-                  </div>
+                  </button>
+
+                  {isCollapsed ? (
+                    <div className="py-4 text-[10px] text-gray-400 text-center border border-dashed border-gray-200 rounded-md">
+                      Drop here
+                    </div>
+                  ) : (
+                    <div className="space-y-2 min-h-[120px]">
+                      {(boardColumns[status] || []).map((inquiry) => renderCard(inquiry))}
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
             {hasTerminalInquiries && (
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-gray-600 mb-3">
                   Closed pipeline
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {TERMINAL_STATUSES.map((status) => (
+                <div className="flex flex-wrap gap-3 items-start">
+                  {TERMINAL_STATUSES.map((status) => {
+                    const isCollapsed = isColumnCollapsed(status);
+                    const count = terminalColumns[status]?.length || 0;
+
+                    return (
                     <div
                       key={status}
-                      className={`min-w-0 rounded-lg p-3 ${TERMINAL_COLUMN_STYLES[status]}`}
+                      className={`min-w-0 rounded-lg p-3 transition-all ${TERMINAL_COLUMN_STYLES[status]} ${
+                        isCollapsed ? 'w-[8.75rem] shrink-0' : 'flex-1 min-w-[11rem]'
+                      }`}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const id = parseInt(e.dataTransfer.getData('inquiryId'), 10);
+                        if (id) handleStatusDrop(id, status);
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-gray-700">
-                          {STATUS_LABELS[status]}
-                        </h4>
+                      <button
+                        type="button"
+                        onClick={() => toggleColumnCollapse(status)}
+                        aria-expanded={!isCollapsed}
+                        className="w-full flex items-start justify-between gap-1 mb-2 rounded-md hover:bg-white/50 px-1 py-1 -mx-1 transition-colors text-left"
+                      >
+                        <div className="flex items-start gap-1 min-w-0">
+                          {isCollapsed ? (
+                            <FiChevronRight size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                          ) : (
+                            <FiChevronDown size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-sm font-semibold text-gray-700 leading-tight">
+                            {STATUS_LABELS[status]}
+                          </h4>
+                        </div>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[status]}`}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[status]}`}
                         >
-                          {terminalColumns[status]?.length || 0}
+                          {count}
                         </span>
-                      </div>
-                      <div className="space-y-2 min-h-[80px]">
-                        {(terminalColumns[status] || []).map((inquiry) =>
-                          renderCard(inquiry, { showStatusBadge: true })
-                        )}
-                        {(terminalColumns[status]?.length ?? 0) === 0 && (
-                          <p className="text-xs text-gray-400 py-4 text-center">None</p>
-                        )}
-                      </div>
+                      </button>
+
+                      {isCollapsed ? (
+                        <div className="py-3 text-[10px] text-gray-400 text-center border border-dashed border-gray-200 rounded-md">
+                          Drop here
+                        </div>
+                      ) : (
+                        <div className="space-y-2 min-h-[80px]">
+                          {(terminalColumns[status] || []).map((inquiry) =>
+                            renderCard(inquiry, { showStatusBadge: true })
+                          )}
+                          {count === 0 && (
+                            <p className="text-xs text-gray-400 py-4 text-center">None</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
