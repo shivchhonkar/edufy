@@ -1,0 +1,45 @@
+{
+  "name": "edulakhya-monorepo",
+  "version": "1.0.0",
+  "description": "EduLakhya School Management System - Monorepo Architecture",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --concurrency=12",
+    "dev:super-admin": "turbo run dev --filter=super-admin",
+    "dev:parent-portal": "turbo run dev --filter=parent-portal",
+    "dev:transport-admin": "turbo run dev --filter=transport-admin",
+    "dev:payroll-admin": "turbo run dev --filter=payroll-admin",
+    "dev:inventory-admin": "turbo run dev --filter=inventory-admin",
+    "build": "turbo run build",
+    "build:super-admin": "turbo run build --filter=super-admin",
+    "build:parent-portal": "turbo run build --filter=parent-portal",
+    "build:transport-admin": "turbo run build --filter=transport-admin",
+    "build:payroll-admin": "turbo run build --filter=payroll-admin",
+    "build:inventory-admin": "turbo run build --filter=inventory-admin",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:control:setup": "node scripts/setup-control-db.js",
+    "db:school:create": "node scripts/create-school-db.js"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "qrcode.react": "^4.2.0"
+  }
+}

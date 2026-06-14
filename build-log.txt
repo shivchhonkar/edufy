@@ -1,0 +1,691 @@
+﻿
+> super-admin@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.33
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+node.exe :  ΓÜá Compiled with warnings
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( ΓÜá Compiled with warnings:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+../../node_modules/bcryptjs/dist/bcrypt.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader\i
+ndex.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1]
+.rules[16].oneOf[3].use[0]!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\bcryptjs\dist\bcrypt.js|rsc
+    Used by 2 module(s), i. e.
+    javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader
+\index.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[
+1].rules[16].oneOf[3].use[0]!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\bcryptjs\index.js|rsc
+* javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader\i
+ndex.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1]
+.rules[16].oneOf[3].use[0]!C:\Shiv\projects\EduLakhya-Monorepo\node_modules\bcryptjs\dist\bcrypt.js|rsc
+    Used by 2 module(s), i. e.
+    javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader
+\index.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[
+1].rules[16].oneOf[3].use[0]!C:\Shiv\projects\EduLakhya-Monorepo\node_modules\bcryptjs\index.js|rsc
+
+Import trace for requested module:
+../../node_modules/bcryptjs/dist/bcrypt.js
+../../node_modules/bcryptjs/index.js
+./src/app/api/users/[id]/route.ts
+
+../../node_modules/bcryptjs/index.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader\i
+ndex.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1]
+.rules[16].oneOf[3].use[0]!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\bcryptjs\index.js|rsc
+    Used by 3 module(s), i. e.
+    javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader
+\index.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[
+1].rules[16].oneOf[3].use[0]!C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\src\app\api\users\[id]\route.ts|rsc
+* javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader\i
+ndex.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1]
+.rules[16].oneOf[3].use[0]!C:\Shiv\projects\EduLakhya-Monorepo\node_modules\bcryptjs\index.js|rsc
+    Used by 1 module(s), i. e.
+    javascript/auto|C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-flight-loader
+\index.js!C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[
+1].rules[16].oneOf[3].use[0]!C:\Shiv\projects\EduLakhya-Monorepo\packages\auth\src\index.ts|rsc
+
+Import trace for requested module:
+../../node_modules/bcryptjs/index.js
+./src/app/api/users/[id]/route.ts
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please 
+update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ Γ£ô Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/173) ...
+Error fetching SMS campaigns: B [Error]: Dynamic server usage: Route /api/communications/campaigns couldn't be 
+rendered statically because it used `request.headers`. See more info here: 
+https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at o 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\communications\campaigns\route.js:1:1712)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/communications/campaigns couldn't be rendered statically because it used `request.headers`. 
+See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching activity logs: B [Error]: Dynamic server usage: Route /api/dashboard/activity-logs couldn't be rendered 
+statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at d (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:3190)
+    at o 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\dashboard\activity-logs\route.js:1:1942)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/dashboard/activity-logs couldn't be rendered statically because it used `request.cookies`. 
+See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error resolving email recipients: B [Error]: Dynamic server usage: Route /api/communications/email-recipients couldn't 
+be rendered statically because it used `request.headers`. See more info here: 
+https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at u (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\communications\email-recipients\rou
+te.js:1:1760)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/communications/email-recipients couldn't be rendered statically because it used 
+`request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching dashboard stats: B [Error]: Dynamic server usage: Route /api/dashboard/stats couldn't be rendered 
+statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at d (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:3190)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\dashboard\stats\route.js:1:2006)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/dashboard/stats couldn't be rendered statically because it used `request.cookies`. See more 
+info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching analytics: B [Error]: Dynamic server usage: Route /api/dashboard/analytics couldn't be rendered 
+statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at d (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:3190)
+    at c 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\dashboard\analytics\route.js:1:1755)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/dashboard/analytics couldn't be rendered statically because it used `request.cookies`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error resolving SMS recipients: B [Error]: Dynamic server usage: Route /api/communications/recipients couldn't be 
+rendered statically because it used `request.headers`. See more info here: 
+https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at u 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\communications\recipients\route.js:1:1729)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/communications/recipients couldn't be rendered statically because it used 
+`request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching student fees: B [Error]: Dynamic server usage: Route /api/fees/my-fees couldn't be rendered statically 
+because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\fees\my-fees\route.js:1:1666)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/fees/my-fees couldn't be rendered statically because it used `request.cookies`. See more 
+info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching students fee status: B [Error]: Dynamic server usage: Route /api/fees/students-status couldn't be 
+rendered statically because it used `request.headers`. See more info here: 
+https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at _ 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\fees\students-status\route.js:1:1715)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/fees/students-status couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (43/173) 
+HR reports error: B [Error]: Dynamic server usage: Route /api/hr/reports couldn't be rendered statically because it 
+used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at u (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:758)
+    at r (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\hr\reports\route.js:1:1656)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/hr/reports couldn't be rendered statically because it used `request.cookies`. See more info 
+here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Marksheet verify error: B [Error]: Dynamic server usage: Route /api/marksheets/verify couldn't be rendered statically 
+because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\marksheets\verify\route.js:1:1690)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/marksheets/verify couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching eligible students: B [Error]: Dynamic server usage: Route /api/promotions/eligible couldn't be rendered 
+statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at u 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\promotions\eligible\route.js:1:1700)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/promotions/eligible couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Marksheet error: B [Error]: Dynamic server usage: Route /api/marksheets couldn't be rendered statically because it 
+used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\marksheets\route.js:13:508)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/marksheets couldn't be rendered statically because it used `request.headers`. See more info 
+here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Report cards error: B [Error]: Dynamic server usage: Route /api/report-cards couldn't be rendered statically because 
+it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at m (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\report-cards\route.js:1:1672)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/report-cards couldn't be rendered statically because it used `request.headers`. See more 
+info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching system settings: B [Error]: Dynamic server usage: Route /api/settings couldn't be rendered statically 
+because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\settings\route.js:1:1653)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/settings couldn't be rendered statically because it used `request.headers`. See more info 
+here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Setup progress error: B [Error]: Dynamic server usage: Route /api/setup/progress couldn't be rendered statically 
+because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at n (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\setup\progress\route.js:11:54)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/setup/progress couldn't be rendered statically because it used `request.headers`. See more 
+info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching report settings: B [Error]: Dynamic server usage: Route /api/settings/reports couldn't be rendered 
+statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at _ (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\settings\reports\route.js:1:1706)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/settings/reports couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (86/173) 
+Teacher performance: B [Error]: Dynamic server usage: Route /api/teachers/performance couldn't be rendered statically 
+because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:195)
+    at u (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:758)
+    at N 
+(C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\teachers\performance\route.js:1:1715)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/teachers/performance couldn't be rendered statically because it used `request.cookies`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching system performance: B [Error]: Dynamic server usage: Route /api/system/performance couldn't be rendered 
+statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at u (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\system\performance\route.js:1:1676)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/system/performance couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/classes". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at b (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\classes\page.js:1:17473)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/classes". Read more: https://nextjs.org/docs/messages/prerender-error
+
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/communications". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at k (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\communications\page.js:1:39285)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/communications". Read more: https://nextjs.org/docs/messages/prerender-error
+
+   Generating static pages (129/173) 
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/settings". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at m (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\settings\page.js:1:1907)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/settings". Read more: https://nextjs.org/docs/messages/prerender-error
+
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/students". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at L (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\students\page.js:1:56551)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/students". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error fetching admission stats: B [Error]: Dynamic server usage: Route /api/admissions/stats couldn't be rendered 
+statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at n (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\admissions\stats\route.js:1:1673)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/admissions/stats couldn't be rendered statically because it used `request.headers`. See 
+more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/hr/reports". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at d (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\hr\reports\page.js:1:1879)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/hr/reports". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error fetching fee statistics: B [Error]: Dynamic server usage: Route /api/fees/stats couldn't be rendered statically 
+because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at c (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\6862.js:1:2295)
+    at T (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\api\fees\stats\route.js:5:402)
+    at 
+C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/fees/stats couldn't be rendered statically because it used `request.headers`. See more info 
+here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ Γ¿» useSearchParams() should be wrapped in a suspense boundary at page "/fees". Read more: 
+https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at l (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:10705)
+    at s (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\chunks\7011.js:1:21686)
+    at P (C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin\.next\server\app\fees\page.js:5:35354)
+    at nj 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nN 
+(C:\Shiv\Projects\EduLakhya-Monorepo\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+
+Error occurred prerendering page "/fees". Read more: https://nextjs.org/docs/messages/prerender-error
+
+ Γ£ô Generating static pages (173/173)
+
+> Export encountered errors on following paths:
+	/classes/page: /classes
+	/communications/page: /communications
+	/fees/page: /fees
+	/hr/reports/page: /hr/reports
+	/settings/page: /settings
+	/students/page: /students
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin
+npm error workspace super-admin@1.0.0
+npm error location C:\Shiv\Projects\EduLakhya-Monorepo\apps\super-admin
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next build

@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 249, 250, 251;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+}
+
+/* Ensure input fields always have proper contrast */
+input, textarea, select {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Sidebar — light theme */
+.sidebar-container {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+}
+
+/* Ensure sidebar navigation items have proper flex layout */
+.sidebar-container nav a {
+  flex-direction: row !important;
+  align-items: center !important;
+  display: flex !important;
+}
+
+/* Sidebar nav — icon + label spacing */
+.sidebar-container nav a svg,
+.sidebar-container nav button svg.sidebar-nav-icon {
+  margin-right: 12px !important;
+  min-width: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+.sidebar-container .sidebar-nav-link svg.sidebar-nav-icon {
+  flex-shrink: 0 !important;
+  stroke-width: 1.75;
+}
+
+.sidebar-container.w-16 .sidebar-nav-link svg.sidebar-nav-icon {
+  margin-right: 0 !important;
+}
+
+/* Ensure modals appear above sidebar */
+.modal-overlay {
+  z-index: 60 !important;
+}
+
+/* Ensure modal content appears above overlay */
+.modal-content {
+  z-index: 61 !important;
+}
+
+/* Confirm dialogs must sit above sidebar (z-50) and all drawers */
+.confirm-dialog-overlay {
+  z-index: 99999 !important;
+  position: fixed;
+  inset: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Custom scrollbar for holidays slider */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a5b4fc;
+}
+
+/* Horizontal scrollbar for class names */
+.class-names-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.class-names-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.class-names-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.class-names-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Shake animation for invalid fields */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+

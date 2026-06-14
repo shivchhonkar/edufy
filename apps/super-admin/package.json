@@ -1,0 +1,50 @@
+{
+  "name": "super-admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@Shribi Edufy/types": "*",
+    "@Shribi Edufy/utils": "*",
+    "@Shribi Edufy/ui": "*",
+    "@Shribi Edufy/database": "*",
+    "@Shribi Edufy/auth": "*",
+    "@Shribi Edufy/tenant": "*",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.3.1",
+    "dotenv": "^17.2.3",
+    "html2pdf.js": "^0.12.1",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.0",
+    "pg": "^8.11.3",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-hook-form": "^7.51.0",
+    "react-icons": "^5.0.1",
+    "recharts": "^2.12.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  }
+}
+

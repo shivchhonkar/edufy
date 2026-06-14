@@ -1,0 +1,53 @@
+item_name,item_code,category_name,description,unit,quantity,min_stock_level,unit_price,gst_percentage,hsn_code,supplier_name,supplier_contact,location
+School Uniform Shirt - Summer,UNI-SH-SUM-001,Uniforms,White cotton shirt with school logo,pcs,100,20,300,5,6203,Uniform Makers Ltd,9876543210,Store Room A
+School Uniform Pants - Summer,UNI-PT-SUM-001,Uniforms,Grey cotton pants,pcs,100,20,400,5,6203,Uniform Makers Ltd,9876543210,Store Room A
+School Uniform Skirt,UNI-SK-001,Uniforms,Grey pleated skirt,pcs,80,15,350,5,6204,Uniform Makers Ltd,9876543210,Store Room A
+School Tie - House Red,UNI-TIE-RED,Uniforms,Red house tie with school emblem,pcs,50,10,100,12,6215,Uniform Makers Ltd,9876543210,Store Room A
+School Tie - House Blue,UNI-TIE-BLU,Uniforms,Blue house tie with school emblem,pcs,50,10,100,12,6215,Uniform Makers Ltd,9876543210,Store Room A
+School Tie - House Green,UNI-TIE-GRN,Uniforms,Green house tie with school emblem,pcs,50,10,100,12,6215,Uniform Makers Ltd,9876543210,Store Room A
+School Blazer,UNI-BLZ-001,Uniforms,Navy blue blazer with school badge,pcs,40,10,1200,12,6203,Uniform Makers Ltd,9876543210,Store Room A
+Winter Sweater,UNI-SWT-001,Uniforms,Navy blue V-neck sweater,pcs,60,15,800,12,6110,Uniform Makers Ltd,9876543210,Store Room A
+School Socks - White,UNI-SOK-WHT,Uniforms,White ankle socks - pack of 3,pack,100,20,150,5,6115,Uniform Makers Ltd,9876543210,Store Room A
+School Belt,UNI-BLT-001,Uniforms,Black leather belt,pcs,50,10,200,12,4203,Uniform Makers Ltd,9876543210,Store Room A
+Black School Shoes - Size 5,FOOT-SH-BLK-05,Footwear,Black leather school shoes Size 5,pair,30,5,1000,12,6403,Footwear Palace,9876543211,Store Room B
+Black School Shoes - Size 6,FOOT-SH-BLK-06,Footwear,Black leather school shoes Size 6,pair,30,5,1000,12,6403,Footwear Palace,9876543211,Store Room B
+Black School Shoes - Size 7,FOOT-SH-BLK-07,Footwear,Black leather school shoes Size 7,pair,30,5,1000,12,6403,Footwear Palace,9876543211,Store Room B
+White Canvas Shoes - Size 5,FOOT-SH-WHT-05,Footwear,White canvas shoes Size 5,pair,25,5,500,5,6404,Footwear Palace,9876543211,Store Room B
+Sports Shoes - Size 6,FOOT-SH-SPT-06,Footwear,Sports shoes for PT Size 6,pair,20,5,1500,12,6404,Footwear Palace,9876543211,Store Room B
+NCERT Mathematics Class 6,BOOK-NCERT-M6,Books,NCERT Mathematics textbook Class 6,pcs,150,30,150,0,4901,Book Distributors,9876543212,Library Store
+NCERT Science Class 6,BOOK-NCERT-S6,Books,NCERT Science textbook Class 6,pcs,150,30,165,0,4901,Book Distributors,9876543212,Library Store
+NCERT English Class 6,BOOK-NCERT-E6,Books,NCERT English textbook Class 6,pcs,150,30,120,0,4901,Book Distributors,9876543212,Library Store
+NCERT Hindi Class 6,BOOK-NCERT-H6,Books,NCERT Hindi textbook Class 6,pcs,150,30,135,0,4901,Book Distributors,9876543212,Library Store
+Reference Book - Mathematics,BOOK-REF-MATH,Books,Mathematics reference guide,pcs,50,10,250,5,4901,Book Distributors,9876543212,Library Store
+Single Line Notebook,STAT-NB-SL,Stationery,Single line notebook - 200 pages,pcs,200,50,40,5,4820,Stationery World,9876543213,Store Room C
+Four Line Notebook,STAT-NB-FL,Stationery,Four line notebook - 100 pages,pcs,200,50,35,5,4820,Stationery World,9876543213,Store Room C
+Graph Notebook,STAT-NB-GR,Stationery,Graph notebook - 100 pages,pcs,100,25,50,5,4820,Stationery World,9876543213,Store Room C
+Drawing Book,STAT-DB-001,Stationery,Drawing book - A4 size,pcs,100,25,60,12,4820,Stationery World,9876543213,Store Room C
+Blue Ball Pen,STAT-PEN-BLU,Stationery,Blue ball point pen,pcs,500,100,10,12,9608,Stationery World,9876543213,Store Room C
+Black Ball Pen,STAT-PEN-BLK,Stationery,Black ball point pen,pcs,500,100,10,12,9608,Stationery World,9876543213,Store Room C
+HB Pencils - Pack of 10,STAT-PNCL-HB,Stationery,HB pencils pack of 10,pack,100,20,50,12,9609,Stationery World,9876543213,Store Room C
+Eraser - White,STAT-ERS-WHT,Stationery,White rubber eraser,pcs,200,50,5,12,4016,Stationery World,9876543213,Store Room C
+Sharpener,STAT-SHRP-001,Stationery,Pencil sharpener,pcs,200,50,5,12,8214,Stationery World,9876543213,Store Room C
+Geometry Box,STAT-GEO-001,Stationery,Complete geometry box set,pcs,100,20,150,18,9017,Stationery World,9876543213,Store Room C
+Scientific Calculator,STAT-CALC-001,Stationery,Scientific calculator,pcs,50,10,500,18,8470,Electronics Hub,9876543214,Store Room C
+Art Set - Complete,STAT-ART-001,Stationery,Complete art supplies set,set,30,5,400,18,3213,Stationery World,9876543213,Store Room C
+Color Pencils - 12 Shades,STAT-CLR-12,Stationery,Color pencils box - 12 shades,box,80,20,120,18,9609,Stationery World,9876543213,Store Room C
+Sketch Pens - 12 Colors,STAT-SKT-12,Stationery,Sketch pens set - 12 colors,set,80,20,150,18,9608,Stationery World,9876543213,Store Room C
+School Bag - Medium,BAG-SCH-MED,Bags,School bag with multiple compartments,pcs,50,10,900,12,4202,Bag Center,9876543215,Store Room D
+School Bag - Large,BAG-SCH-LRG,Bags,Large school bag with laptop compartment,pcs,40,10,1200,12,4202,Bag Center,9876543215,Store Room D
+Lunch Box - Plastic,BAG-LB-PLS,Bags,3-compartment lunch box,pcs,100,20,200,12,3924,Bag Center,9876543215,Store Room D
+Lunch Box - Steel,BAG-LB-STL,Bags,Stainless steel lunch box,pcs,60,15,350,12,7323,Bag Center,9876543215,Store Room D
+Water Bottle - 1 Liter,BAG-WB-1L,Bags,Plastic water bottle 1 liter,pcs,100,25,150,18,3923,Bag Center,9876543215,Store Room D
+Water Bottle - Steel 750ml,BAG-WB-STL,Bags,Stainless steel bottle 750ml,pcs,50,15,400,18,7323,Bag Center,9876543215,Store Room D
+ID Card Holder,BAG-ID-001,Bags,Transparent ID card holder with strap,pcs,150,30,50,18,3926,Bag Center,9876543215,Store Room D
+Cricket Bat - Kashmir Willow,SPORT-CB-KW,Sports,Kashmir willow cricket bat,pcs,15,3,2500,18,9506,Sports Arena,9876543216,Store Room E
+Cricket Ball - Leather,SPORT-CBL-L,Sports,Leather cricket ball - red,pcs,30,10,400,18,9506,Sports Arena,9876543216,Store Room E
+Football - Size 5,SPORT-FB-5,Sports,Football regulation size 5,pcs,20,5,800,18,9506,Sports Arena,9876543216,Store Room E
+Basketball - Size 7,SPORT-BB-7,Sports,Basketball regulation size 7,pcs,15,5,1200,18,9506,Sports Arena,9876543216,Store Room E
+Badminton Racket,SPORT-BR-001,Sports,Aluminum badminton racket,pcs,25,5,600,18,9506,Sports Arena,9876543216,Store Room E
+Badminton Shuttlecock - Pack,SPORT-BS-PACK,Sports,Feather shuttlecock pack of 10,pack,20,5,500,18,9506,Sports Arena,9876543216,Store Room E
+Table Tennis Bat,SPORT-TT-BAT,Sports,Table tennis bat with case,pcs,20,5,400,18,9506,Sports Arena,9876543216,Store Room E
+Skipping Rope,SPORT-SR-001,Sports,Adjustable skipping rope,pcs,50,10,150,18,9506,Sports Arena,9876543216,Store Room E
+Chess Board,SPORT-CH-001,Sports,Wooden chess board with pieces,set,15,3,800,18,9504,Sports Arena,9876543216,Store Room E
+Carrom Board,SPORT-CAR-001,Sports,Carrom board with coins and striker,set,10,2,1500,18,9504,Sports Arena,9876543216,Store Room E
+

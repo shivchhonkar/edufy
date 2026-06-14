@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Class 7 Fee Structure Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .active { color: green; }
+        .inactive { color: red; }
+        button { padding: 10px 20px; margin: 10px 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Class 7 Fee Structure Check</h1>
+    <p>This will help us find all Class 7 fee structures in your database.</p>
+    
+    <button onclick="checkClass7Fees()">Check Class 7 Fee Structures</button>
+    <button onclick="activateInactiveFee()">Activate Inactive Fee</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function checkClass7Fees() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔍 Checking Class 7 fee structures...</div>';
+            
+            try {
+                const response = await fetch('/api/fees/structures?academic_year=2025-26');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const class7Fees = data.data.filter(fee => 
+                        fee.class_name === 'Class 7' || 
+                        fee.fee_type?.toLowerCase().includes('tuition') && 
+                        (fee.class_id === 7 || fee.class_name?.includes('7'))
+                    );
+                    
+                    let html = '<h3>📊 Class 7 Fee Structures Found:</h3>';
+                    
+                    if (class7Fees.length === 0) {
+                        html += '<div class="result">❌ No Class 7 fee structures found</div>';
+                    } else {
+                        class7Fees.forEach((fee, index) => {
+                            const status = fee.is_active ? '✅ Active' : '❌ Inactive';
+                            const statusClass = fee.is_active ? 'active' : 'inactive';
+                            
+                            html += `
+                                <div class="result">
+                                    <strong>${index + 1}. ${fee.fee_type}</strong><br>
+                                    ID: ${fee.id}<br>
+                                    Amount: ₹${fee.amount}<br>
+                                    Status: <span class="${statusClass}">${status}</span><br>
+                                    Class: ${fee.class_name || 'Not found'}<br>
+                                    Academic Year: ${fee.academic_year}<br>
+                                    Created: ${new Date(fee.created_at).toLocaleDateString()}<br>
+                                    Updated: ${new Date(fee.updated_at).toLocaleDateString()}
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = '<div class="result">❌ Error fetching fee structures: ' + data.error + '</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="result">❌ Error: ' + error.message + '</div>';
+            }
+        }
+        
+        async function activateInactiveFee() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔧 Activating inactive Class 7 fee...</div>';
+            
+            try {
+                // First, find the inactive fee
+                const response = await fetch('/api/fees/structures?academic_year=2025-26');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const class7InactiveFees = data.data.filter(fee => 
+                        (fee.class_name === 'Class 7' || fee.class_id === 7) && 
+                        !fee.is_active && 
+                        fee.fee_type?.toLowerCase().includes('tuition')
+                    );
+                    
+                    if (class7InactiveFees.length > 0) {
+                        const fee = class7InactiveFees[0];
+                        
+                        // Update to active
+                        const updateResponse = await fetch('/api/fees/structures', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: fee.id,
+                                class_id: fee.class_id,
+                                category_id: fee.category_id,
+                                fee_type: fee.fee_type,
+                                amount: fee.amount,
+                                frequency: fee.frequency,
+                                academic_year: fee.academic_year,
+                                description: fee.description,
+                                late_fee_percentage: fee.late_fee_percentage,
+                                late_fee_days: fee.late_fee_days,
+                                is_active: true
+                            })
+                        });
+                        
+                        const updateData = await updateResponse.json();
+                        
+                        if (updateData.success) {
+                            resultsDiv.innerHTML = `
+                                <div class="result">
+                                    ✅ Successfully activated Class 7 tuition fee (ID: ${fee.id})<br>
+                                    Amount: ₹${fee.amount}<br>
+                                    Please refresh the page to see the changes.
+                                </div>
+                            `;
+                        } else {
+                            resultsDiv.innerHTML = '<div class="result">❌ Error activating fee: ' + updateData.error + '</div>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<div class="result">❌ No inactive Class 7 tuition fees found</div>';
+                    }
+                } else {
+                    resultsDiv.innerHTML = '<div class="result">❌ Error fetching fee structures: ' + data.error + '</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="result">❌ Error: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

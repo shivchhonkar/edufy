@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fee Structures Database Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #007bff; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .result { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+        .active { color: #28a745; font-weight: bold; }
+        .inactive { color: #dc3545; font-weight: bold; }
+        .class-section { background: #e9ecef; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .class-header { background: #6c757d; color: white; padding: 10px; border-radius: 3px; margin-bottom: 10px; }
+        .fee-item { background: white; padding: 10px; margin: 5px 0; border-radius: 3px; border: 1px solid #dee2e6; }
+        .fee-id { font-weight: bold; color: #495057; }
+        .fee-amount { color: #007bff; font-weight: bold; }
+        .fee-status { padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        button { padding: 12px 24px; margin: 10px 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .loading { text-align: center; color: #6c757d; }
+        .error { background: #f8d7da; color: #721c24; border-left-color: #dc3545; }
+        .success { background: #d4edda; color: #155724; border-left-color: #28a745; }
+        .duplicate { background: #fff3cd; color: #856404; border-left-color: #ffc107; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background: #f8f9fa; font-weight: bold; }
+        .summary { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Fee Structures Database Check</h1>
+            <p>This will show you all fee structures in your database to help debug the Class 7 issue.</p>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="checkAllFeeStructures()">Check All Fee Structures</button>
+            <button onclick="checkClass7Only()">Check Class 7 Only</button>
+            <button onclick="activateClass7Inactive()">Activate Class 7 Inactive Fee</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function checkAllFeeStructures() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result loading">🔍 Checking all fee structures...</div>';
+            
+            try {
+                const response = await fetch('/api/fees/structures?academic_year=2025-26');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAllFeeStructures(data.data);
+                } else {
+                    resultsDiv.innerHTML = `<div class="result error">❌ Error fetching fee structures: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkClass7Only() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result loading">🔍 Checking Class 7 fee structures...</div>';
+            
+            try {
+                const response = await fetch('/api/fees/structures?academic_year=2025-26');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const class7Fees = data.data.filter(fee => 
+                        fee.class_name === 'Class 7' || fee.class_id === 7
+                    );
+                    displayClass7Structures(class7Fees);
+                } else {
+                    resultsDiv.innerHTML = `<div class="result error">❌ Error fetching fee structures: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function activateClass7Inactive() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result loading">🔧 Activating Class 7 inactive fee...</div>';
+            
+            try {
+                // First, find the inactive fee
+                const response = await fetch('/api/fees/structures?academic_year=2025-26');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const class7InactiveFees = data.data.filter(fee => 
+                        (fee.class_name === 'Class 7' || fee.class_id === 7) && 
+                        !fee.is_active && 
+                        fee.fee_type && fee.fee_type.toLowerCase().includes('tuition')
+                    );
+                    
+                    if (class7InactiveFees.length > 0) {
+                        const fee = class7InactiveFees[0];
+                        
+                        // Update to active
+                        const updateResponse = await fetch('/api/fees/structures', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: fee.id,
+                                class_id: fee.class_id,
+                                category_id: fee.category_id,
+                                fee_type: fee.fee_type,
+                                amount: fee.amount,
+                                frequency: fee.frequency,
+                                academic_year: fee.academic_year,
+                                description: fee.description,
+                                late_fee_percentage: fee.late_fee_percentage,
+                                late_fee_days: fee.late_fee_days,
+                                is_active: true
+                            })
+                        });
+                        
+                        const updateData = await updateResponse.json();
+                        
+                        if (updateData.success) {
+                            resultsDiv.innerHTML = `
+                                <div class="result success">
+                                    ✅ Successfully activated Class 7 tuition fee!<br>
+                                    <strong>ID:</strong> ${fee.id}<br>
+                                    <strong>Amount:</strong> ₹${fee.amount}<br>
+                                    <strong>Type:</strong> ${fee.fee_type}<br>
+                                    <br>
+                                    <strong>Please refresh your browser to see the changes!</strong>
+                                </div>
+                            `;
+                        } else {
+                            resultsDiv.innerHTML = `<div class="result error">❌ Error activating fee: ${updateData.error}</div>`;
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<div class="result error">❌ No inactive Class 7 tuition fees found</div>';
+                    }
+                } else {
+                    resultsDiv.innerHTML = `<div class="result error">❌ Error fetching fee structures: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function displayAllFeeStructures(fees) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Group by class
+            const groupedByClass = {};
+            fees.forEach(fee => {
+                const className = fee.class_name || 'No Class';
+                if (!groupedByClass[className]) {
+                    groupedByClass[className] = [];
+                }
+                groupedByClass[className].push(fee);
+            });
+            
+            let html = '<div class="summary"><h3>📊 Fee Structures Summary</h3>';
+            html += `<p><strong>Total Records:</strong> ${fees.length}</p>`;
+            html += `<p><strong>Classes:</strong> ${Object.keys(groupedByClass).length}</p>`;
+            
+            const activeCount = fees.filter(f => f.is_active).length;
+            const inactiveCount = fees.filter(f => !f.is_active).length;
+            html += `<p><strong>Active:</strong> ${activeCount} | <strong>Inactive:</strong> ${inactiveCount}</p></div>`;
+            
+            // Display by class
+            Object.keys(groupedByClass).sort().forEach(className => {
+                const classFees = groupedByClass[className];
+                const activeFees = classFees.filter(f => f.is_active);
+                const inactiveFees = classFees.filter(f => !f.is_active);
+                
+                html += `
+                    <div class="class-section">
+                        <div class="class-header">
+                            📚 ${className} (${classFees.length} fee${classFees.length !== 1 ? 's' : ''})
+                            ${activeFees.length > 0 ? `<span class="active">${activeFees.length} Active</span>` : ''}
+                            ${inactiveFees.length > 0 ? `<span class="inactive">${inactiveFees.length} Inactive</span>` : ''}
+                        </div>
+                `;
+                
+                classFees.forEach(fee => {
+                    const statusClass = fee.is_active ? 'status-active' : 'status-inactive';
+                    const statusText = fee.is_active ? 'Active' : 'Inactive';
+                    
+                    html += `
+                        <div class="fee-item">
+                            <div>
+                                <span class="fee-id">ID: ${fee.id}</span> | 
+                                <span class="fee-amount">₹${fee.amount}</span> | 
+                                <span class="fee-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <div style="margin-top: 5px; color: #6c757d; font-size: 14px;">
+                                <strong>${fee.fee_type}</strong> | 
+                                ${fee.frequency} | 
+                                ${fee.academic_year} | 
+                                Created: ${new Date(fee.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function displayClass7Structures(class7Fees) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = '<div class="class-section">';
+            html += '<div class="class-header">🎯 Class 7 Fee Structures</div>';
+            
+            if (class7Fees.length === 0) {
+                html += '<div class="result error">❌ No Class 7 fee structures found in database</div>';
+            } else {
+                html += `<div class="result">Found ${class7Fees.length} Class 7 fee structure${class7Fees.length !== 1 ? 's' : ''}</div>`;
+                
+                class7Fees.forEach(fee => {
+                    const statusClass = fee.is_active ? 'status-active' : 'status-inactive';
+                    const statusText = fee.is_active ? 'Active' : 'Inactive';
+                    
+                    html += `
+                        <div class="fee-item">
+                            <table>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Frequency</th>
+                                    <th>Academic Year</th>
+                                </tr>
+                                <tr>
+                                    <td>${fee.id}</td>
+                                    <td>${fee.fee_type}</td>
+                                    <td class="fee-amount">₹${fee.amount}</td>
+                                    <td><span class="fee-status ${statusClass}">${statusText}</span></td>
+                                    <td>${fee.frequency}</td>
+                                    <td>${fee.academic_year}</td>
+                                </tr>
+                            </table>
+                            <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                Created: ${new Date(fee.created_at).toLocaleString()} | 
+                                Updated: ${new Date(fee.updated_at).toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
