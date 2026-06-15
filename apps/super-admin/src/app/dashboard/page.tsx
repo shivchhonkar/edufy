@@ -36,6 +36,32 @@ function formatCurrencyFull(amount: number) {
   return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
+const EMPTY_DASHBOARD: DashboardOverview = {
+  total_students: 0,
+  total_staff: 0,
+  total_teachers: 0,
+  total_classes: 0,
+  total_vehicles: 0,
+  present_today: 0,
+  absent_today: 0,
+  pending_fees: 0,
+  low_stock_items: 0,
+  fees_collected: 0,
+  attendance_rate: 0,
+  attendance_marked: 0,
+  attendance_chart: [],
+  fee_collection_chart: [],
+  todays_classes: [],
+  classes_conducted_today: 0,
+  teacher_performance: [],
+  alerts: [],
+  recent_activities: [],
+  admissions: { total: 0, active: 0, follow_up_today: 0, new_this_week: 0 },
+  exams: { upcoming: 0, total: 0 },
+  transport: { active_routes: 0, student_assignments: 0, active_vehicles: 0 },
+  library: { total_items: 0, low_stock: 0 },
+};
+
 function PanelCard({
   title,
   subtitle,
@@ -119,14 +145,23 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard/stats')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) setStats(data.data);
+      .then(async (r) => {
+        const data = await r.json();
+        if (r.ok && data.success && data.data) {
+          setStats(data.data);
+          return;
+        }
+        setError(data.error || 'Failed to load dashboard statistics');
+        setStats(EMPTY_DASHBOARD);
       })
-      .catch(console.error)
+      .catch(() => {
+        setError('Failed to load dashboard statistics');
+        setStats(EMPTY_DASHBOARD);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -206,7 +241,7 @@ export default function DashboardPage() {
     );
   }
 
-  const s = stats!;
+  const s = stats ?? EMPTY_DASHBOARD;
 
   return (
     <DashboardLayout>
@@ -217,6 +252,12 @@ export default function DashboardPage() {
             Morning overview for principals and management
           </p>
         </div>
+
+        {error && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {error}. Showing empty dashboard — refresh or check your connection.
+          </div>
+        )}
 
         {/* Row 1 — KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
