@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { FiDollarSign, FiUsers, FiCreditCard, FiTrendingUp, FiFileText, FiSettings } from 'react-icons/fi';
-import { StatCard } from '@EduLakhya/ui';
-import { formatCurrency } from '@EduLakhya/utils';
+import { StatCard } from '@edulakhya/ui';
+import { formatCurrency } from '@edulakhya/utils';
 
 export default function PayrollAdmin() {
   return (

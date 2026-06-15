@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiMapPin } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
+import { Button } from '@edulakhya/ui';
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState<any[]>([]);

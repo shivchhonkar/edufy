@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FiEdit, FiTrash2, FiPlus, FiUser } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatDate } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatDate } from '@edulakhya/utils';
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<any[]>([]);

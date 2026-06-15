@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb, TenantResolutionError } from '@/lib/request-db';
-import { verifyPassword, generateToken } from '@EduLakhya/auth';
-import type { User } from '@EduLakhya/types';
+import { verifyPassword, generateToken } from '@edulakhya/auth';
+import type { User } from '@edulakhya/types';
 
 export async function POST(request: NextRequest) {
   try {

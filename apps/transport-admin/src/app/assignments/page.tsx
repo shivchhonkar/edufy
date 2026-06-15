@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiUser, FiMapPin } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatCurrency, formatDate } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatCurrency, formatDate } from '@edulakhya/utils';
 
 export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<any[]>([]);

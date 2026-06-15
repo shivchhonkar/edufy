@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@EduLakhya/types', '@EduLakhya/utils', '@EduLakhya/ui', '@EduLakhya/database', '@EduLakhya/auth'],
+  transpilePackages: ['@edulakhya/types', '@edulakhya/utils', '@edulakhya/ui', '@edulakhya/database', '@edulakhya/auth'],
 };
 
 module.exports = nextConfig;

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiTruck, FiMapPin, FiUsers, FiDollarSign, FiDownload } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatCurrency, formatDate } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatCurrency, formatDate } from '@edulakhya/utils';
 
 export default function ReportsPage() {
   const [stats, setStats] = useState<any>(null);

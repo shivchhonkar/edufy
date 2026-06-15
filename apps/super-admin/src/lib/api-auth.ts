@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserFromToken, hasRole, verifyToken } from '@EduLakhya/auth';
+import { getUserFromToken, hasRole, verifyToken } from '@edulakhya/auth';
 
 export type AuthUser = NonNullable<ReturnType<typeof getUserFromToken>> & {
   id: number;

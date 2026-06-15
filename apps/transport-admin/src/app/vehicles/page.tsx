@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiSearch, FiTruck, FiAlertCircle } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatDate } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatDate } from '@edulakhya/utils';
 import Link from 'next/link';
 
 export default function VehiclesPage() {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@EduLakhya/database';
-import { verifyPassword, generateToken } from '@EduLakhya/auth';
+import { query } from '@edulakhya/database';
+import { verifyPassword, generateToken } from '@edulakhya/auth';
 
 export async function POST(request: NextRequest) {
   try {

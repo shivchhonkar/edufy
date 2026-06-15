@@ -8,6 +8,6 @@ export {
   hasRole,
   isAuthenticated,
   getUserFromToken,
-} from '@EduLakhya/auth';
+} from '@edulakhya/auth';
 
-export type { JwtPayload } from '@EduLakhya/auth';
+export type { JwtPayload } from '@edulakhya/auth';

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiTruck, FiMapPin, FiUsers, FiDollarSign, FiAlertCircle } from 'react-icons/fi';
-import { StatCard } from '@EduLakhya/ui';
-import { formatCurrency, formatDate } from '@EduLakhya/utils';
+import { StatCard } from '@edulakhya/ui';
+import { formatCurrency, formatDate } from '@edulakhya/utils';
 import Link from 'next/link';
 
 export default function TransportAdmin() {

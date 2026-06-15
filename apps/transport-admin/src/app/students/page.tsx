@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiUser, FiMapPin, FiSearch, FiPhone, FiMail } from 'react-icons/fi';
-import { formatCurrency, formatDate } from '@EduLakhya/utils';
+import { formatCurrency, formatDate } from '@edulakhya/utils';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiUser, FiDollarSign, FiCalendar, FiBook, FiVideo, FiFileText } from 'react-icons/fi';
-import { StatCard } from '@EduLakhya/ui';
-import { formatCurrency } from '@EduLakhya/utils';
+import { StatCard } from '@edulakhya/ui';
+import { formatCurrency } from '@edulakhya/utils';
 
 // Icon mapping
 const iconMap: any = {

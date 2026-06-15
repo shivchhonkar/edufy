@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiFilter, FiDownload, FiPackage } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatCurrency, formatDate } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatCurrency, formatDate } from '@edulakhya/utils';
 import Link from 'next/link';
 
 export default function TransactionsPage() {

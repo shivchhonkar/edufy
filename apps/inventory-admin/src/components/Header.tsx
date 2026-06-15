@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@EduLakhya/ui';
+import { Button } from '@edulakhya/ui';
 import { FiHome } from 'react-icons/fi';
 
 interface HeaderProps {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiTag } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
+import { Button } from '@edulakhya/ui';
 import Link from 'next/link';
 
 export default function CategoriesPage() {

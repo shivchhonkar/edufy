@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiSearch, FiPackage, FiAlertCircle, FiUpload, FiDownload } from 'react-icons/fi';
-import { Button, Input } from '@EduLakhya/ui';
-import { formatCurrency } from '@EduLakhya/utils';
-import { InventoryItem, InventoryCategory } from '@EduLakhya/types';
+import { Button, Input } from '@edulakhya/ui';
+import { formatCurrency } from '@edulakhya/utils';
+import { InventoryItem, InventoryCategory } from '@edulakhya/types';
 import Link from 'next/link';
 
 export default function ItemsPage() {

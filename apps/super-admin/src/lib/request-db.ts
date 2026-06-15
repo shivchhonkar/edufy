@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTenantFromRequest } from '@EduLakhya/tenant';
+import { getTenantFromRequest } from '@edulakhya/tenant';
 import {
   queryForTenant,
   getClientForTenant,
   transactionForTenant,
-} from '@EduLakhya/database';
+} from '@edulakhya/database';
 import { query, getClient, transaction } from '@/lib/db';
 import { requireAuth, type AuthUser } from '@/lib/api-auth';
-import type { TenantContext } from '@EduLakhya/types';
+import type { TenantContext } from '@edulakhya/types';
 import type { QueryResult, QueryResultRow } from 'pg';
 export interface RequestDb {
   query: <T extends QueryResultRow = QueryResultRow>(

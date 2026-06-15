@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@EduLakhya/database';
+import { query } from '@edulakhya/database';
 
 export async function DELETE(
   request: NextRequest,

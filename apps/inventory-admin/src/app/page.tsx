@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { FiPackage, FiShoppingCart, FiTrendingDown, FiDollarSign, FiUsers, FiBarChart, FiTag } from 'react-icons/fi';
-import { StatCard } from '@EduLakhya/ui';
-import { formatCurrency } from '@EduLakhya/utils';
+import { StatCard } from '@edulakhya/ui';
+import { formatCurrency } from '@edulakhya/utils';
 import Link from 'next/link';
 
 export default function InventoryAdmin() {

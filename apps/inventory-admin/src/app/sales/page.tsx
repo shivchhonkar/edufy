@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiShoppingCart, FiPlus, FiTrash2, FiUser } from 'react-icons/fi';
-import { Button } from '@EduLakhya/ui';
-import { formatCurrency } from '@EduLakhya/utils';
+import { Button } from '@edulakhya/ui';
+import { formatCurrency } from '@edulakhya/utils';
 import Link from 'next/link';
 
 export default function SalesPage() {

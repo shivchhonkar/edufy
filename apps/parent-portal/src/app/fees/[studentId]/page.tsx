@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { FiArrowLeft, FiDollarSign, FiCalendar, FiDownload, FiCreditCard } from 'react-icons/fi';
-import { formatCurrency } from '@EduLakhya/utils';
+import { formatCurrency } from '@edulakhya/utils';
 
 export default function FeesPage() {
   const router = useRouter();
