@@ -104,7 +104,7 @@ async function analyzeDuplicateFees() {
     console.log('4. Use the UI edit button to deactivate duplicates');
     
     console.log('\n📝 To fix manually:');
-    console.log('1. Go to http://localhost:3000/fees');
+    console.log('1. Go to http://localhost:7000/fees');
     console.log('2. Try to delete duplicate fees');
     console.log('3. If deletion fails, edit the fee and uncheck "Enable this fee"');
     console.log('4. This will deactivate the duplicate while preserving data integrity');

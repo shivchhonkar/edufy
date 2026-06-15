@@ -177,7 +177,7 @@ async function initializeFees() {
     console.log('✨ Fee Management System initialized successfully!');
     console.log('');
     console.log('Next steps:');
-    console.log('1. Visit http://localhost:3000/fees to view the fee management dashboard');
+    console.log('1. Visit http://localhost:7000/fees to view the fee management dashboard');
     console.log('2. Create more fee structures as needed');
     console.log('3. Record payments for students');
     console.log('4. Monitor fee statistics and overdue payments');

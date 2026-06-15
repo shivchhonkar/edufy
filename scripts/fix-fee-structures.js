@@ -53,7 +53,7 @@ async function fixFeeStructures() {
     console.log(`   Null: ${summary.null_count}`);
 
     console.log('\n🎉 All fee structures are now active!');
-    console.log('\n👉 Please refresh your browser page: http://localhost:3001/fees');
+    console.log('\n👉 Please refresh your browser page: http://localhost:7001/fees');
     console.log('   Go to Fee Structures tab and all structures should now appear.\n');
 
   } catch (error) {

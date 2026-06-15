@@ -195,7 +195,9 @@ export default function RegisterSchoolPage() {
               />
               {form.slug.length >= 3 && (
                 <div className="flex items-center justify-between mt-1.5 text-xs gap-2">
-                  <span className="text-gray-400 font-mono truncate">{form.slug}.localhost:3000</span>
+                  <span className="text-gray-400 font-mono truncate">
+                    {form.slug}.{process.env.NEXT_PUBLIC_APP_BASE_DOMAIN || 'localhost:7000'}
+                  </span>
                   {checkingSlug && <span className="text-gray-400 shrink-0">Checking...</span>}
                   {!checkingSlug && slugAvailable === true && (
                     <span className="text-green-600 font-medium shrink-0">Available</span>

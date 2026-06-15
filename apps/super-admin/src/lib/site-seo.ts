@@ -5,7 +5,7 @@ export const SITE_TAGLINE = 'Best School ERP Software in India';
 export const LOGO_SRC = '/shribi-smart-school-logo.png';
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:7000';
 
 export const SITE_DESCRIPTION =
   'Shribi Edufy is an advanced School ERP for admissions, academics, fees, HR, transport, exams, report cards, and parent communication. Cloud-based multi-tenant platform built for Indian schools.';

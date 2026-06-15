@@ -79,7 +79,7 @@ async function runMigration() {
     console.log('\nNext steps:');
     console.log('1. Run: node scripts/init-fees.js (to create sample data)');
     console.log('2. Start your app: npm run dev');
-    console.log('3. Visit: http://localhost:3000/fees\n');
+    console.log('3. Visit: http://localhost:7000/fees\n');
 
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

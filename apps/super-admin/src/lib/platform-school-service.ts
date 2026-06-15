@@ -224,7 +224,7 @@ export async function registerSchool(
 
   await control.end();
 
-  const baseDomain = process.env.APP_BASE_DOMAIN || 'localhost:3000';
+  const baseDomain = process.env.APP_BASE_DOMAIN || 'localhost:7000';
   const loginUrl = `http://${slug}.${baseDomain}/login`;
 
   return {
