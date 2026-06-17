@@ -1,39 +1,14 @@
-import { Pool } from 'pg';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { hashPassword } from '@/lib/auth';
 import { ensureControlDatabase } from '@/lib/ensure-control-db';
 import { getDefaultAcademicYearConfig } from '@/lib/academic-year-utils';
-
-function controlPool(): Pool {
-  return new Pool({
-    host: process.env.CONTROL_DB_HOST || process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.CONTROL_DB_PORT || process.env.DB_PORT || '5432', 10),
-    database: process.env.CONTROL_DB_NAME || 'edulakhya_control',
-    user: process.env.CONTROL_DB_USER || process.env.DB_USER || 'postgres',
-    password: process.env.CONTROL_DB_PASSWORD || process.env.DB_PASSWORD || '',
-  });
-}
-
-function tenantPool(dbName: string): Pool {
-  return new Pool({
-    host: process.env.TENANT_DB_HOST || process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.TENANT_DB_PORT || process.env.DB_PORT || '5432', 10),
-    database: dbName,
-    user: process.env.TENANT_DB_USER || process.env.DB_USER || 'postgres',
-    password: process.env.TENANT_DB_PASSWORD || process.env.DB_PASSWORD || '',
-  });
-}
-
-function adminPool(): Pool {
-  return new Pool({
-    host: process.env.TENANT_DB_HOST || process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.TENANT_DB_PORT || process.env.DB_PORT || '5432', 10),
-    database: 'postgres',
-    user: process.env.TENANT_DB_USER || process.env.DB_USER || 'postgres',
-    password: process.env.TENANT_DB_PASSWORD || process.env.DB_PASSWORD || '',
-  });
-}
+import {
+  createPlatformPool,
+  getControlDbConfig,
+  getTenantAdminDbConfig,
+  getTenantDbConfig,
+} from '@/lib/platform-db-config';
 
 export interface RegisterSchoolInput {
   school_name: string;
@@ -68,7 +43,7 @@ export async function registerSchool(
 
   await ensureControlDatabase();
 
-  const control = controlPool();
+  const control = createPlatformPool(getControlDbConfig());
 
   const existing = await control.query(
     'SELECT id FROM tenants WHERE slug = $1 OR db_name = $2',
@@ -78,7 +53,7 @@ export async function registerSchool(
     throw new Error('A school with this slug already exists');
   }
 
-  const admin = adminPool();
+  const admin = createPlatformPool(getTenantAdminDbConfig());
   try {
     await admin.query(`CREATE DATABASE "${dbName}"`);
   } catch (err: unknown) {
@@ -99,7 +74,7 @@ export async function registerSchool(
     schemaSql = readFileSync(altSchemaPath, 'utf8');
   }
 
-  const schoolDb = tenantPool(dbName);
+  const schoolDb = createPlatformPool(getTenantDbConfig(dbName));
   try {
     await schoolDb.query(schemaSql);
 

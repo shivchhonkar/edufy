@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { registerSchool } from '@/lib/platform-school-service';
+import { formatDbConfigError } from '@/lib/platform-db-config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('School registration error:', error);
-    const message = error instanceof Error ? error.message : 'Registration failed';
+    const message = formatDbConfigError(error);
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

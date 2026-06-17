@@ -4,9 +4,24 @@ import type { Tenant, TenantBranding, TenantContext } from '@edulakhya/types';
 const controlPool = new Pool({
   host: process.env.CONTROL_DB_HOST || process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.CONTROL_DB_PORT || process.env.DB_PORT || '5432', 10),
-  database: process.env.CONTROL_DB_NAME || 'edulakhya_control',
-  user: process.env.CONTROL_DB_USER || process.env.DB_USER,
-  password: process.env.CONTROL_DB_PASSWORD || process.env.DB_PASSWORD,
+  database: process.env.CONTROL_DB_NAME || 'Shribi Edufy_control',
+  user: process.env.CONTROL_DB_USER || process.env.DB_USER || 'postgres',
+  password: String(
+    process.env.CONTROL_DB_PASSWORD ??
+      process.env.DB_PASSWORD ??
+      (process.env.CONTROL_DATABASE_URL || process.env.DATABASE_URL
+        ? (() => {
+            try {
+              const url = new URL(
+                process.env.CONTROL_DATABASE_URL || process.env.DATABASE_URL || '',
+              );
+              return url.password ? decodeURIComponent(url.password) : '';
+            } catch {
+              return '';
+            }
+          })()
+        : ''),
+  ),
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

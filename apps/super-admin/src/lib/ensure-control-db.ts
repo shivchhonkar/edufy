@@ -1,19 +1,6 @@
-import { Pool } from 'pg';
 import { readFileSync } from 'fs';
 import path from 'path';
-
-function getDbConfig() {
-  return {
-    host: process.env.CONTROL_DB_HOST || process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.CONTROL_DB_PORT || process.env.DB_PORT || '5432', 10),
-    user: process.env.CONTROL_DB_USER || process.env.DB_USER || 'postgres',
-    password: process.env.CONTROL_DB_PASSWORD || process.env.DB_PASSWORD || '',
-  };
-}
-
-function getControlDbName(): string {
-  return process.env.CONTROL_DB_NAME || 'edulakhya_control';
-}
+import { createPlatformPool, getControlDbConfig } from '@/lib/platform-db-config';
 
 function resolveControlSchemaSql(): string {
   const candidates = [
@@ -36,14 +23,13 @@ function resolveControlSchemaSql(): string {
  * Safe to call before school registration or slug checks.
  */
 export async function ensureControlDatabase(): Promise<void> {
-  const config = getDbConfig();
-  const controlDbName = getControlDbName();
+  const controlDbName = getControlDbConfig().database;
 
-  const admin = new Pool({ ...config, database: 'postgres' });
+  const admin = createPlatformPool(getControlDbConfig('postgres'));
   try {
     const exists = await admin.query(
       'SELECT 1 FROM pg_database WHERE datname = $1',
-      [controlDbName]
+      [controlDbName],
     );
     if (exists.rows.length === 0) {
       await admin.query(`CREATE DATABASE "${controlDbName}"`);
@@ -52,10 +38,10 @@ export async function ensureControlDatabase(): Promise<void> {
     await admin.end();
   }
 
-  const control = new Pool({ ...config, database: controlDbName });
+  const control = createPlatformPool(getControlDbConfig(controlDbName));
   try {
     const tableCheck = await control.query<{ reg: string | null }>(
-      "SELECT to_regclass('public.tenants') AS reg"
+      "SELECT to_regclass('public.tenants') AS reg",
     );
     if (!tableCheck.rows[0]?.reg) {
       const schemaSql = resolveControlSchemaSql();
