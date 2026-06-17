@@ -128,3 +128,55 @@ export function buildSearchQuery(
   return { clause, values };
 }
 
+export {
+  HTML2PDF_PAGE_MARGIN_MM,
+  PRINT_PAGE_MARGIN_MM,
+  FR_RECEIPT_CONTENT_STYLES,
+  RECEIPT_PRINT_DOCUMENT_STYLES,
+  RECEIPT_PREVIEW_STYLES,
+} from './print-layout'
+
+export function resolveSchoolAssetUrl(
+  assetPath: string | null | undefined,
+  requestHost?: string | null,
+): string {
+  const path = assetPath?.trim();
+  if (!path) return '';
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const origin = getSuperAdminOrigin(requestHost);
+  return origin ? `${origin}${normalized}` : normalized;
+}
+
+function getSuperAdminOrigin(requestHost?: string | null): string {
+  const fromEnv =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+    process.env.NEXT_PUBLIC_SUPER_ADMIN_URL?.replace(/\/$/, '');
+
+  if (fromEnv) return fromEnv;
+
+  if (requestHost) {
+    const hostname = requestHost.split(':')[0];
+    if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+      return `http://${hostname}:7000`;
+    }
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseHost = requestHost.replace(/:\d+$/, '');
+    return `${protocol}://${baseHost}`;
+  }
+
+  const baseDomain = process.env.NEXT_PUBLIC_APP_BASE_DOMAIN;
+  if (baseDomain) {
+    const hasProtocol = baseDomain.startsWith('http');
+    const hostOnly = baseDomain.replace(/^https?:\/\//, '').replace(/:\d+$/, '');
+    const protocol = baseDomain.startsWith('https') ? 'https' : 'http';
+    return hasProtocol ? baseDomain.replace(/\/$/, '') : `${protocol}://${hostOnly}`;
+  }
+
+  return 'http://localhost:7000';
+}
+

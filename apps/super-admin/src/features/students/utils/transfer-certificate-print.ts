@@ -173,14 +173,14 @@ const PRINT_STYLES = `
     width: 210mm;
     min-height: 277mm;
     margin: 0 auto;
-    padding: 10mm;
+    padding: 2mm;
   }
   .tc-header {
     display: flex;
     align-items: flex-start;
-    gap: 16px;
+    gap: 3px;
     border-bottom: 2px solid #155FA8;
-    padding-bottom: 16px;
+    padding-bottom: 3px;
   }
   .logo-img {
     width: 64px;
@@ -188,7 +188,7 @@ const PRINT_STYLES = `
     object-fit: contain;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    padding: 4px;
+    padding: 1px;
     flex-shrink: 0;
   }
   .logo-placeholder {
@@ -218,12 +218,12 @@ const PRINT_STYLES = `
     color: #0D3D75;
   }
   .school-address {
-    margin: 4px 0 0;
+    margin: 1px 0 0;
     font-size: 12px;
     color: #4b5563;
   }
   .school-year {
-    margin: 2px 0 0;
+    margin: 1px 0 0;
     font-size: 12px;
     color: #6b7280;
   }
@@ -232,7 +232,7 @@ const PRINT_STYLES = `
     justify-content: flex-end;
     align-items: baseline;
     gap: 8px;
-    margin: 8px 0 0;
+    margin: 2px 0 0;
     white-space: nowrap;
     font-size: 14px;
     color: #111827;
@@ -249,7 +249,7 @@ const PRINT_STYLES = `
     color: #0D3D75;
   }
   .tc-title {
-    margin: 16px 0 0;
+    margin: 3px 0 0;
     text-align: center;
     font-size: 18px;
     font-weight: 700;
@@ -260,27 +260,27 @@ const PRINT_STYLES = `
     text-underline-offset: 4px;
   }
   .tc-body {
-    margin-top: 32px;
+    margin-top: 6px;
     font-size: 14px;
     line-height: 1.75;
     color: #1f2937;
   }
-  .tc-intro { margin: 0 0 16px; }
+  .tc-intro { margin: 0 0 3px; }
   .tc-details {
-    margin: 0 0 16px;
-    padding: 16px;
+    margin: 0 0 3px;
+    padding: 3px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: rgba(249, 250, 251, 0.8);
   }
   .info-line {
-    margin: 0 0 4px;
+    margin: 0 0 1px;
     font-size: 14px;
     line-height: 1.6;
   }
   .info-label { font-weight: 600; }
   .tc-footer {
-    margin-top: 48px;
+    margin-top: 10px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -290,7 +290,7 @@ const PRINT_STYLES = `
     font-size: 14px;
     color: #374151;
   }
-  .tc-footer-left p { margin: 0 0 4px; }
+  .tc-footer-left p { margin: 0 0 1px; }
   .tc-footer-right {
     display: flex;
     flex-direction: column;
@@ -301,10 +301,10 @@ const PRINT_STYLES = `
     max-height: 48px;
     max-width: 140px;
     object-fit: contain;
-    margin-bottom: 4px;
+    margin-bottom: 1px;
   }
   .signature-name {
-    margin: 0 0 4px;
+    margin: 0 0 1px;
     font-size: 18px;
     color: #1A73C7;
     font-family: "Segoe Script", "Brush Script MT", cursive;
@@ -314,12 +314,12 @@ const PRINT_STYLES = `
     border-top: 1px solid #9ca3af;
   }
   .principal-label {
-    margin: 4px 0 0;
+    margin: 1px 0 0;
     font-size: 14px;
     font-weight: 600;
   }
   .principal-school {
-    margin: 2px 0 0;
+    margin: 1px 0 0;
     font-size: 12px;
     color: #6b7280;
   }

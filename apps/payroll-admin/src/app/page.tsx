@@ -13,7 +13,9 @@ import {
   PortalPageShell,
   PortalQuickActionCard,
 } from '@edulakhya/ui'
-import { formatCurrency } from '@edulakhya/utils'
+import { useSettings } from '@/shared/SettingsContext'
+import { useFeesStats } from '@/features/fees/hooks/useFeesStats'
+import { formatFeeCurrency } from '@/features/fees/utils/fees-format'
 import RupeeIcon from '@/components/icons/RupeeIcon'
 
 function getGreeting() {
@@ -25,6 +27,8 @@ function getGreeting() {
 
 export default function FeesDashboard() {
   const [userName, setUserName] = useState('')
+  const { settings } = useSettings()
+  const { stats, loading } = useFeesStats(settings.academic_year)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -44,16 +48,36 @@ export default function FeesDashboard() {
       title="Fees Dashboard"
       subtitle="Collect fees, record payments, and print receipts"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Collected This Month" value={formatCurrency(125000)} icon={RupeeIcon} color="green" trend={{ value: '+15%', isPositive: true }} />
-        <StatCard title="Pending Fees" value={formatCurrency(45000)} icon={FiCreditCard} color="red" />
-        <StatCard title="Students with Dues" value="78" icon={FiUsers} color="yellow" />
-        <StatCard title="Collection Rate" value="85%" icon={FiTrendingUp} color="blue" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 min-w-0">
+        <StatCard
+          title="Collected This Month"
+          value={loading ? '...' : formatFeeCurrency(stats?.this_month || 0)}
+          icon={RupeeIcon}
+          color="green"
+        />
+        <StatCard
+          title="Pending Fees"
+          value={loading ? '...' : formatFeeCurrency(stats?.total_pending || 0)}
+          icon={FiCreditCard}
+          color="red"
+        />
+        <StatCard
+          title="Students with Dues"
+          value={loading ? '...' : String(stats?.pending_students_count || 0)}
+          icon={FiUsers}
+          color="yellow"
+        />
+        <StatCard
+          title="Total Collected"
+          value={loading ? '...' : formatFeeCurrency(stats?.total_collected || 0)}
+          icon={FiTrendingUp}
+          color="blue"
+        />
       </div>
 
       <section>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
           <PortalQuickActionCard title="Fee Structures" description="Create and manage fee structures by class" icon={FiSettings} href="/fee-structures" color="blue" />
           <PortalQuickActionCard title="Student Fees" description="View and manage individual student fees" icon={FiUsers} href="/student-fees" color="indigo" />
           <PortalQuickActionCard title="Record Payment" description="Record fee payments from students" icon={RupeeIcon} href="/payments" color="green" />

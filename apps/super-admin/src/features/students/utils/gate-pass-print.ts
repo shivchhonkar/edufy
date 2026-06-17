@@ -47,7 +47,7 @@ const PRINT_STYLES = `
   html, body {
     width: 100%;
     margin: 0;
-    padding: 10mm 6mm;
+    padding: 2mm 1mm;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-size: 11pt;
     line-height: 1.45;
@@ -71,9 +71,9 @@ const PRINT_STYLES = `
   }
   .gp-header {
     display: flex;
-    gap: 14px;
+    gap: 3px;
     align-items: flex-start;
-    padding: 14px 9px;
+    padding: 3px 2px;
     border-bottom: 4px solid #2563eb;
     background: linear-gradient(to right, #f8fafc, #fff);
   }
@@ -112,7 +112,7 @@ const PRINT_STYLES = `
     margin-top: 2px;
   }
   .gp-school-meta {
-    margin-top: 8px;
+    margin-top: 2px;
     font-size: 9pt;
     color: #475569;
     line-height: 1.5;
@@ -120,11 +120,11 @@ const PRINT_STYLES = `
   .gp-title-bar {
     background: #2563eb;
     color: #fff;
-    padding: 10px 9px;
+    padding: 2px 2px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 2px;
   }
   .gp-title-bar h2 {
     font-size: 11pt;
@@ -137,7 +137,7 @@ const PRINT_STYLES = `
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    padding: 3px 10px;
+    padding: 1px 2px;
     border-radius: 999px;
     border: 1px solid rgba(255,255,255,0.45);
     background: rgba(255,255,255,0.15);
@@ -148,7 +148,7 @@ const PRINT_STYLES = `
     border-bottom: 1px solid #e2e8f0;
   }
   .gp-meta-cell {
-    padding: 12px 8px;
+    padding: 2px 2px;
     border-right: 1px solid #e2e8f0;
   }
   .gp-meta-cell:last-child { border-right: none; }
@@ -158,7 +158,7 @@ const PRINT_STYLES = `
     letter-spacing: 0.08em;
     color: #64748b;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 1px;
   }
   .gp-meta-value {
     font-size: 10pt;
@@ -171,13 +171,13 @@ const PRINT_STYLES = `
     color: #1e40af;
   }
   .gp-body {
-    padding: 16px 9px;
+    padding: 3px 2px;
   }
   .gp-body-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 3px;
+    margin-bottom: 3px;
   }
   .gp-section-title {
     font-size: 8.5pt;
@@ -186,14 +186,14 @@ const PRINT_STYLES = `
     letter-spacing: 0.08em;
     color: #1d4ed8;
     border-bottom: 1px solid #dbeafe;
-    padding-bottom: 4px;
-    margin-bottom: 10px;
+    padding-bottom: 1px;
+    margin-bottom: 2px;
   }
-  .gp-section { margin-bottom: 16px; }
+  .gp-section { margin-bottom: 3px; }
   .gp-fields {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px 16px;
+    gap: 2px 3px;
   }
   .gp-field-full { grid-column: 1 / -1; }
   .gp-field-label {
@@ -211,10 +211,10 @@ const PRINT_STYLES = `
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 10px 12px;
+    padding: 2px 2px;
     font-size: 10pt;
     line-height: 1.5;
-    min-height: 48px;
+    min-height: 10px;
   }
   .gp-photo-wrap {
     text-align: center;
@@ -223,15 +223,15 @@ const PRINT_STYLES = `
   .gp-photo-sublabel {
     font-size: 7.5pt;
     color: #94a3b8;
-    margin-bottom: 6px;
+    margin-bottom: 1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .gp-photos-grid {
     display: grid;
-    gap: 12px;
-    margin-top: 10px;
+    gap: 2px;
+    margin-top: 2px;
   }
   .gp-photo-label {
     font-size: 8pt;
@@ -239,7 +239,7 @@ const PRINT_STYLES = `
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #64748b;
-    margin-bottom: 8px;
+    margin-bottom: 2px;
   }
   .gp-photo-box {
     width: 100%;
@@ -260,12 +260,12 @@ const PRINT_STYLES = `
   .gp-photo-empty {
     font-size: 8.5pt;
     color: #94a3b8;
-    padding: 8px;
+    padding: 2px;
   }
   .gp-footer {
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
-    padding: 12px 9px 14px;
+    padding: 2px 2px 3px;
   }
   .gp-footer-title {
     font-size: 8.5pt;
@@ -273,16 +273,16 @@ const PRINT_STYLES = `
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #475569;
-    margin-bottom: 10px;
+    margin-bottom: 2px;
   }
   .gp-footer-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 2px;
   }
   .gp-footer-note {
-    margin-top: 10px;
-    padding-top: 8px;
+    margin-top: 2px;
+    padding-top: 2px;
     border-top: 1px solid #e2e8f0;
     font-size: 8pt;
     color: #64748b;
@@ -291,7 +291,7 @@ const PRINT_STYLES = `
     html, body {
       width: 100%;
       margin: 0;
-      padding: 10mm 6mm;
+      padding: 2mm 1mm;
     }
     .gate-pass-sheet { max-width: none; border-radius: 0; }
   }

@@ -139,7 +139,7 @@ function buildBulkEditPrintHtml(rows: BulkEditRow[], meta: BulkEditPrintMeta): s
   <meta charset="utf-8" />
   <title>${escapeHtml(title)}</title>
   <style>
-    @page { size: landscape; margin: 8mm; }
+    @page { size: landscape; margin: 2mm; }
     body { font-family: Arial, sans-serif; font-size: 9px; color: #111; margin: 0; padding: 16px; }
     h1 { font-size: 16px; margin: 0 0 4px; }
     .meta { font-size: 10px; color: #555; margin-bottom: 12px; line-height: 1.4; }

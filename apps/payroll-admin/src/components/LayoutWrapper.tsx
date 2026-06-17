@@ -28,10 +28,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <div className="flex h-screen overflow-hidden bg-gray-50">
         <Sidebar onToggle={setSidebarCollapsed} />
         <div
-          className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
+          className="flex-1 flex flex-col overflow-hidden transition-all duration-300 min-w-0"
           style={{ marginLeft }}
         >
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">{children}</main>
         </div>
       </div>
     </SchoolBrandingProvider>

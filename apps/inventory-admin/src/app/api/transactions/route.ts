@@ -6,6 +6,8 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const type = searchParams.get('type');
     const itemId = searchParams.get('item_id');
+    const fromDate = searchParams.get('from');
+    const toDate = searchParams.get('to');
     
     let sql = `
       SELECT 
@@ -29,6 +31,16 @@ export async function GET(req: NextRequest) {
     if (itemId) {
       params.push(itemId);
       sql += ` AND t.item_id = $${params.length}`;
+    }
+
+    if (fromDate) {
+      params.push(fromDate);
+      sql += ` AND t.transaction_date >= $${params.length}::date`;
+    }
+
+    if (toDate) {
+      params.push(toDate);
+      sql += ` AND t.transaction_date <= $${params.length}::date`;
     }
     
     sql += ` ORDER BY t.transaction_date DESC, t.created_at DESC LIMIT 100`;

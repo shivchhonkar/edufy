@@ -14,6 +14,12 @@ export default function SalesPage() {
   const [showStudentSearch, setShowStudentSearch] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
   const [students, setStudents] = useState<any[]>([]);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [invoiceResult, setInvoiceResult] = useState<{
+    invoice_number: string;
+    invoice_id: number;
+    total_amount: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -99,6 +105,7 @@ export default function SalesPage() {
     }
 
     try {
+      setCheckoutLoading(true);
       const saleItems = cart.map((item) => ({
         item_id: item.id,
         quantity: item.cart_quantity,
@@ -117,7 +124,11 @@ export default function SalesPage() {
 
       const data = await res.json();
       if (data.success) {
-        alert(`Sale completed! Total: ${formatCurrency(data.data.total_amount)}`);
+        setInvoiceResult({
+          invoice_id: data.data.invoice_id,
+          invoice_number: data.data.invoice_number,
+          total_amount: data.data.total_amount,
+        });
         setCart([]);
         setSelectedStudent(null);
         fetchItems(); // Refresh items to update quantities
@@ -127,6 +138,8 @@ export default function SalesPage() {
     } catch (error) {
       console.error('Error completing sale:', error);
       alert('Failed to complete sale');
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -155,6 +168,23 @@ export default function SalesPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {invoiceResult && (
+          <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900">
+            <p className="font-medium">
+              Invoice created: {invoiceResult.invoice_number}
+            </p>
+            <p className="text-sm mt-1">
+              Total: {formatCurrency(invoiceResult.total_amount)}
+            </p>
+            <div className="mt-2 flex gap-3 text-sm">
+              <Link className="underline" href={`/sales/${invoiceResult.invoice_id}`}>
+                View invoice
+              </Link>
+              <Link className="underline" href="/reports">View all invoices</Link>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Items List */}
           <div className="lg:col-span-2">
@@ -338,10 +368,10 @@ export default function SalesPage() {
                   </div>
                   <Button
                     onClick={handleCheckout}
-                    disabled={!selectedStudent}
+                    disabled={!selectedStudent || checkoutLoading}
                     className="w-full"
                   >
-                    Complete Sale
+                    {checkoutLoading ? 'Creating Invoice...' : 'Complete Sale & Create Invoice'}
                   </Button>
                   <button
                     onClick={() => setCart([])}

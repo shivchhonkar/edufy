@@ -411,7 +411,7 @@ export default function ReportCardsPage() {
           }
           @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin: 2mm;
           }
         }
       `}</style>

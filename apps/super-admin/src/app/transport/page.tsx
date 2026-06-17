@@ -361,20 +361,20 @@ export default function TransportPage() {
         <title>Student Transport Assignments - Route Wise</title>
         <style>
           @media print {
-            @page { margin: 1cm; }
+            @page { margin: 2mm; }
             body { margin: 0; }
             .page-break { page-break-before: always; }
           }
           body {
             font-family: Arial, sans-serif;
-            padding: 20px;
+            padding: 4px;
             color: #000;
           }
           .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 6px;
             border-bottom: 3px solid #333;
-            padding-bottom: 15px;
+            padding-bottom: 3px;
           }
           .header h1 {
             margin: 0;
@@ -382,19 +382,19 @@ export default function TransportPage() {
             color: #333;
           }
           .header p {
-            margin: 5px 0;
+            margin: 1px 0;
             color: #666;
             font-size: 14px;
           }
           .route-section {
-            margin-bottom: 40px;
+            margin-bottom: 8px;
             page-break-inside: avoid;
           }
           .route-header {
             background: #f3f4f6;
-            padding: 12px;
+            padding: 2px;
             border-left: 4px solid #2563eb;
-            margin-bottom: 15px;
+            margin-bottom: 3px;
           }
           .route-header h2 {
             margin: 0;
@@ -402,18 +402,18 @@ export default function TransportPage() {
             color: #1f2937;
           }
           .route-header p {
-            margin: 5px 0 0 0;
+            margin: 1px 0 0 0;
             font-size: 12px;
             color: #6b7280;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 4px;
           }
           th {
             background: #e5e7eb;
-            padding: 10px;
+            padding: 2px;
             text-align: left;
             font-size: 12px;
             font-weight: bold;
@@ -421,7 +421,7 @@ export default function TransportPage() {
             text-transform: uppercase;
           }
           td {
-            padding: 10px;
+            padding: 2px;
             border: 1px solid #d1d5db;
             font-size: 12px;
           }
@@ -429,18 +429,18 @@ export default function TransportPage() {
             background: #f9fafb;
           }
           .footer {
-            margin-top: 30px;
+            margin-top: 6px;
             text-align: center;
             font-size: 11px;
             color: #9ca3af;
             border-top: 1px solid #e5e7eb;
-            padding-top: 15px;
+            padding-top: 3px;
           }
           .summary {
             background: #fef3c7;
-            padding: 10px;
+            padding: 2px;
             border-left: 4px solid #f59e0b;
-            margin-bottom: 20px;
+            margin-bottom: 4px;
           }
           .summary p {
             margin: 2px 0;

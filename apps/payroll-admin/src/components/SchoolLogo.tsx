@@ -1,11 +1,42 @@
-const DEFAULT_LOGO = '/shribi-smart-school-logo.png'
+'use client'
+
+import { useState } from 'react'
 
 interface SchoolLogoProps {
-  variant?: 'sidebar' | 'sidebar-collapsed'
+  variant?: 'sidebar' | 'sidebar-collapsed' | 'login'
   className?: string
   src?: string
   alt?: string
 }
+
+function SchoolLogoFallback({
+  alt,
+  className = '',
+  onLight = false,
+}: {
+  alt: string
+  className?: string
+  onLight?: boolean
+}) {
+  const initial = alt.charAt(0).toUpperCase() || 'S'
+  return (
+    <div
+      className={`flex items-center justify-center rounded-lg font-semibold ${
+        onLight ? 'bg-blue-100 text-blue-700' : 'bg-white/20 text-white'
+      } ${className}`}
+      title={alt}
+      aria-hidden
+    >
+      {initial}
+    </div>
+  )
+}
+
+const sizeByVariant = {
+  'sidebar-collapsed': 'h-12 w-12 text-base',
+  sidebar: 'h-14 w-14 text-lg',
+  login: 'h-16 w-16 text-xl',
+} as const
 
 export default function SchoolLogo({
   variant = 'sidebar',
@@ -13,15 +44,18 @@ export default function SchoolLogo({
   src,
   alt,
 }: SchoolLogoProps) {
-  const logoSrc = DEFAULT_LOGO // src?.trim() || DEFAULT_LOGO
+  const [failed, setFailed] = useState(false)
+  const logoSrc = src?.trim() || ''
   const logoAlt = alt?.trim() || 'School logo'
+  const sizeClass = sizeByVariant[variant]
+  const onLight = true
 
-  if (variant === 'sidebar-collapsed') {
+  if (!logoSrc || failed) {
     return (
-      <img
-        src={logoSrc}
+      <SchoolLogoFallback
         alt={logoAlt}
-        className={`h-9 w-9 object-contain ${className}`}
+        className={`${sizeClass} ${className}`}
+        onLight={onLight}
       />
     )
   }
@@ -30,7 +64,8 @@ export default function SchoolLogo({
     <img
       src={logoSrc}
       alt={logoAlt}
-      className={`h-full w-full max-h-10 max-w-full object-contain object-center ${className}`}
+      className={`${sizeClass} object-contain object-center ${className}`}
+      onError={() => setFailed(true)}
     />
   )
 }

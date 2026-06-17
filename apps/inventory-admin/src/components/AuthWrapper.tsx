@@ -1,32 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Don't check auth on login page
     if (pathname === '/login') {
       setIsChecking(false);
       return;
     }
 
-    // Check if user is authenticated
-    const checkAuth = () => {
-      if (!isAuthenticated()) {
-        router.push('/login');
-      } else {
-        setIsChecking(false);
-      }
-    };
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+      return;
+    }
 
-    checkAuth();
-  }, [router, pathname]);
+    setIsChecking(false);
+  }, [pathname]);
 
   // Show loading on protected pages while checking auth
   if (isChecking && pathname !== '/login') {

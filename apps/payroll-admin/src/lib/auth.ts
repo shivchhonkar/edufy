@@ -20,3 +20,15 @@ export function logout() {
   document.cookie = 'token=; path=/; max-age=0'
   window.location.href = '/login'
 }
+
+export {
+  hashPassword,
+  verifyPassword,
+  generateToken,
+  verifyToken,
+  decodeToken,
+  hasRole,
+  getUserFromToken,
+} from '@edulakhya/auth'
+
+export type { JwtPayload } from '@edulakhya/auth'

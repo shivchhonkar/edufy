@@ -23,7 +23,7 @@ export function PortalPageShell({ title, subtitle, greeting, children }: PortalP
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">{children}</div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-w-0">{children}</div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { getTenantFromRequest } from '@edulakhya/tenant'
 import { queryForTenant } from '@edulakhya/database'
+import { resolveSchoolAssetUrl } from '@edulakhya/utils'
 import { DEFAULT_FAVICON } from '@/lib/site-seo'
 
 export type SchoolBranding = {
@@ -40,14 +41,15 @@ export async function fetchSchoolBranding(host: string | null): Promise<SchoolBr
       | { school_name?: string; report_settings?: unknown }
       | undefined
 
-    const logo_url = parseLogoUrl(row?.report_settings)
+    const rawLogo = parseLogoUrl(row?.report_settings)
+    const logo_url = resolveSchoolAssetUrl(rawLogo, host)
     const school_name =
       row?.school_name?.trim() || resolved.context.tenant.name?.trim() || 'School'
 
     return {
       school_name,
       logo_url,
-      favicon_url: logo_url || DEFAULT_FAVICON,
+      favicon_url: logo_url || resolveSchoolAssetUrl(DEFAULT_FAVICON, host),
     }
   } catch (error) {
     console.error('fetchSchoolBranding error:', error)

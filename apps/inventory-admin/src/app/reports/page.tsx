@@ -8,37 +8,56 @@ import Link from 'next/link';
 
 export default function ReportsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalPurchases: 0,
     totalIssues: 0,
     netValue: 0,
+    totalInvoices: 0,
   });
   const [filterType, setFilterType] = useState('');
+  const [invoiceStatus, setInvoiceStatus] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
-    fetchTransactions();
-  }, [filterType]);
+    fetchData();
+  }, [filterType, invoiceStatus, dateFrom, dateTo]);
 
-  const fetchTransactions = async () => {
+  const fetchData = async () => {
     try {
-      const params = new URLSearchParams();
-      if (filterType) params.append('type', filterType);
-      
-      const res = await fetch(`/api/transactions?${params}`);
-      const data = await res.json();
-      if (data.success) {
-        setTransactions(data.data);
-        calculateStats(data.data);
+      const txnParams = new URLSearchParams();
+      if (filterType) txnParams.append('type', filterType);
+      if (dateFrom) txnParams.append('from', dateFrom);
+      if (dateTo) txnParams.append('to', dateTo);
+
+      const invoiceParams = new URLSearchParams();
+      if (invoiceStatus) invoiceParams.append('status', invoiceStatus);
+      if (dateFrom) invoiceParams.append('from', dateFrom);
+      if (dateTo) invoiceParams.append('to', dateTo);
+
+      const [txnRes, invoiceRes] = await Promise.all([
+        fetch(`/api/transactions?${txnParams}`),
+        fetch(`/api/sales?${invoiceParams}`),
+      ]);
+
+      const txnData = await txnRes.json();
+      const invoiceData = await invoiceRes.json();
+
+      if (txnData.success) {
+        setTransactions(txnData.data);
+        calculateStats(txnData.data, invoiceData.success ? invoiceData.data : []);
+      }
+      if (invoiceData.success) {
+        setInvoices(invoiceData.data);
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching report data:', error);
     }
   };
 
-  const calculateStats = (txns: any[]) => {
+  const calculateStats = (txns: any[], invoiceRows: any[]) => {
     const sales = txns
       .filter((t) => t.transaction_type === 'issue' && t.total_amount)
       .reduce((sum, t) => sum + parseFloat(t.total_amount), 0);
@@ -54,19 +73,19 @@ export default function ReportsPage() {
       totalPurchases: purchases,
       totalIssues: issues,
       netValue: sales - purchases,
+      totalInvoices: invoiceRows.length,
     });
   };
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Item', 'Type', 'Quantity', 'Amount', 'Created By', 'Remarks'];
-    const rows = transactions.map((t) => [
-      formatDate(new Date(t.transaction_date)),
-      t.item_name,
-      t.transaction_type,
-      t.quantity,
-      t.total_amount || 0,
-      t.created_by_name || '',
-      t.remarks || '',
+    const headers = ['Invoice Number', 'Date', 'Student', 'Total Amount', 'Payment Status', 'Items'];
+    const rows = invoices.map((inv) => [
+      inv.invoice_number,
+      formatDate(new Date(inv.created_at)),
+      `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || inv.admission_number || 'N/A',
+      inv.total_amount || 0,
+      inv.payment_status,
+      inv.total_items || 0,
     ]);
 
     const csv = [
@@ -78,7 +97,7 @@ export default function ReportsPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `inventory-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `inventory-invoices-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
@@ -134,18 +153,16 @@ export default function ReportsPage() {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-500">Net Value</h3>
+              <h3 className="text-sm font-medium text-gray-500">Total Invoices</h3>
               <FiDollarSign className={stats.netValue >= 0 ? 'text-green-600' : 'text-red-600'} size={24} />
             </div>
-            <p className={`text-xl ${stats.netValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(Math.abs(stats.netValue))}
-            </p>
+            <p className="text-xl text-gray-900">{stats.totalInvoices}</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -156,6 +173,16 @@ export default function ReportsPage() {
               <option value="issue">Sales/Issues</option>
               <option value="return">Returns</option>
               <option value="damage">Damages</option>
+            </select>
+            <select
+              value={invoiceStatus}
+              onChange={(e) => setInvoiceStatus(e.target.value)}
+              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">All Invoice Status</option>
+              <option value="paid">Paid</option>
+              <option value="partial">Partial</option>
+              <option value="due">Due</option>
             </select>
 
             <input
@@ -173,6 +200,77 @@ export default function ReportsPage() {
               className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="To Date"
             />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => {
+              setFilterType('');
+              setInvoiceStatus('');
+              setDateFrom('');
+              setDateTo('');
+            }}>
+              Reset Filters
+            </Button>
+            <Link href="/sales">
+              <Button>Create Sell Invoice</Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-bold">Sell Invoices</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {invoices.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-4 text-center text-gray-500" colSpan={6}>
+                      No invoices found
+                    </td>
+                  </tr>
+                ) : (
+                  invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium">
+                        <Link
+                          href={`/sales/${inv.id}`}
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          {inv.invoice_number}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {`${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'N/A'}
+                        <div className="text-xs text-gray-500">{inv.admission_number || ''}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {formatDate(new Date(inv.created_at))}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{inv.total_items}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className="rounded-full bg-slate-100 px-2 py-1 capitalize text-slate-700">
+                          {inv.payment_status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {formatCurrency(Number(inv.total_amount || 0))}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

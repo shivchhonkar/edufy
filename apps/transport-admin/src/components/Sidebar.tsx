@@ -90,7 +90,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         {isCollapsed ? (
           <div className="flex flex-col items-center gap-3">
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/40 p-1.5"
+              className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/95 p-1 shadow-sm"
               title={schoolName}
             >
               <SchoolLogo variant="sidebar-collapsed" src={schoolLogo} alt={schoolName} />
@@ -106,7 +106,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         ) : (
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/40 p-1.5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white/95 p-1 shadow-sm">
                 <SchoolLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
               </div>
               <div className="min-w-0 flex-1">

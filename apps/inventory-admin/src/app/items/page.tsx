@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiSearch, FiPackage, FiAlertCircle, FiUpload, FiDownload } from 'react-icons/fi';
-import { Button, Input } from '@edulakhya/ui';
+import { Button } from '@edulakhya/ui';
 import { formatCurrency } from '@edulakhya/utils';
-import { InventoryItem, InventoryCategory } from '@edulakhya/types';
+import { InventoryCategory } from '@edulakhya/types';
 import Link from 'next/link';
+import VirtualizedTable, { type VirtualizedTableColumn } from '@/components/VirtualizedTable';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -53,9 +54,14 @@ export default function ItemsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const openModal = useCallback((item: any = null) => {
+    setEditingItem(item);
+    setShowModal(true);
+  }, []);
+
+  const handleDelete = useCallback(async (id: number) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
-    
+
     try {
       const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -68,12 +74,104 @@ export default function ItemsPage() {
       console.error('Error deleting item:', error);
       alert('Failed to delete item');
     }
-  };
+  }, []);
 
-  const openModal = (item: any = null) => {
-    setEditingItem(item);
-    setShowModal(true);
-  };
+  const itemColumns = useMemo<VirtualizedTableColumn<any>[]>(
+    () => [
+      {
+        key: 'item',
+        header: 'Item',
+        width: '2fr',
+        render: (item) => (
+          <div className="flex items-center min-w-0">
+            <FiPackage className="text-gray-400 mr-3 shrink-0" />
+            <div className="min-w-0">
+              <div className="font-medium text-gray-900 truncate">{item.item_name}</div>
+              <div className="text-sm text-gray-500 truncate">{item.item_code}</div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'category',
+        header: 'Category',
+        width: '1fr',
+        render: (item) => <span className="text-gray-900">{item.category_name || '-'}</span>,
+      },
+      {
+        key: 'stock',
+        header: 'Stock',
+        width: '1fr',
+        render: (item) => (
+          <div>
+            <div className="flex items-center">
+              <span
+                className={`font-medium ${
+                  item.min_stock_level && item.quantity <= item.min_stock_level
+                    ? 'text-red-600'
+                    : 'text-gray-900'
+                }`}
+              >
+                {item.quantity} {item.unit}
+              </span>
+              {item.min_stock_level && item.quantity <= item.min_stock_level && (
+                <FiAlertCircle className="ml-2 text-red-600 shrink-0" />
+              )}
+            </div>
+            {item.min_stock_level && (
+              <div className="text-xs text-gray-500">Min: {item.min_stock_level}</div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'unit_price',
+        header: 'Unit Price',
+        width: '0.9fr',
+        render: (item) => (
+          <span className="text-gray-900">
+            {item.unit_price ? formatCurrency(item.unit_price) : '-'}
+          </span>
+        ),
+      },
+      {
+        key: 'supplier',
+        header: 'Supplier',
+        width: '1.2fr',
+        render: (item) => (
+          <span className="text-gray-900 truncate">{item.supplier_name || '-'}</span>
+        ),
+      },
+      {
+        key: 'actions',
+        header: 'Actions',
+        width: '100px',
+        headerClassName: 'text-right',
+        cellClassName: 'justify-end',
+        render: (item) => (
+          <div className="flex items-center justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => openModal(item)}
+              className="text-indigo-600 hover:text-indigo-900"
+              aria-label={`Edit ${item.item_name}`}
+            >
+              <FiEdit />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(item.id)}
+              className="text-red-600 hover:text-red-900"
+              aria-label={`Delete ${item.item_name}`}
+            >
+              <FiTrash2 />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [handleDelete, openModal],
+  );
 
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,101 +312,25 @@ export default function ItemsPage() {
 
         {/* Items Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Item
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Unit Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Supplier
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    No items found
-                  </td>
-                </tr>
-              ) : (
-                items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <FiPackage className="text-gray-400 mr-3" />
-                        <div>
-                          <div className="font-medium text-gray-900">{item.item_name}</div>
-                          <div className="text-sm text-gray-500">{item.item_code}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.category_name || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <span className={`font-medium ${
-                          item.min_stock_level && item.quantity <= item.min_stock_level
-                            ? 'text-red-600'
-                            : 'text-gray-900'
-                        }`}>
-                          {item.quantity} {item.unit}
-                        </span>
-                        {item.min_stock_level && item.quantity <= item.min_stock_level && (
-                          <FiAlertCircle className="ml-2 text-red-600" />
-                        )}
-                      </div>
-                      {item.min_stock_level && (
-                        <div className="text-xs text-gray-500">
-                          Min: {item.min_stock_level}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.unit_price ? formatCurrency(item.unit_price) : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.supplier_name || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm font-medium">
-                      <button
-                        onClick={() => openModal(item)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        <FiEdit />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              {loading ? 'Loading items...' : `${items.length} item${items.length === 1 ? '' : 's'}`}
+            </p>
+          </div>
+          {loading ? (
+            <div className="px-6 py-12 text-center text-gray-500">Loading...</div>
+          ) : (
+            <VirtualizedTable
+              rows={items}
+              columns={itemColumns}
+              getRowKey={(item) => item.id}
+              rowHeight={72}
+              maxHeight="min(72vh, 800px)"
+              minWidth={1024}
+              emptyMessage="No items found"
+              rowClassName="hover:bg-gray-50"
+            />
+          )}
         </div>
       </div>
 

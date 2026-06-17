@@ -407,7 +407,7 @@ export default function StudentIdCardsPage() {
           }
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 2mm;
           }
         }
       `}</style>
