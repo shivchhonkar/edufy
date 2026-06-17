@@ -30,7 +30,8 @@
     "db:school:create": "node scripts/create-school-db.js",
     "setup:production": "node scripts/setup-production.js",
     "setup:production:verify": "node scripts/setup-production.js --verify",
-    "setup:production:control": "node scripts/setup-production.js --control-only"
+    "setup:production:control": "node scripts/setup-production.js --control-only",
+    "db:sync-sql": "node scripts/sync-database-sql.js"
   },
   "devDependencies": {
     "dotenv": "^16.0.0",

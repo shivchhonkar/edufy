@@ -4,6 +4,11 @@ import { hashPassword } from '@/lib/auth';
 import { ensureControlDatabase } from '@/lib/ensure-control-db';
 import { getDefaultAcademicYearConfig } from '@/lib/academic-year-utils';
 import {
+  REGISTER_SCHOOL_MIGRATION_FILES,
+  readDatabaseSql,
+  resolveDatabaseFile,
+} from '@/lib/database-files';
+import {
   createPlatformPool,
   getControlDbConfig,
   getTenantAdminDbConfig,
@@ -65,55 +70,20 @@ export async function registerSchool(
     await admin.end();
   }
 
-  const schemaPath = path.join(process.cwd(), '..', '..', 'database', 'schema.sql');
-  const altSchemaPath = path.join(process.cwd(), 'database', 'schema.sql');
-  let schemaSql: string;
-  try {
-    schemaSql = readFileSync(schemaPath, 'utf8');
-  } catch {
-    schemaSql = readFileSync(altSchemaPath, 'utf8');
-  }
+  const schemaSql = readDatabaseSql('schema.sql');
 
   const schoolDb = createPlatformPool(getTenantDbConfig(dbName));
   try {
     await schoolDb.query(schemaSql);
 
-    const migrationsDir = path.join(process.cwd(), '..', '..', 'database', 'migrations');
-    const altMigrationsDir = path.join(process.cwd(), 'database', 'migrations');
-    const migrationFiles = [
-      'phase1_student_columns.sql',
-      'phase2_student_guardians.sql',
-      'phase3_student_documents.sql',
-      'phase4_student_medical_records.sql',
-      'phase5_student_enrollments.sql',
-      'phase6_enrollment_history.sql',
-      'phase7_sms_communications.sql',
-      'phase8_admission_inquiries.sql',
-      'phase9_platform_modules.sql',
-      'phase10_classes_is_active.sql',
-      'phase11_class_sections.sql',
-      'add_academic_years_table.sql',
-      'add_system_settings_table.sql',
-      'phase13_system_settings.sql',
-      'phase14_transfer_certificate_generations.sql',
-      'phase15_student_gate_passes.sql',
-      'phase16_school_houses.sql',
-      'phase17_student_mother_fields.sql',
-      'phase18_student_portal_password.sql',
-      'phase19_portal_access.sql',
-    ];
+    const migrationsDir = resolveDatabaseFile('migrations');
 
-    for (const file of migrationFiles) {
+    for (const file of REGISTER_SCHOOL_MIGRATION_FILES) {
       try {
         const sql = readFileSync(path.join(migrationsDir, file), 'utf8');
         await schoolDb.query(sql);
       } catch {
-        try {
-          const sql = readFileSync(path.join(altMigrationsDir, file), 'utf8');
-          await schoolDb.query(sql);
-        } catch {
-          // migration optional if not found
-        }
+        // migration optional if not found
       }
     }
 

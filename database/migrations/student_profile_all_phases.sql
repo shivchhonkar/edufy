@@ -1,0 +1,3 @@
+-- Student profile upgrade — Phases 1–5
+-- Prefer: node scripts/run-student-profile-migration.js
+-- Or run each phase file in order (phase1 … phase5).

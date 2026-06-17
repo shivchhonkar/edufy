@@ -40,6 +40,10 @@ next-env.d.ts
 
 # Database
 *.sql
+!database/
+!database/**/*.sql
+!apps/super-admin/database/
+!apps/super-admin/database/**/*.sql
 backups/
 
 # Uploads

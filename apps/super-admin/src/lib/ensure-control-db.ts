@@ -1,22 +1,5 @@
-import { readFileSync } from 'fs';
-import path from 'path';
 import { createPlatformPool, getControlDbConfig } from '@/lib/platform-db-config';
-
-function resolveControlSchemaSql(): string {
-  const candidates = [
-    path.join(process.cwd(), '..', '..', 'database', 'control_schema.sql'),
-    path.join(process.cwd(), 'database', 'control_schema.sql'),
-    path.join(process.cwd(), '..', '..', '..', 'database', 'control_schema.sql'),
-  ];
-  for (const filePath of candidates) {
-    try {
-      return readFileSync(filePath, 'utf8');
-    } catch {
-      // try next path
-    }
-  }
-  throw new Error('control_schema.sql not found');
-}
+import { readDatabaseSql } from '@/lib/database-files';
 
 /**
  * Ensures the multi-tenant control database exists and has the registry schema.
@@ -44,7 +27,7 @@ export async function ensureControlDatabase(): Promise<void> {
       "SELECT to_regclass('public.tenants') AS reg",
     );
     if (!tableCheck.rows[0]?.reg) {
-      const schemaSql = resolveControlSchemaSql();
+      const schemaSql = readDatabaseSql('control_schema.sql');
       await control.query(schemaSql);
     }
   } finally {

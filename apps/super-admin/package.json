@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 7000",
+    "db:sync-sql": "node ../../scripts/sync-database-sql.js",
+    "prebuild": "node ../../scripts/sync-database-sql.js",
     "build": "next build",
     "start": "next start -p 7000",
     "lint": "next lint",
