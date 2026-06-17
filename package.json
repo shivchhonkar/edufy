@@ -27,7 +27,10 @@
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
     "db:control:setup": "node scripts/setup-control-db.js",
-    "db:school:create": "node scripts/create-school-db.js"
+    "db:school:create": "node scripts/create-school-db.js",
+    "setup:production": "node scripts/setup-production.js",
+    "setup:production:verify": "node scripts/setup-production.js --verify",
+    "setup:production:control": "node scripts/setup-production.js --control-only"
   },
   "devDependencies": {
     "dotenv": "^16.0.0",

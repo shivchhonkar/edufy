@@ -99,6 +99,8 @@ export async function registerSchool(
       'phase15_student_gate_passes.sql',
       'phase16_school_houses.sql',
       'phase17_student_mother_fields.sql',
+      'phase18_student_portal_password.sql',
+      'phase19_portal_access.sql',
     ];
 
     for (const file of migrationFiles) {
