@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/require-student-api';
 
 export async function GET(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromQuery(request);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
 
     // Get current academic year
     console.log('Fetching academic year...');
-    const academicYearResult = await pool.query(
+    const academicYearResult = await db.query(
       'SELECT academic_year FROM system_settings ORDER BY id DESC LIMIT 1'
     );
     const academicYear = academicYearResult.rows[0]?.academic_year || '2025-26';
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
     let attendancePercentage = 0;
     
     try {
-      const attendanceResult = await pool.query(
+      const attendanceResult = await db.query(
         `SELECT 
           COUNT(*) FILTER (WHERE status = 'present') as present_days,
           COUNT(*) FILTER (WHERE status = 'absent') as absent_days,
@@ -37,14 +41,23 @@ export async function GET(request: NextRequest) {
         [studentId, currentMonth, currentYear]
       );
 
-      attendance = attendanceResult.rows[0];
+      const row = attendanceResult.rows[0] as
+        | { present_days?: unknown; absent_days?: unknown; total_days?: unknown }
+        | undefined
+      if (row) {
+        attendance = {
+          present_days: Number(row.present_days) || 0,
+          absent_days: Number(row.absent_days) || 0,
+          total_days: Number(row.total_days) || 0,
+        }
+      }
       attendancePercentage = attendance.total_days > 0
         ? Math.round((attendance.present_days / attendance.total_days) * 100)
-        : 0;
-      console.log('Attendance fetched successfully');
+        : 0
+      console.log('Attendance fetched successfully')
     } catch (attError) {
-      console.error('Error fetching attendance:', attError);
-      console.log('Using default attendance values');
+      console.error('Error fetching attendance:', attError)
+      console.log('Using default attendance values')
     }
 
     // Get fees stats
@@ -52,7 +65,7 @@ export async function GET(request: NextRequest) {
     let fees = { pending_amount: 0, paid_amount: 0, pending_count: 0 };
     
     try {
-      const feesResult = await pool.query(
+      const feesResult = await db.query(
         `SELECT 
           COALESCE(SUM(amount_due - amount_paid + COALESCE(late_fee_amount, 0)), 0) as pending_amount,
           COALESCE(SUM(amount_paid), 0) as paid_amount,
@@ -63,7 +76,16 @@ export async function GET(request: NextRequest) {
         [studentId, academicYear]
       );
 
-      fees = feesResult.rows[0];
+      const feesRow = feesResult.rows[0] as
+        | { pending_amount?: unknown; paid_amount?: unknown; pending_count?: unknown }
+        | undefined
+      if (feesRow) {
+        fees = {
+          pending_amount: Number(feesRow.pending_amount) || 0,
+          paid_amount: Number(feesRow.paid_amount) || 0,
+          pending_count: Number(feesRow.pending_count) || 0,
+        }
+      }
       console.log('Fees fetched successfully');
     } catch (feesError) {
       console.error('Error fetching fees:', feesError);
@@ -72,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     // Get student's class
     console.log('Fetching student class...');
-    const studentClassResult = await pool.query(
+    const studentClassResult = await db.query(
       'SELECT class_id FROM students WHERE id = $1',
       [studentId]
     );
@@ -91,7 +113,7 @@ export async function GET(request: NextRequest) {
         console.log('Student class ID:', classId);
 
         // First, check if homework table exists and has data for this class
-        const allHomeworkResult = await pool.query(
+        const allHomeworkResult = await db.query(
           `SELECT h.id, h.title, h.class_id, h.status 
            FROM homework h 
            WHERE h.class_id = $1`,
@@ -100,7 +122,7 @@ export async function GET(request: NextRequest) {
         console.log('All homework for class:', allHomeworkResult.rows);
 
         // Get homework stats - using same approach as super-admin
-        const homeworkResult = await pool.query(
+        const homeworkResult = await db.query(
           `SELECT 
             COUNT(*) FILTER (WHERE hs.status = 'pending') as pending,
             COUNT(*) FILTER (WHERE hs.status = 'submitted') as submitted,
@@ -147,7 +169,7 @@ export async function GET(request: NextRequest) {
 
     // Recent fee payments
     try {
-      const recentPaymentsResult = await pool.query(
+      const recentPaymentsResult = await db.query(
       `SELECT fp.*, sf.fee_type, sf.month
        FROM fee_payments fp
        JOIN student_fees sf ON fp.student_id = sf.student_id 
@@ -164,7 +186,7 @@ export async function GET(request: NextRequest) {
           title: 'Fee Payment Received',
           description: `${payment.fee_type} - Month ${payment.month}`,
           time: formatTimeAgo(payment.payment_date),
-          iconName: 'FiDollarSign',
+          iconName: 'RupeeIcon',
           iconColor: 'text-green-600',
           iconBg: 'bg-green-100',
         });
@@ -175,7 +197,7 @@ export async function GET(request: NextRequest) {
 
     // Recent attendance
     try {
-      const recentAttendanceResult = await pool.query(
+      const recentAttendanceResult = await db.query(
       `SELECT * FROM attendance
        WHERE student_id = $1
        AND status = 'present'
@@ -202,7 +224,7 @@ export async function GET(request: NextRequest) {
     if (studentClassResult.rows.length > 0) {
       try {
         const classId = studentClassResult.rows[0].class_id;
-        const recentHomeworkResult = await pool.query(
+        const recentHomeworkResult = await db.query(
           `SELECT h.*, s.name as subject_name, hs.status as submission_status
            FROM homework h
            LEFT JOIN subjects s ON h.subject_id = s.id

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import AnnualMarksheet, { type MarksheetData } from '@/features/exams/components/AnnualMarksheet';
 import type { ReportSettings } from '@/lib/report-settings';
-import { FiAward, FiPrinter, FiInfo, FiFileText } from 'react-icons/fi';
+import { FiAward, FiPrinter, FiInfo, FiFileText, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 interface Class { id: number; name: string; }
 interface Term { id: number; name: string; }
@@ -59,6 +59,7 @@ export default function ReportCardsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [newTerm, setNewTerm] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     fetch('/api/classes').then((r) => r.json()).then((d) => d.success && setClasses(d.data));
@@ -152,21 +153,61 @@ export default function ReportCardsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 min-w-0 max-w-full print:space-y-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-          <div>
-            <h1 className="text-xl flex items-center gap-2">
-              <FiAward className="text-primary-600" /> Report Cards & Marksheets
-            </h1>
-            <p className="text-sm text-gray-500">Generate simple report cards or CBSE-style annual marksheets</p>
+        <div className="flex flex-col gap-3 print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl flex items-center gap-2">
+                <FiAward className="text-primary-600 shrink-0" /> Report Cards & Marksheets
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">Generate simple report cards or CBSE-style annual marksheets</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowHelp((open) => !open)}
+                className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition-colors ${
+                  showHelp
+                    ? 'border-blue-300 bg-blue-50 text-blue-800'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FiInfo size={16} className="shrink-0" />
+                <span className="text-left">
+                  {mode === 'marksheet'
+                    ? 'How to generate annual marksheet (CBSE style)'
+                    : 'How to generate simple report cards'}
+                </span>
+                {showHelp ? <FiChevronUp size={14} className="shrink-0" /> : <FiChevronDown size={14} className="shrink-0" />}
+              </button>
+              {hasOutput && (
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
+                >
+                  <FiPrinter size={16} /> Print All
+                </button>
+              )}
+            </div>
           </div>
-          {hasOutput && (
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
-            >
-              <FiPrinter size={16} /> Print All
-            </button>
+
+          {showHelp && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
+              {mode === 'marksheet' ? (
+                <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                  <li>Create <strong>Half-Yearly</strong> exam on Exams page → upload results for all subjects</li>
+                  <li>Create <strong>Annual / Final</strong> exam with same subjects → upload results</li>
+                  <li>Select class, pick both exams below, click <strong>Generate Marksheet</strong></li>
+                  <li>Print — each student gets a marksheet with half-yearly + annual marks per subject</li>
+                </ol>
+              ) : (
+                <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                  <li>Upload exam results on <strong>Exams & Results</strong></li>
+                  <li>Select class and optionally one exam</li>
+                  <li>Click <strong>Generate</strong></li>
+                </ol>
+              )}
+            </div>
           )}
         </div>
 
@@ -174,7 +215,7 @@ export default function ReportCardsPage() {
         <div className="flex gap-2 print:hidden">
           <button
             type="button"
-            onClick={() => { setMode('marksheet'); setError(''); }}
+            onClick={() => { setMode('marksheet'); setError(''); setShowHelp(false); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
               mode === 'marksheet' ? 'bg-primary-600 text-white' : 'bg-white border text-gray-700 hover:bg-gray-50'
             }`}
@@ -183,34 +224,13 @@ export default function ReportCardsPage() {
           </button>
           <button
             type="button"
-            onClick={() => { setMode('report'); setError(''); }}
+            onClick={() => { setMode('report'); setError(''); setShowHelp(false); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
               mode === 'report' ? 'bg-primary-600 text-white' : 'bg-white border text-gray-700 hover:bg-gray-50'
             }`}
           >
             <FiAward size={16} /> Simple Report Card
           </button>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900 print:hidden">
-          <p className="font-medium flex items-center gap-2 mb-2">
-            <FiInfo />
-            {mode === 'marksheet' ? 'How to generate annual marksheet (CBSE style)' : 'How to generate simple report cards'}
-          </p>
-          {mode === 'marksheet' ? (
-            <ol className="list-decimal list-inside space-y-1 text-blue-800">
-              <li>Create <strong>Half-Yearly</strong> exam on Exams page → upload results for all subjects</li>
-              <li>Create <strong>Annual / Final</strong> exam with same subjects → upload results</li>
-              <li>Select class, pick both exams below, click <strong>Generate Marksheet</strong></li>
-              <li>Print — each student gets a marksheet with half-yearly + annual marks per subject</li>
-            </ol>
-          ) : (
-            <ol className="list-decimal list-inside space-y-1 text-blue-800">
-              <li>Upload exam results on <strong>Exams & Results</strong></li>
-              <li>Select class and optionally one exam</li>
-              <li>Click <strong>Generate</strong></li>
-            </ol>
-          )}
         </div>
 
         <div className="flex flex-wrap gap-3 items-end bg-white border rounded-xl p-4 print:hidden">

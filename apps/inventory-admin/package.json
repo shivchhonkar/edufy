@@ -16,6 +16,7 @@
     "@edulakhya/ui": "*",
     "@edulakhya/database": "*",
     "@edulakhya/auth": "*",
+    "@edulakhya/tenant": "*",
     "csv-parse": "^5.5.6",
     "date-fns": "^3.3.1",
     "next": "^14.2.0",

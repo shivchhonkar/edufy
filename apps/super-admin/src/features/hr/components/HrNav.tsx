@@ -7,13 +7,13 @@ const links = [
   { href: '/hr', label: 'Overview' },
   { href: '/hr/departments', label: 'Departments' },
   { href: '/hr/designations', label: 'Designations' },
-  { href: '/hr/leaves', label: 'Leaves' },
+  { href: '/hr/leave-management', label: 'Leave Management' },
   { href: '/hr/shifts', label: 'Shifts' },
   { href: '/hr/salary-structures', label: 'Salary Structures' },
   { href: '/hr/promotions', label: 'Promotions' },
   { href: '/hr/increments', label: 'Increments' },
   { href: '/hr/resignations', label: 'Resignations' },
-  { href: '/hr/teacher-assignments', label: 'Teacher Assignments' },
+  { href: '/academics/teacher-assignments', label: 'Teacher Assignments' },
   { href: '/hr/reports', label: 'Reports' },
 ];
 

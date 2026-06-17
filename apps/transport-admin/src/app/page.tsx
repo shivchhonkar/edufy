@@ -1,78 +1,77 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { FiTruck, FiMapPin, FiUsers, FiDollarSign, FiAlertCircle } from 'react-icons/fi';
-import { StatCard } from '@edulakhya/ui';
-import { formatCurrency, formatDate } from '@edulakhya/utils';
-import Link from 'next/link';
+import { useState, useEffect } from 'react'
+import { FiTruck, FiMapPin, FiUsers, FiDollarSign, FiAlertCircle } from 'react-icons/fi'
+import { StatCard, PortalPageShell, PortalLoadingSpinner } from '@edulakhya/ui'
+import { formatCurrency, formatDate } from '@edulakhya/utils'
+import Link from 'next/link'
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
 
 export default function TransportAdmin() {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await fetch('/api/stats');
-      const data = await res.json();
-      if (data.success) {
-        setStats(data.data);
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        const user = JSON.parse(userData)
+        setUserName(user.full_name || user.email || '')
+      } catch {
+        /* ignore */
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+    fetch('/api/stats')
+      .then((r) => r.json())
+      .then((data) => data.success && setStats(data.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Stats */}
+    <PortalPageShell
+      greeting={userName ? `${getGreeting()}, ${userName.split(' ')[0]}` : getGreeting()}
+      title="Transport Dashboard"
+      subtitle="Manage vehicles, routes, drivers, and student transport"
+    >
       {loading ? (
-        <div className="text-center py-8">Loading...</div>
+        <PortalLoadingSpinner />
       ) : stats ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard 
-              title="Total Vehicles" 
-              value={stats.total_vehicles.toString()} 
-              icon={FiTruck} 
-              color="blue" 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Total Vehicles" value={stats.total_vehicles.toString()} icon={FiTruck} color="blue" />
+            <StatCard title="Active Routes" value={stats.active_routes.toString()} icon={FiMapPin} color="green" />
+            <StatCard
+              title="Students Using Transport"
+              value={stats.students_using_transport.toString()}
+              icon={FiUsers}
+              color="purple"
             />
-            <StatCard 
-              title="Active Routes" 
-              value={stats.active_routes.toString()} 
-              icon={FiMapPin} 
-              color="green" 
-            />
-            <StatCard 
-              title="Students Using Transport" 
-              value={stats.students_using_transport.toString()} 
-              icon={FiUsers} 
-              color="purple" 
-            />
-            <StatCard 
-              title="Monthly Transport Fee" 
-              value={formatCurrency(stats.monthly_transport_fee)} 
-              icon={FiDollarSign} 
-              color="yellow" 
+            <StatCard
+              title="Monthly Transport Fee"
+              value={formatCurrency(stats.monthly_transport_fee)}
+              icon={FiDollarSign}
+              color="yellow"
             />
           </div>
 
-          {/* Maintenance Alerts */}
-          {stats.maintenance_needed && stats.maintenance_needed.length > 0 && (
-            <section className="mt-8">
+          {stats.maintenance_needed?.length > 0 && (
+            <section>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl text-gray-900">Maintenance Alerts</h2>
-                <span className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-slate-900">Maintenance Alerts</h2>
+                <span className="text-sm text-slate-500">
                   {stats.maintenance_needed.length} vehicle(s) need attention
                 </span>
               </div>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="divide-y">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="divide-y divide-slate-100">
                   {stats.maintenance_needed.map((vehicle: any) => (
                     <MaintenanceAlert key={vehicle.id} vehicle={vehicle} />
                   ))}
@@ -80,97 +79,47 @@ export default function TransportAdmin() {
               </div>
             </section>
           )}
-
-          {/* Quick Stats Cards */}
-          <section className="mt-8">
-            <h2 className="text-xl text-gray-900 mb-4">Quick Overview</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Active Vehicles</p>
-                    <p className="text-xl text-gray-900 mt-1">
-                      {stats.total_vehicles}
-                    </p>
-                  </div>
-                  <FiTruck className="text-blue-600 text-3xl" />
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Transport Routes</p>
-                    <p className="text-xl text-gray-900 mt-1">
-                      {stats.active_routes}
-                    </p>
-                  </div>
-                  <FiMapPin className="text-green-600 text-3xl" />
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Students Transported</p>
-                    <p className="text-xl text-gray-900 mt-1">
-                      {stats.students_using_transport}
-                    </p>
-                  </div>
-                  <FiUsers className="text-purple-600 text-3xl" />
-                </div>
-              </div>
-            </div>
-          </section>
         </>
       ) : (
-        <div className="text-center py-8 text-gray-500">Failed to load stats</div>
+        <div className="text-center py-12 text-slate-500">Failed to load dashboard data</div>
       )}
-    </div>
-  );
+    </PortalPageShell>
+  )
 }
 
 function MaintenanceAlert({ vehicle }: any) {
   const getExpiringItem = () => {
-    const items = [];
-    if (vehicle.insurance_expiry) {
-      const date = new Date(vehicle.insurance_expiry);
+    const items: string[] = []
+    const check = (label: string, dateStr?: string) => {
+      if (!dateStr) return
+      const date = new Date(dateStr)
       if (date < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) {
-        items.push(`Insurance: ${formatDate(date)}`);
+        items.push(`${label}: ${formatDate(date)}`)
       }
     }
-    if (vehicle.pollution_certificate_expiry) {
-      const date = new Date(vehicle.pollution_certificate_expiry);
-      if (date < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) {
-        items.push(`Pollution Cert: ${formatDate(date)}`);
-      }
-    }
-    if (vehicle.fitness_certificate_expiry) {
-      const date = new Date(vehicle.fitness_certificate_expiry);
-      if (date < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) {
-        items.push(`Fitness Cert: ${formatDate(date)}`);
-      }
-    }
-    return items.join(', ');
-  };
+    check('Insurance', vehicle.insurance_expiry)
+    check('Pollution Cert', vehicle.pollution_certificate_expiry)
+    check('Fitness Cert', vehicle.fitness_certificate_expiry)
+    return items.join(', ')
+  }
 
   return (
-    <div className="p-4 flex items-center justify-between hover:bg-gray-50">
-      <div className="flex items-center">
-        <FiAlertCircle className="text-red-600 mr-3" size={20} />
+    <div className="p-4 flex items-center justify-between hover:bg-slate-50">
+      <div className="flex items-center gap-3">
+        <FiAlertCircle className="text-red-600 shrink-0" size={20} />
         <div>
-          <h4 className="font-medium text-gray-900">{vehicle.vehicle_number}</h4>
-          <p className="text-sm text-gray-600">
-            {vehicle.vehicle_type} - {getExpiringItem()}
+          <h4 className="font-medium text-slate-900">{vehicle.vehicle_number}</h4>
+          <p className="text-sm text-slate-600">
+            {vehicle.vehicle_type} — {getExpiringItem()}
           </p>
         </div>
       </div>
-      <Link href="/vehicles">
-        <button className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">
-          Update
-        </button>
+      <Link
+        href="/vehicles"
+        className="px-4 py-2 bg-red-600 text-white text-sm rounded-xl hover:bg-red-700"
+      >
+        Update
       </Link>
     </div>
-  );
+  )
 }
-

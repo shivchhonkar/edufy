@@ -629,10 +629,10 @@ export default function RecordPaymentModal({
 
   return (
     <>
-      <div className={`fixed top-3 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
+      <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
         sidebarCollapsed ? 'left-16' : 'left-56'
-      }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 20px)' }}>
-        <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full flex flex-col rounded-tl-xl" style={{ height: 'calc(100vh - 20px)' }}>
+      }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 0px)' }}>
+        <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full flex flex-col rounded-tl-xl" style={{ height: 'calc(100vh - 0px)' }}>
           {/* Fixed Header */}
           <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white flex-shrink-0">
             <h2 className="text-xl text-gray-900">Record Payment</h2>

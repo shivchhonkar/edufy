@@ -4,6 +4,11 @@ export { default as ConfirmDialog } from './components/ConfirmDialog';
 export { default as Button } from './components/Button';
 export { default as Card } from './components/Card';
 export { default as Input } from './components/Input';
+export {
+  PortalPageShell,
+  PortalLoadingSpinner,
+  PortalQuickActionCard,
+} from './components/PortalPageShell';
 
 // Export types
 export type { StatCardProps } from './components/StatCard';

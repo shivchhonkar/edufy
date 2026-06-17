@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getRequestDb } from '@/lib/request-db';
-import { ensureHrSchema } from '@/lib/ensure-hr-schema';
-import { requireAuth, getStaffIdForUser } from '@/lib/hr-auth';
+import { NextRequest, NextResponse } from 'next/server'
+import { getRequestDb } from '@/lib/request-db'
+import { ensureHrSchema } from '@/lib/ensure-hr-schema'
+import { requireAuth, getStaffIdForUser } from '@/lib/hr-auth'
+import { getStaffPortalAccess, isStaffModuleAllowed } from '@/lib/staff-portal-access'
+import {
+  countWorkingDays,
+  getLeaveBalanceRemaining,
+  hasOverlappingLeave,
+} from '@/lib/leave-utils'
 
 async function resolveStaffId(db: Awaited<ReturnType<typeof getRequestDb>>['db'], userId: number): Promise<number | null> {
   let staffId = await getStaffIdForUser(db, userId);
@@ -26,7 +32,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No staff profile linked' }, { status: 404 });
     }
 
+    const portalAccess = await getStaffPortalAccess(db, staffId);
+    if (!portalAccess.enabled) {
+      return NextResponse.json(
+        { success: false, error: 'Staff portal access has been disabled' },
+        { status: 403 },
+      );
+    }
+
     const type = request.nextUrl.searchParams.get('type') || 'attendance';
+    if (!isStaffModuleAllowed(portalAccess, type)) {
+      return NextResponse.json(
+        { success: false, error: 'You do not have access to this module' },
+        { status: 403 },
+      );
+    }
     const month = request.nextUrl.searchParams.get('month');
     const year = request.nextUrl.searchParams.get('year');
 
@@ -80,25 +100,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No staff profile linked' }, { status: 404 });
     }
 
-    const { leave_type_id, start_date, end_date, reason } = await request.json();
-    if (!leave_type_id || !start_date || !end_date) {
-      return NextResponse.json({ success: false, error: 'leave_type_id, start_date, end_date required' }, { status: 400 });
+    const portalAccess = await getStaffPortalAccess(db, staffId);
+    if (!portalAccess.enabled) {
+      return NextResponse.json(
+        { success: false, error: 'Staff portal access has been disabled' },
+        { status: 403 },
+      );
+    }
+    if (!isStaffModuleAllowed(portalAccess, 'leaves')) {
+      return NextResponse.json(
+        { success: false, error: 'You do not have access to leave requests' },
+        { status: 403 },
+      );
     }
 
-    const s = new Date(start_date);
-    const e = new Date(end_date);
-    let days = 0;
-    const cur = new Date(s);
-    while (cur <= e) {
-      if (cur.getDay() !== 0 && cur.getDay() !== 6) days++;
-      cur.setDate(cur.getDate() + 1);
+    const { leave_type_id, start_date, end_date, reason } = await request.json()
+    if (!leave_type_id || !start_date || !end_date) {
+      return NextResponse.json({ success: false, error: 'leave_type_id, start_date, end_date required' }, { status: 400 })
+    }
+
+    if (new Date(end_date) < new Date(start_date)) {
+      return NextResponse.json({ success: false, error: 'End date must be on or after start date' }, { status: 400 })
+    }
+
+    const days = countWorkingDays(start_date, end_date)
+    if (days <= 0) {
+      return NextResponse.json({ success: false, error: 'Leave must include at least one working day' }, { status: 400 })
+    }
+
+    if (await hasOverlappingLeave(db, staffId, start_date, end_date)) {
+      return NextResponse.json(
+        { success: false, error: 'You already have a pending or approved leave for overlapping dates' },
+        { status: 409 },
+      )
+    }
+
+    const year = new Date(start_date).getFullYear()
+    const balance = await getLeaveBalanceRemaining(db, staffId, leave_type_id, year)
+    if (balance.maxDays != null && days > balance.remaining) {
+      return NextResponse.json(
+        { success: false, error: `Insufficient leave balance. ${balance.remaining} day(s) remaining.` },
+        { status: 400 },
+      )
     }
 
     const result = await db.query(
       `INSERT INTO staff_leaves (staff_id, leave_type_id, start_date, end_date, days_requested, reason, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
-      [staffId, leave_type_id, start_date, end_date, days, reason || null]
-    );
+      [staffId, leave_type_id, start_date, end_date, days, reason || null],
+    )
     return NextResponse.json({ success: true, data: result.rows[0] }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to submit leave' }, { status: 500 });

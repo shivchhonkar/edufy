@@ -14,7 +14,14 @@ const WEEKDAYS = [1, 2, 3, 4, 5, 6];
 interface Class { id: number; name: string; }
 interface Section { id: number; name: string; }
 interface Subject { id: number; name: string; }
-interface Period { id: number; name: string; start_time: string; end_time: string; sort_order: number; }
+interface Period {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  sort_order: number;
+  is_active: boolean;
+}
 interface Staff { id: number; first_name: string; last_name: string; }
 interface Entry {
   id: number;
@@ -32,6 +39,44 @@ interface Entry {
 function formatTime(time: string | null | undefined) {
   if (!time) return '';
   return String(time).slice(0, 5);
+}
+
+function addMinutesToTime(time: string, minutes: number) {
+  const [hours, mins] = time.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(mins)) return '';
+  const totalMinutes = hours * 60 + mins + minutes;
+  const nextHours = Math.floor(totalMinutes / 60) % 24;
+  const nextMinutes = totalMinutes % 60;
+  return `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}`;
+}
+
+function getPeriodDurationMinutes(startTime: string, endTime: string) {
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  if ([startHours, startMinutes, endHours, endMinutes].some(Number.isNaN)) return 40;
+  const duration = endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+  return duration > 0 ? duration : 40;
+}
+
+function getSuggestedNewPeriodTimes(periodList: Period[]) {
+  const sorted = [...periodList].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return a.id - b.id;
+  });
+  const lastPeriod = sorted[sorted.length - 1];
+  if (!lastPeriod?.end_time) {
+    return { start_time: '08:00', end_time: '08:40' };
+  }
+
+  const startTime = formatTime(lastPeriod.end_time);
+  const lastStart = formatTime(lastPeriod.start_time);
+  const lastEnd = formatTime(lastPeriod.end_time);
+  const duration = lastStart && lastEnd ? getPeriodDurationMinutes(lastStart, lastEnd) : 40;
+
+  return {
+    start_time: startTime,
+    end_time: addMinutesToTime(startTime, duration),
+  };
 }
 
 function PeriodsSkeleton() {
@@ -124,13 +169,18 @@ export default function TimetablePage() {
   const fetchPeriods = useCallback(async () => {
     setLoadingPeriods(true);
     try {
-      const res = await fetch('/api/timetable/periods');
+      const res = await fetch('/api/timetable/periods?active_only=false');
       const data = await res.json();
       if (data.success) setPeriods(data.data);
     } finally {
       setLoadingPeriods(false);
     }
   }, []);
+
+  const activePeriods = useMemo(
+    () => periods.filter((period) => period.is_active !== false),
+    [periods],
+  );
 
   const fetchEntries = useCallback(async () => {
     if (!classId) {
@@ -269,8 +319,13 @@ export default function TimetablePage() {
   };
 
   const openAddPeriodForm = () => {
+    const suggestedTimes = getSuggestedNewPeriodTimes(periods);
     setEditingPeriodId(null);
-    setPeriodForm({ name: `Period ${periods.length + 1}`, start_time: '', end_time: '' });
+    setPeriodForm({
+      name: `Period ${periods.length + 1}`,
+      start_time: suggestedTimes.start_time,
+      end_time: suggestedTimes.end_time,
+    });
     setShowPeriodForm(true);
   };
 
@@ -336,6 +391,32 @@ export default function TimetablePage() {
     }
   };
 
+  const togglePeriodActive = async (period: Period) => {
+    const nextActive = period.is_active === false;
+    const res = await fetch(`/api/timetable/periods/${period.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: period.name,
+        start_time: formatTime(period.start_time) || null,
+        end_time: formatTime(period.end_time) || null,
+        sort_order: period.sort_order,
+        is_active: nextActive,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      await fetchPeriods();
+      if (classId) await fetchEntries();
+      await alert(
+        nextActive ? 'Period activated' : 'Period deactivated',
+        { title: 'Success', type: 'success' },
+      );
+    } else {
+      await alert(data.error || 'Failed to update period status', { title: 'Error', type: 'error' });
+    }
+  };
+
   const getEntry = (day: number, periodId: number) =>
     entries.find((e) => e.day_of_week === day && e.period_id === periodId);
 
@@ -354,7 +435,7 @@ export default function TimetablePage() {
             </p>
           </div>
           <Link
-            href="/subjects"
+            href="/academics/subjects"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
           >
             <FiBook className="w-4 h-4" />
@@ -369,7 +450,9 @@ export default function TimetablePage() {
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <FiClock className="text-primary-600" /> School Periods
               </h2>
-              <p className="text-xs text-gray-500 mt-0.5">Add periods before building the weekly timetable</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                9 default periods are created automatically. Activate, edit, or remove periods as needed.
+              </p>
             </div>
             <button
               type="button"
@@ -426,32 +509,86 @@ export default function TimetablePage() {
           {loadingPeriods ? (
             <PeriodsSkeleton />
           ) : periods.length === 0 ? (
-            <p className="text-sm text-gray-500 py-2">No periods yet. Click &quot;Add Period&quot; to create your first period.</p>
+            <p className="text-sm text-gray-500 py-2">No periods found.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {periods.map((p) => (
-                <div
-                  key={p.id}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${
-                    editingPeriodId === p.id
-                      ? 'bg-primary-50 border-primary-300 ring-1 ring-primary-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <span className="font-medium text-gray-900">{p.name}</span>
-                  {(p.start_time || p.end_time) && (
-                    <span className="text-xs text-gray-500">
-                      {formatTime(p.start_time)}{p.end_time ? ` – ${formatTime(p.end_time)}` : ''}
-                    </span>
-                  )}
-                  <button type="button" onClick={() => openEditPeriodForm(p)} className="text-gray-400 hover:text-primary-600 p-0.5" title="Edit period">
-                    <FiEdit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" onClick={() => removePeriod(p)} className="text-gray-400 hover:text-red-600 p-0.5" title="Remove period">
-                    <FiTrash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      S.N.
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Period
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Time
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {periods.map((period, index) => {
+                    const isActive = period.is_active !== false;
+                    return (
+                      <tr
+                        key={period.id}
+                        className={isActive ? 'bg-white' : 'bg-gray-50 text-gray-500'}
+                      >
+                        <td className="px-4 py-3 tabular-nums">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900">{period.name}</td>
+                        <td className="px-4 py-3">
+                          {formatTime(period.start_time) || '—'}
+                          {period.end_time ? ` – ${formatTime(period.end_time)}` : ''}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            {isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openEditPeriodForm(period)}
+                              className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded"
+                              title="Edit period"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => togglePeriodActive(period)}
+                              className="px-2 py-1 text-xs font-medium border border-gray-200 rounded hover:bg-gray-100"
+                            >
+                              {isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removePeriod(period)}
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                              title="Delete period"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -526,22 +663,22 @@ export default function TimetablePage() {
           </div>
         )}
 
-        {classId && !loadingPeriods && periods.length === 0 && (
+        {classId && !loadingPeriods && activePeriods.length === 0 && (
           <div className="text-center py-12 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-            Add at least one period above before assigning subjects to the timetable.
+            Activate at least one period above before assigning subjects to the timetable.
           </div>
         )}
 
-        {classId && (loadingPeriods || periods.length > 0) && loadingTimetable && (
-          <TimetableGridSkeleton periodCount={periods.length} />
+        {classId && (loadingPeriods || activePeriods.length > 0) && loadingTimetable && (
+          <TimetableGridSkeleton periodCount={activePeriods.length} />
         )}
 
-        {classId && periods.length > 0 && !loadingTimetable && (
+        {classId && activePeriods.length > 0 && !loadingTimetable && (
           <div className="overflow-x-auto max-w-full space-y-3">
             {availableSubjects.length === 0 && subjects.length > 0 && (
               <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2">
                 <span>No subjects assigned to this class yet. Assign subjects before filling the timetable.</span>
-                <Link href="/subjects" className="text-primary-600 font-medium hover:underline">
+                <Link href="/academics/subjects" className="text-primary-600 font-medium hover:underline">
                   Go to Subject Management →
                 </Link>
               </div>
@@ -549,7 +686,7 @@ export default function TimetablePage() {
             {subjects.length === 0 && (
               <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2">
                 <span>No subjects found.</span>
-                <Link href="/subjects" className="text-primary-600 font-medium hover:underline">
+                <Link href="/academics/subjects" className="text-primary-600 font-medium hover:underline">
                   Go to Subject Management →
                 </Link>
               </div>
@@ -564,7 +701,7 @@ export default function TimetablePage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="p-2 border">Day / Period</th>
-                  {periods.map((p) => (
+                  {activePeriods.map((p) => (
                     <th key={p.id} className="p-2 border text-xs">
                       {p.name}
                       <br />
@@ -580,7 +717,7 @@ export default function TimetablePage() {
                 {WEEKDAYS.map((day) => (
                   <tr key={day}>
                     <td className="p-2 border font-medium">{DAYS[day]}</td>
-                    {periods.map((p) => {
+                    {activePeriods.map((p) => {
                       const entry = getEntry(day, p.id);
                       const isEditing = editCell?.day === day && editCell?.periodId === p.id;
                       const inherited = !!entry?.is_inherited;

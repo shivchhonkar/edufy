@@ -92,14 +92,17 @@ export default function ProfileTab({ student }: ProfileTabProps) {
         </div>
       </Section>
 
-      <Section title="Legacy Parent Contact" icon={FiUser}>
+      <Section title="Father & Mother Contact" icon={FiUser}>
         <p className="text-xs text-gray-500 mb-3">
-          Manage detailed guardian records in the Guardians tab.
+          Default father and mother guardians are managed in the Guardians tab.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <InfoRow label="Parent Name" value={student.parent_name} />
-          <InfoRow label="Parent Phone" value={student.parent_phone} icon={FiPhone} />
-          <InfoRow label="Parent Email" value={student.parent_email} icon={FiMail} />
+          <InfoRow label="Father's Name" value={student.parent_name} />
+          <InfoRow label="Father's Phone" value={student.parent_phone} icon={FiPhone} />
+          <InfoRow label="Father's Email" value={student.parent_email} icon={FiMail} />
+          <InfoRow label="Mother's Name" value={student.mother_name} />
+          <InfoRow label="Mother's Phone" value={student.mother_phone} icon={FiPhone} />
+          <InfoRow label="Mother's Email" value={student.mother_email} icon={FiMail} />
           <InfoRow label="Emergency Contact" value={student.emergency_contact} icon={FiPhone} />
         </div>
       </Section>

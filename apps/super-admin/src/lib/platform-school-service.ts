@@ -121,6 +121,9 @@ export async function registerSchool(
       'add_system_settings_table.sql',
       'phase13_system_settings.sql',
       'phase14_transfer_certificate_generations.sql',
+      'phase15_student_gate_passes.sql',
+      'phase16_school_houses.sql',
+      'phase17_student_mother_fields.sql',
     ];
 
     for (const file of migrationFiles) {

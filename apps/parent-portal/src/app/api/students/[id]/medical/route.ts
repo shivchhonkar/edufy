@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromParams } from '@/lib/require-student-api';
 
 export async function GET(
@@ -7,11 +7,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromParams(request, params.id);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
 
-    const result = await query(
+    const result = await db.query(
       `SELECT blood_group, allergies, chronic_disease, disability,
               doctor_name, doctor_contact, emergency_contact, medical_notes
        FROM student_medical_records

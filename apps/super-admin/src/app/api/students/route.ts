@@ -3,6 +3,7 @@ import { getAuthenticatedDb } from '@/lib/request-db';
 import type { RequestDb } from '@/lib/request-db';
 import { Student } from '@/shared/types';
 import { generateAdmissionNumber, getPaginationParams } from '@/lib/utils';
+import { ensureDefaultStudentGuardians, ensureStudentMotherColumns } from '@/lib/student-profile-api';
 
 // Helper function to assign default fees to a student (uses request-scoped db for multi-tenant)
 async function assignDefaultFeesToStudent(studentId: number, classId: number | null, db: RequestDb) {
@@ -243,6 +244,9 @@ export async function POST(request: NextRequest) {
       parent_name,
       parent_phone,
       parent_email,
+      mother_name,
+      mother_phone,
+      mother_email,
       emergency_contact,
       photo_url,
     } = body;
@@ -258,16 +262,19 @@ export async function POST(request: NextRequest) {
     // Generate admission number
     const admission_number = generateAdmissionNumber();
 
+    await ensureStudentMotherColumns(db);
+
     const result = await db.query<Student>(
       `INSERT INTO students (
         admission_number, student_code, first_name, middle_name, last_name,
         date_of_birth, gender, blood_group, aadhaar_no, religion, caste, category,
         nationality, mother_tongue, remarks, address, city, state, pincode,
         admission_date, class_id, section_id, roll_number,
-        parent_name, parent_phone, parent_email, emergency_contact, photo_url, status
+        parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email,
+        emergency_contact, photo_url, status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
       )
       RETURNING *`,
       [
@@ -277,7 +284,8 @@ export async function POST(request: NextRequest) {
         mother_tongue || null, remarks || null, address || null, city || null,
         state || null, pincode || null, admission_date, class_id || null,
         section_id || null, roll_number || null, parent_name || null,
-        parent_phone || null, parent_email || null, emergency_contact || null,
+        parent_phone || null, parent_email || null, mother_name || null,
+        mother_phone || null, mother_email || null, emergency_contact || null,
         photo_url || null, 'active',
       ]
     );
@@ -319,6 +327,12 @@ export async function POST(request: NextRequest) {
     } catch (feeError) {
       console.error('Error assigning default fees to new student:', feeError);
       // Don't fail student creation if fee assignment fails
+    }
+
+    try {
+      await ensureDefaultStudentGuardians(db, newStudent.id);
+    } catch (guardianError) {
+      console.error('Error syncing default guardians for new student:', guardianError);
     }
 
     return NextResponse.json({

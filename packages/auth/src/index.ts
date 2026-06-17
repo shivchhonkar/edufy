@@ -96,3 +96,13 @@ export function getUserFromToken(token: string): (Partial<User> & { tenant_id?: 
   return out;
 }
 
+export {
+  defaultStaffPortalPermissions,
+  staffCanAccessPortalModule,
+  STAFF_ESS_MODULE_KEYS,
+  STAFF_EXTERNAL_PORTAL_KEYS,
+  PORTAL_LOGIN_PRIVILEGED_ROLES,
+} from './staff-portal-access';
+export type { PortalLoginModule, StaffExternalPortalKey } from './staff-portal-access';
+export { authenticateStaffPortalLogin } from './portal-login';
+

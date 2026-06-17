@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/require-student-api';
 
 export async function GET(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromQuery(request);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
 
-    const result = await pool.query(
+    const result = await db.query(
       `SELECT 
         er.*,
         e.name as exam_name,

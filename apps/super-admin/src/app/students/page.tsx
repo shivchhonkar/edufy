@@ -1,15 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import AddStudentModal from '@/features/students/components/AddStudentModal';
 import ViewStudentModal from '@/features/students/components/ViewStudentModal';
-import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
-import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { useDialog } from '@/shared/context/DialogContext';
-import { useSettings } from '@/shared/SettingsContext';
 import { Student } from '@/shared/types';
 import Link from 'next/link';
 import {
@@ -21,8 +18,6 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiFilter,
-  FiCreditCard,
-  FiFileText,
 } from 'react-icons/fi';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import VirtualizedStudentsTable from '@/features/students/components/VirtualizedStudentsTable';
@@ -44,7 +39,6 @@ interface Section {
 
 function StudentsPageContent() {
   const { alert } = useDialog();
-  const { settings } = useSettings();
   const searchParams = useSearchParams();
   const pageHint = searchParams.get('hint');
   const [students, setStudents] = useState<Student[]>([]);
@@ -61,42 +55,6 @@ function StudentsPageContent() {
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [showTcModal, setShowTcModal] = useState(false);
-  const [reportSettings, setReportSettings] = useState<{
-    counsellor_name?: string;
-    counsellor_signature_url?: string;
-  }>({});
-
-  useEffect(() => {
-    fetch('/api/settings/reports')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setReportSettings(d.data);
-      })
-      .catch(console.error);
-  }, []);
-
-  const tcSchoolInfo: TransferCertificateSchoolInfo = useMemo(
-    () => ({
-      name: settings.school_name || 'School',
-      address: settings.school_address || undefined,
-      logoUrl: settings.logo_url || undefined,
-      academicYear: settings.academic_year
-        ? `Academic Year ${settings.academic_year}`
-        : undefined,
-      phone: settings.school_phone || undefined,
-      email: settings.school_email || undefined,
-      principalName: reportSettings.counsellor_name || undefined,
-      signatureUrl: reportSettings.counsellor_signature_url || undefined,
-    }),
-    [settings, reportSettings]
-  );
-
-  const selectedStudents = useMemo(
-    () => students.filter((s) => selectedIds.has(s.id)),
-    [students, selectedIds]
-  );
 
   useEffect(() => {
     fetchClasses();
@@ -205,37 +163,6 @@ function StudentsPageContent() {
     setEditingStudent(null);
   };
 
-  const toggleStudentSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAllStudents = (ids: number[], select: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        if (select) next.add(id);
-        else next.delete(id);
-      }
-      return next;
-    });
-  };
-
-  const handleGenerateTc = async () => {
-    if (selectedStudents.length === 0) {
-      await alert('Select at least one student to generate a Transfer Certificate.', {
-        title: 'No selection',
-        type: 'warning',
-      });
-      return;
-    }
-    setShowTcModal(true);
-  };
-
   const hasActiveFilters = Boolean(search || classFilter || sectionFilter);
   const activeFilterCount = [search, classFilter, sectionFilter].filter(Boolean).length;
 
@@ -278,32 +205,6 @@ function StudentsPageContent() {
                   </span>
                 )}
                 {filtersExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-              </button>
-              <Link
-                href="/students/id-cards"
-                className="border px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm"
-              >
-                <FiCreditCard />
-                <span>ID Cards</span>
-              </Link>
-              <Link
-                href="/students/transfer-certificates"
-                className="border px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm"
-              >
-                <FiFileText />
-                <span>TC History</span>
-              </Link>
-              <button
-                type="button"
-                onClick={handleGenerateTc}
-                disabled={selectedStudents.length === 0}
-                className="border px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm disabled:opacity-40"
-              >
-                <FiFileText />
-                <span>
-                  Generate TC
-                  {selectedStudents.length > 0 ? ` (${selectedStudents.length})` : ''}
-                </span>
               </button>
               <Link
                 href="/students/bulk-edit"
@@ -452,9 +353,6 @@ function StudentsPageContent() {
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleStudentSelect}
-              onToggleSelectAll={toggleAllStudents}
             />
           )}
         </div>
@@ -523,13 +421,6 @@ function StudentsPageContent() {
           title="Bulk Import Students"
           templateType="students"
           importUrl="/api/import/students"
-        />
-
-        <TransferCertificateModal
-          isOpen={showTcModal}
-          onClose={() => setShowTcModal(false)}
-          students={selectedStudents}
-          school={tcSchoolInfo}
         />
       </div>
     </DashboardLayout>

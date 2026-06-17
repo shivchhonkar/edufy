@@ -77,6 +77,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
     parent_name: '',
     parent_phone: '',
     parent_email: '',
+    mother_name: '',
+    mother_phone: '',
+    mother_email: '',
     emergency_contact: '',
     photo_url: '',
     status: 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
@@ -188,6 +191,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
         parent_name: editingStudent.parent_name || '',
         parent_phone: editingStudent.parent_phone || '',
         parent_email: editingStudent.parent_email || '',
+        mother_name: editingStudent.mother_name || '',
+        mother_phone: editingStudent.mother_phone || '',
+        mother_email: editingStudent.mother_email || '',
         emergency_contact: editingStudent.emergency_contact || '',
         photo_url: editingStudent.photo_url || '',
         status: editingStudent.status || 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
@@ -223,6 +229,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
         parent_name: '',
         parent_phone: '',
         parent_email: '',
+        mother_name: '',
+        mother_phone: '',
+        mother_email: '',
         emergency_contact: '',
         photo_url: '',
         status: 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
@@ -800,64 +809,114 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
             </div>
           </div>
 
-          {/* Parent Information */}
+          {/* Guardian Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Parent Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Guardian Information</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Father and mother details are shown by default in the Guardians tab.
+            </p>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Parent Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-                  value={formData.parent_name}
-                  onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
-                />
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">Father</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Father&apos;s Name
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      value={formData.parent_name}
+                      onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Father&apos;s Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      ref={parentPhoneRef}
+                      type="tel"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
+                        fieldErrors.parent_phone ? 'border-red-500 shake' : 'border-gray-300'
+                      }`}
+                      value={formData.parent_phone}
+                      onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
+                    />
+                    {fieldErrors.parent_phone && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.parent_phone}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Father&apos;s Email
+                    </label>
+                    <input
+                      type="email"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
+                        fieldErrors.parent_email ? 'border-red-500 shake' : 'border-gray-300'
+                      }`}
+                      value={formData.parent_email}
+                      onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
+                    />
+                    {fieldErrors.parent_email && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.parent_email}</p>
+                    )}
+                  </div>
+                </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Parent Phone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  ref={parentPhoneRef}
-                  type="tel"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.parent_phone ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
-                  value={formData.parent_phone}
-                  onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
-                />
-                {fieldErrors.parent_phone && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.parent_phone}</p>
-                )}
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">Mother</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mother&apos;s Name
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      value={formData.mother_name}
+                      onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mother&apos;s Phone
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      value={formData.mother_phone}
+                      onChange={(e) => setFormData({ ...formData, mother_phone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mother&apos;s Email
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      value={formData.mother_email}
+                      onChange={(e) => setFormData({ ...formData, mother_email: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Parent Email
-                </label>
-                <input
-                  type="email"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.parent_email ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
-                  value={formData.parent_email}
-                  onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
-                />
-                {fieldErrors.parent_email && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.parent_email}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Emergency Contact
-                </label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-                  value={formData.emergency_contact}
-                  onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Emergency Contact
+                  </label>
+                  <input
+                    type="tel"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                    value={formData.emergency_contact}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { getParentSession, requireParentStudentAccess } from '@/lib/parent-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const body = await request.json();
     const { submission_id, submission_text } = body;
 
@@ -19,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const ownership = await pool.query(
+    const ownership = await db.query(
       'SELECT student_id FROM homework_submissions WHERE id = $1',
       [submission_id]
     );
@@ -31,7 +35,7 @@ export async function POST(request: NextRequest) {
     const auth = requireParentStudentAccess(request, studentId);
     if (auth instanceof NextResponse) return auth;
 
-    const result = await pool.query(
+    const result = await db.query(
       `UPDATE homework_submissions 
        SET submission_text = $1,
            submitted_at = CURRENT_TIMESTAMP,

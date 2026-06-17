@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/require-student-api';
 
 export async function GET(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromQuery(request);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
 
-    const studentResult = await pool.query(
+    const studentResult = await db.query(
       `SELECT COALESCE(e.class_id, s.class_id) AS class_id
        FROM students s
        LEFT JOIN student_enrollments e ON e.student_id = s.id AND e.is_current = true
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     console.log('Student class_id:', classId);
 
     // Get homework for student's class
-    const homeworkResult = await pool.query(
+    const homeworkResult = await db.query(
       `SELECT 
         h.*,
         s.name as subject_name,

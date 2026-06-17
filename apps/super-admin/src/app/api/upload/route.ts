@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     const folderParam = request.nextUrl.searchParams.get('folder');
-    const allowedFolders = ['homework', 'students', 'student-documents', 'staff-documents', 'reports'];
+    const allowedFolders = ['homework', 'students', 'student-documents', 'staff-documents', 'reports', 'gate-pass'];
     const folder = allowedFolders.includes(folderParam || '')
       ? (folderParam as string)
       : 'homework';

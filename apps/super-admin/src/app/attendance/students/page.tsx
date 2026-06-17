@@ -1,10 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { FiUsers, FiClock, FiCalendar, FiEdit } from 'react-icons/fi';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  FiUsers,
+  FiClock,
+  FiCalendar,
+  FiEdit,
+  FiCheckCircle,
+  FiSend,
+} from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import RecordStudentAttendanceModal from '@/features/attendance/components/RecordStudentAttendanceModal';
-import MarkStudentAttendancePanel from '@/features/attendance/components/MarkStudentAttendancePanel';
+import MarkStudentAttendancePanel, {
+  type MarkStudentAttendancePanelHandle,
+} from '@/features/attendance/components/MarkStudentAttendancePanel';
 
 interface Student {
   id: number;
@@ -56,6 +65,11 @@ function buildAttendanceStats(records: AttendanceRecord[], studentCount: number)
   };
 }
 
+function pct(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+}
+
 export default function StudentAttendancePage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -72,7 +86,9 @@ export default function StudentAttendancePage() {
   const [migrationRequired, setMigrationRequired] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
-  const [activeTab, setActiveTab] = useState<'mark' | 'today' | 'history'>('mark');
+  const [activeTab, setActiveTab] = useState<'mark' | 'individual' | 'history'>('mark');
+  const [submitState, setSubmitState] = useState({ canSubmit: false, saving: false });
+  const attendancePanelRef = useRef<MarkStudentAttendancePanelHandle>(null);
   const [filters, setFilters] = useState({
     start_date: new Date().toISOString().split('T')[0],
     end_date: new Date().toISOString().split('T')[0],
@@ -113,23 +129,16 @@ export default function StudentAttendancePage() {
   };
 
   const loadRecords = async () => {
-    if (activeTab === 'mark') return;
+    if (activeTab !== 'history') return;
 
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
       const params = new URLSearchParams();
-
-      if (activeTab === 'today') {
-        params.append('start_date', today);
-        params.append('end_date', today);
-      } else {
-        if (filters.start_date) params.append('start_date', filters.start_date);
-        if (filters.end_date) params.append('end_date', filters.end_date);
-        if (filters.class_id) params.append('class_id', filters.class_id);
-        if (filters.section_id) params.append('section_id', filters.section_id);
-        if (filters.status) params.append('status', filters.status);
-      }
+      if (filters.start_date) params.append('start_date', filters.start_date);
+      if (filters.end_date) params.append('end_date', filters.end_date);
+      if (filters.class_id) params.append('class_id', filters.class_id);
+      if (filters.section_id) params.append('section_id', filters.section_id);
+      if (filters.status) params.append('status', filters.status);
 
       const response = await fetch(`/api/attendance/students?${params.toString()}`);
       const data = await response.json();
@@ -178,160 +187,212 @@ export default function StudentAttendancePage() {
   }, [filters.class_id]);
 
   useEffect(() => {
-    if (activeTab !== 'mark') {
-      loadRecords();
-    }
+    if (activeTab === 'history') loadRecords();
   }, [activeTab, filters]);
 
   const handleRecordSuccess = () => {
     loadStats();
-    if (activeTab !== 'mark') loadRecords();
+    if (activeTab === 'history') loadRecords();
     setShowRecordModal(false);
     setSelectedRecord(null);
   };
 
   const handleMarkSaved = () => {
     loadStats();
-    if (activeTab === 'today') loadRecords();
+    if (activeTab === 'history') loadRecords();
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'present': return 'bg-green-100 text-green-800';
-      case 'absent': return 'bg-red-100 text-red-800';
-      case 'late': return 'bg-yellow-100 text-yellow-800';
-      case 'half_day': return 'bg-orange-100 text-orange-800';
-      case 'on_leave': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'present':
+        return 'bg-green-100 text-green-800';
+      case 'absent':
+        return 'bg-red-100 text-red-800';
+      case 'late':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'half_day':
+        return 'bg-orange-100 text-orange-800';
+      case 'on_leave':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (loading && activeTab !== 'mark') {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600" />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const statCards = [
+    {
+      label: 'Total Students',
+      value: stats.total_students,
+      sub: null,
+      valueClass: 'text-gray-900',
+      icon: FiUsers,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+    },
+    {
+      label: 'Present Today',
+      value: stats.present_today,
+      sub: `${pct(stats.present_today, stats.total_students)}%`,
+      valueClass: 'text-green-600',
+      icon: FiCheckCircle,
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+    },
+    {
+      label: 'Absent Today',
+      value: stats.absent_today,
+      sub: `${pct(stats.absent_today, stats.total_students)}%`,
+      valueClass: 'text-red-600',
+      icon: FiCalendar,
+      iconBg: 'bg-red-100',
+      iconColor: 'text-red-600',
+    },
+    {
+      label: 'Late Today',
+      value: stats.late_today,
+      sub: `${pct(stats.late_today, stats.total_students)}%`,
+      valueClass: 'text-amber-600',
+      icon: FiClock,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+    },
+    {
+      label: 'On Leave',
+      value: stats.on_leave_today,
+      sub: `${pct(stats.on_leave_today, stats.total_students)}%`,
+      valueClass: 'text-blue-600',
+      icon: FiCalendar,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+    },
+  ];
 
+  // FiCheckCircle used above - need import
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-xl text-gray-900">Student Attendance</h1>
-            <p className="text-gray-600 mt-1">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Student Attendance</h1>
+            <p className="text-gray-600 mt-1 text-sm">
               Mark attendance by class or individually, then review today&apos;s records and history.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('history')}
+            className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <FiClock size={16} />
+            View Attendance History
+          </button>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {statCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.label}
+                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Students</p>
-                    <p className="text-xl text-gray-900">{stats.total_students}</p>
+                    <p className="text-xs font-medium text-gray-500">{card.label}</p>
+                    <p className={`text-xl mt-0.5 ${card.valueClass}`}>
+                      {card.value}
+                      {card.sub && (
+                        <span className="text-sm font-normal text-gray-400 ml-1">{card.sub}</span>
+                      )}
+                    </p>
                   </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <FiUsers className="w-6 h-6 text-blue-600" />
+                  <div className={`p-2.5 rounded-full ${card.iconBg}`}>
+                    <Icon className={`w-5 h-5 ${card.iconColor}`} />
                   </div>
                 </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Present Today</p>
-                    <p className="text-xl text-green-600">{stats.present_today}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <FiClock className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Absent Today</p>
-                    <p className="text-xl text-red-600">{stats.absent_today}</p>
-                  </div>
-                  <div className="p-3 bg-red-100 rounded-full">
-                    <FiCalendar className="w-6 h-6 text-red-600" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Late Today</p>
-                    <p className="text-xl text-yellow-600">{stats.late_today}</p>
-                  </div>
-                  <div className="p-3 bg-yellow-100 rounded-full">
-                    <FiClock className="w-6 h-6 text-yellow-600" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">On Leave</p>
-                    <p className="text-xl text-blue-600">{stats.on_leave_today}</p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <FiCalendar className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            );
+          })}
+        </div>
 
-          {migrationRequired && (
-            <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">
-              Student attendance table is not set up for this school yet.
-            </div>
-          )}
+        {migrationRequired && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">
+            Student attendance table is not set up for this school yet.
+          </div>
+        )}
 
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8 px-5">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="border-b border-gray-200 px-5 flex flex-wrap items-center justify-between gap-3">
+            <nav className="-mb-px flex gap-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('mark')}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'mark'
+                    ? 'border-primary-600 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Mark Attendance
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('individual')}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'individual'
+                    ? 'border-primary-600 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Mark for Individual Student
+              </button>
+              {activeTab === 'history' && (
                 <button
-                  onClick={() => setActiveTab('mark')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'mark'
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Mark Attendance
-                </button>
-                <button
-                  onClick={() => setActiveTab('today')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'today'
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Today&apos;s Records
-                </button>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'history'
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  type="button"
+                  className="py-4 text-sm font-medium border-b-2 border-primary-600 text-primary-700"
                 >
                   Attendance History
                 </button>
-              </nav>
-            </div>
-
-            <div className="p-5">
-              {activeTab === 'mark' && (
-                <MarkStudentAttendancePanel classes={classes} onSaved={handleMarkSaved} />
               )}
+            </nav>
+            {(activeTab === 'mark' || activeTab === 'individual') && (
+              <button
+                type="button"
+                onClick={() => attendancePanelRef.current?.submit()}
+                disabled={!submitState.canSubmit || submitState.saving}
+                className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 shrink-0 mb-2 sm:mb-3"
+              >
+                <FiSend size={16} />
+                {submitState.saving ? 'Submitting...' : 'Submit Attendance'}
+              </button>
+            )}
+          </div>
 
-              {activeTab === 'history' && (
+          <div className="p-5">
+            {activeTab === 'mark' && (
+              <MarkStudentAttendancePanel
+                ref={attendancePanelRef}
+                classes={classes}
+                variant="class"
+                onSaved={handleMarkSaved}
+                onCancel={() => setActiveTab('mark')}
+                onSubmitStateChange={setSubmitState}
+              />
+            )}
+
+            {activeTab === 'individual' && (
+              <MarkStudentAttendancePanel
+                ref={attendancePanelRef}
+                classes={classes}
+                variant="individual"
+                onSaved={handleMarkSaved}
+                onCancel={() => setActiveTab('mark')}
+                onSubmitStateChange={setSubmitState}
+              />
+            )}
+
+            {activeTab === 'history' && (
+              <>
                 <div className="mb-5 grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
@@ -355,12 +416,16 @@ export default function StudentAttendancePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
                     <select
                       value={filters.class_id}
-                      onChange={(e) => setFilters({ ...filters, class_id: e.target.value, section_id: '' })}
+                      onChange={(e) =>
+                        setFilters({ ...filters, class_id: e.target.value, section_id: '' })
+                      }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="">All Classes</option>
                       {classes.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -370,11 +435,13 @@ export default function StudentAttendancePage() {
                       value={filters.section_id}
                       onChange={(e) => setFilters({ ...filters, section_id: e.target.value })}
                       disabled={!filters.class_id}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:bg-gray-100"
                     >
                       <option value="">All Sections</option>
                       {sections.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -389,15 +456,16 @@ export default function StudentAttendancePage() {
                       <option value="present">Present</option>
                       <option value="absent">Absent</option>
                       <option value="late">Late</option>
-                      <option value="half_day">Half Day</option>
                       <option value="on_leave">On Leave</option>
                     </select>
                   </div>
                 </div>
-              )}
 
-              {activeTab !== 'mark' && (
-                attendanceRecords.length === 0 ? (
+                {loading ? (
+                  <div className="flex justify-center py-16">
+                    <div className="animate-spin h-8 w-8 border-b-2 border-primary-600 rounded-full" />
+                  </div>
+                ) : attendanceRecords.length === 0 ? (
                   <div className="text-center py-16 text-gray-500 text-sm">
                     No attendance records found.
                   </div>
@@ -430,7 +498,9 @@ export default function StudentAttendancePage() {
                               {new Date(record.date).toLocaleDateString('en-IN')}
                             </td>
                             <td className="px-5 py-3">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}
+                              >
                                 {record.status.replace('_', ' ').toUpperCase()}
                               </span>
                             </td>
@@ -439,6 +509,7 @@ export default function StudentAttendancePage() {
                             </td>
                             <td className="px-5 py-3">
                               <button
+                                type="button"
                                 onClick={() => {
                                   setSelectedRecord(record);
                                   setShowRecordModal(true);
@@ -454,24 +525,35 @@ export default function StudentAttendancePage() {
                       </tbody>
                     </table>
                   </div>
-                )
-              )}
-            </div>
+                )}
+
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('mark')}
+                    className="text-sm text-primary-600 hover:underline"
+                  >
+                    ← Back to Mark Attendance
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
+      </div>
 
-        {showRecordModal && (
-          <RecordStudentAttendanceModal
-            isOpen={showRecordModal}
-            onClose={() => {
-              setShowRecordModal(false);
-              setSelectedRecord(null);
-            }}
-            onSuccess={handleRecordSuccess}
-            students={students}
-            editingRecord={selectedRecord}
-          />
-        )}
+      {showRecordModal && (
+        <RecordStudentAttendanceModal
+          isOpen={showRecordModal}
+          onClose={() => {
+            setShowRecordModal(false);
+            setSelectedRecord(null);
+          }}
+          onSuccess={handleRecordSuccess}
+          students={students}
+          editingRecord={selectedRecord}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const { db } = await getRequestDb(request);
     await ensureTimetableSchema(db);
 
-    const activeOnly = request.nextUrl.searchParams.get('active_only') !== 'false';
+    const activeOnly = request.nextUrl.searchParams.get('active_only') === 'true';
     const result = await db.query(
       `SELECT * FROM timetable_periods
        ${activeOnly ? 'WHERE is_active = true' : ''}

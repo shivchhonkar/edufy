@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/require-student-api';
 
 export async function GET(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromQuery(request);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
@@ -24,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     queryText += ' ORDER BY date DESC LIMIT 120';
 
-    const records = await pool.query(queryText, queryParams);
+    const records = await db.query(queryText, queryParams);
 
-    const summaryResult = await pool.query(
+    const summaryResult = await db.query(
       `SELECT
         COUNT(*) FILTER (WHERE status = 'present') AS present_days,
         COUNT(*) FILTER (WHERE status = 'absent') AS absent_days,

@@ -1,18 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  forwardRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useImperativeHandle,
+} from 'react';
 import {
-  FiCheckSquare,
-  FiRefreshCw,
-  FiSave,
-  FiSearch,
-  FiSquare,
-  FiUsers,
+  FiCalendar,
+  FiCheck,
+  FiClock,
+  FiEdit3,
+  FiSend,
+  FiUpload,
+  FiUser,
+  FiX,
 } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
-import { studentFullName } from '@/features/students/utils/student-profile';
+import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
+import { sortClassesByName } from '@/lib/class-sort';
 
-type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'on_leave';
+type MarkMode = 'manual' | 'bulk';
 
 interface ClassOption {
   id: number;
@@ -29,67 +40,168 @@ interface StudentOption {
   id: number;
   first_name: string;
   last_name: string;
+  middle_name?: string | null;
   admission_number: string;
   roll_number?: string | null;
+  photo_url?: string | null;
   class_name?: string;
   section_name?: string;
 }
 
 interface StudentMarkRow extends StudentOption {
-  status: AttendanceStatus;
-  present: boolean;
+  status: AttendanceStatus | null;
+  selected: boolean;
 }
 
 interface MarkStudentAttendancePanelProps {
   classes: ClassOption[];
+  variant: 'class' | 'individual';
   onSaved: () => void;
+  onCancel?: () => void;
+  onSubmitStateChange?: (state: { canSubmit: boolean; saving: boolean }) => void;
 }
 
-const STATUS_OPTIONS: { value: AttendanceStatus; label: string }[] = [
-  { value: 'present', label: 'Present' },
-  { value: 'absent', label: 'Absent' },
-  { value: 'late', label: 'Late' },
-  { value: 'half_day', label: 'Half Day' },
-  { value: 'on_leave', label: 'On Leave' },
-];
+export type MarkStudentAttendancePanelHandle = {
+  submit: () => void;
+};
 
-const MODE_OPTIONS: { value: 'class' | 'individual'; label: string; description: string }[] = [
+const STATUS_CONFIG: {
+  value: AttendanceStatus;
+  label: string;
+  activeClass: string;
+  idleClass: string;
+  icon: React.ReactNode;
+}[] = [
   {
-    value: 'class',
-    label: 'By Class / Section',
-    description: 'Load students by class and mark attendance in bulk',
+    value: 'present',
+    label: 'Present',
+    activeClass: 'bg-green-600 text-white border-green-600',
+    idleClass: 'text-green-700 border-green-200 hover:bg-green-50',
+    icon: <FiCheck size={14} />,
   },
   {
-    value: 'individual',
-    label: 'Individual Student',
-    description: 'Mark attendance for a single student',
+    value: 'absent',
+    label: 'Absent',
+    activeClass: 'bg-red-600 text-white border-red-600',
+    idleClass: 'text-red-700 border-red-200 hover:bg-red-50',
+    icon: <FiX size={14} />,
+  },
+  {
+    value: 'late',
+    label: 'Late',
+    activeClass: 'bg-amber-500 text-white border-amber-500',
+    idleClass: 'text-amber-700 border-amber-200 hover:bg-amber-50',
+    icon: <FiClock size={14} />,
+  },
+  {
+    value: 'on_leave',
+    label: 'On Leave',
+    activeClass: 'bg-blue-600 text-white border-blue-600',
+    idleClass: 'text-blue-700 border-blue-200 hover:bg-blue-50',
+    icon: <FiCalendar size={14} />,
   },
 ];
 
-function isPresentStatus(status: AttendanceStatus) {
-  return status === 'present' || status === 'late' || status === 'half_day';
+function draftKey(date: string, classId: string, sectionId: string) {
+  return `attendance-draft:${date}:${classId}:${sectionId}`;
 }
 
-function statusFromPresent(present: boolean): AttendanceStatus {
-  return present ? 'present' : 'absent';
+function resolveDefaultClassId(classes: ClassOption[]): string {
+  const classOne = classes.find((c) => c.name.trim().toLowerCase() === 'class 1');
+  const defaultClass = classOne ?? sortClassesByName(classes)[0];
+  return defaultClass ? defaultClass.id.toString() : '';
 }
 
-export default function MarkStudentAttendancePanel({
-  classes,
-  onSaved,
-}: MarkStudentAttendancePanelProps) {
-  const { alert } = useDialog();
+function StatusButtons({
+  value,
+  onChange,
+  compact,
+}: {
+  value: AttendanceStatus | null;
+  onChange: (status: AttendanceStatus) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`flex flex-wrap gap-1.5 ${compact ? '' : 'justify-end'}`}>
+      {STATUS_CONFIG.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors ${
+              compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs'
+            } ${active ? opt.activeClass : opt.idleClass}`}
+          >
+            {opt.icon}
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SubmitAttendanceActions({
+  onSaveDraft,
+  onSubmit,
+  saving,
+  canSubmit,
+  showSaveDraft = true,
+  className = '',
+}: {
+  onSaveDraft?: () => void;
+  onSubmit: () => void;
+  saving: boolean;
+  canSubmit: boolean;
+  showSaveDraft?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-wrap items-center justify-end gap-2 ${className}`}>
+      {showSaveDraft && onSaveDraft && (
+        <button
+          type="button"
+          onClick={onSaveDraft}
+          disabled={!canSubmit}
+          className="border border-gray-300 text-primary-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+        >
+          Save Draft
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={!canSubmit || saving}
+        className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+      >
+        <FiSend size={16} />
+        {saving ? 'Submitting...' : 'Submit Attendance'}
+      </button>
+    </div>
+  );
+}
+
+const MarkStudentAttendancePanel = forwardRef<
+  MarkStudentAttendancePanelHandle,
+  MarkStudentAttendancePanelProps
+>(function MarkStudentAttendancePanel(
+  { classes, variant, onSaved, onCancel, onSubmitStateChange },
+  ref
+) {
+  const { alert, confirm } = useDialog();
   const today = new Date().toISOString().split('T')[0];
 
-  const [mode, setMode] = useState<'class' | 'individual'>('class');
   const [markDate, setMarkDate] = useState(today);
   const [classId, setClassId] = useState('');
   const [sectionId, setSectionId] = useState('');
   const [sections, setSections] = useState<SectionOption[]>([]);
-  const [listSearch, setListSearch] = useState('');
+  const [markMode, setMarkMode] = useState<MarkMode>('manual');
   const [rows, setRows] = useState<StudentMarkRow[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<AttendanceStatus>('present');
 
   const [allStudents, setAllStudents] = useState<StudentOption[]>([]);
   const [individualStudentId, setIndividualStudentId] = useState('');
@@ -102,22 +214,16 @@ export default function MarkStudentAttendancePanel({
     fetch('/api/students?limit=500&status=active')
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) {
-          setAllStudents(
-            data.data.map((s: StudentOption) => ({
-              id: s.id,
-              first_name: s.first_name,
-              last_name: s.last_name,
-              admission_number: s.admission_number,
-              roll_number: s.roll_number,
-              class_name: s.class_name,
-              section_name: s.section_name,
-            }))
-          );
-        }
+        if (data.success) setAllStudents(data.data);
       })
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (variant !== 'class' || classId || classes.length === 0) return;
+    const defaultId = resolveDefaultClassId(classes);
+    if (defaultId) setClassId(defaultId);
+  }, [classes, variant, classId]);
 
   useEffect(() => {
     if (!classId) {
@@ -132,6 +238,23 @@ export default function MarkStudentAttendancePanel({
       })
       .catch(console.error);
   }, [classId]);
+
+  const applyDraft = useCallback(
+    (nextRows: StudentMarkRow[]) => {
+      if (!classId || typeof window === 'undefined') return nextRows;
+      try {
+        const raw = localStorage.getItem(draftKey(markDate, classId, sectionId));
+        if (!raw) return nextRows;
+        const draft = JSON.parse(raw) as Record<string, AttendanceStatus>;
+        return nextRows.map((r) =>
+          draft[r.id] ? { ...r, status: draft[r.id] } : r
+        );
+      } catch {
+        return nextRows;
+      }
+    },
+    [classId, sectionId, markDate]
+  );
 
   const loadClassStudents = useCallback(async () => {
     if (!classId) {
@@ -175,50 +298,36 @@ export default function MarkStudentAttendancePanel({
         }
       }
 
-      const nextRows: StudentMarkRow[] = studentsData.data.map((s: StudentOption) => {
-        const existing = existingByStudent.get(s.id);
-        const status: AttendanceStatus = existing || 'present';
-        return {
-          id: s.id,
-          first_name: s.first_name,
-          last_name: s.last_name,
-          admission_number: s.admission_number,
-          roll_number: s.roll_number,
-          class_name: s.class_name,
-          section_name: s.section_name,
-          status,
-          present: existing ? isPresentStatus(existing) : true,
-        };
-      });
+      let nextRows: StudentMarkRow[] = studentsData.data.map((s: StudentOption) => ({
+        ...s,
+        status: (existingByStudent.get(s.id) as AttendanceStatus) || null,
+        selected: false,
+      }));
 
+      nextRows = applyDraft(nextRows);
       setRows(nextRows);
-      setListSearch('');
     } catch (error) {
       console.error('Error loading students for marking:', error);
       setRows([]);
     } finally {
       setLoadingList(false);
     }
-  }, [classId, sectionId, markDate]);
+  }, [classId, sectionId, markDate, applyDraft]);
 
   useEffect(() => {
-    if (mode === 'class') {
-      loadClassStudents();
-    }
-  }, [mode, loadClassStudents]);
+    if (variant === 'class') loadClassStudents();
+  }, [variant, loadClassStudents]);
 
-  const filteredRows = useMemo(() => {
-    if (!listSearch.trim()) return rows;
-    const q = listSearch.toLowerCase();
-    return rows.filter(
-      (r) =>
-        studentFullName(r).toLowerCase().includes(q) ||
-        r.admission_number.toLowerCase().includes(q) ||
-        (r.roll_number || '').toLowerCase().includes(q)
-    );
-  }, [rows, listSearch]);
+  const classCounts = useMemo(() => {
+    const present = rows.filter((r) => r.status === 'present').length;
+    const absent = rows.filter((r) => r.status === 'absent').length;
+    const late = rows.filter((r) => r.status === 'late').length;
+    const onLeave = rows.filter((r) => r.status === 'on_leave').length;
+    return { present, absent, late, onLeave, total: rows.length };
+  }, [rows]);
 
-  const presentCount = rows.filter((r) => r.present).length;
+  const selectedClassName = classes.find((c) => c.id.toString() === classId)?.name;
+  const selectedSectionName = sections.find((s) => s.id.toString() === sectionId)?.name;
 
   const filteredIndividualStudents = allStudents.filter((s) => {
     const q = individualSearch.toLowerCase();
@@ -228,58 +337,96 @@ export default function MarkStudentAttendancePanel({
     );
   });
 
-  const selectedIndividual = allStudents.find(
-    (s) => s.id.toString() === individualStudentId
-  );
+  useEffect(() => {
+    if (!individualStudentId || !markDate) return;
 
-  const toggleRow = (studentId: number) => {
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.id !== studentId) return r;
-        const present = !r.present;
-        return {
-          ...r,
-          present,
-          status: present
-            ? r.status === 'absent' || r.status === 'on_leave'
-              ? 'present'
-              : r.status
-            : 'absent',
-        };
+    const params = new URLSearchParams({
+      start_date: markDate,
+      end_date: markDate,
+      student_id: individualStudentId,
+    });
+
+    fetch(`/api/attendance/students?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data.length > 0) {
+          const record = data.data[0];
+          setIndividualStatus((record.status as AttendanceStatus) || 'present');
+          setIndividualRemarks(record.remarks || '');
+        } else {
+          setIndividualStatus('present');
+          setIndividualRemarks('');
+        }
       })
-    );
-  };
+      .catch(console.error);
+  }, [individualStudentId, markDate]);
+
+  const selectedIndividual = allStudents.find((s) => s.id.toString() === individualStudentId);
 
   const setRowStatus = (studentId: number, status: AttendanceStatus) => {
     setRows((prev) =>
-      prev.map((r) =>
-        r.id === studentId ? { ...r, status, present: isPresentStatus(status) } : r
-      )
+      prev.map((r) => (r.id === studentId ? { ...r, status } : r))
     );
   };
 
-  const toggleAllFiltered = () => {
-    const allPresent = filteredRows.every((r) => r.present);
-    const ids = new Set(filteredRows.map((r) => r.id));
+  const toggleRowSelected = (studentId: number) => {
+    setRows((prev) =>
+      prev.map((r) => (r.id === studentId ? { ...r, selected: !r.selected } : r))
+    );
+  };
+
+  const toggleAllSelected = () => {
+    const allSelected = rows.length > 0 && rows.every((r) => r.selected);
+    setRows((prev) => prev.map((r) => ({ ...r, selected: !allSelected })));
+  };
+
+  const markAllPresent = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'present' as AttendanceStatus })));
+  };
+
+  const clearAll = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: null, selected: false })));
+  };
+
+  const applyBulkToSelected = () => {
     setRows((prev) =>
       prev.map((r) =>
-        ids.has(r.id)
-          ? { ...r, present: !allPresent, status: statusFromPresent(!allPresent) }
+        r.selected || prev.every((x) => !x.selected)
+          ? { ...r, status: bulkStatus }
           : r
       )
     );
   };
 
-  const allFilteredPresent =
-    filteredRows.length > 0 && filteredRows.every((r) => r.present);
+  const saveDraft = () => {
+    if (!classId || rows.length === 0) return;
+    const draft: Record<string, AttendanceStatus> = {};
+    for (const r of rows) {
+      if (r.status) draft[r.id] = r.status;
+    }
+    localStorage.setItem(draftKey(markDate, classId, sectionId), JSON.stringify(draft));
+    alert('Draft saved on this device. Submit when ready to record attendance.', {
+      title: 'Draft saved',
+      type: 'success',
+    });
+  };
 
-  const saveClassAttendance = async () => {
+  const submitClassAttendance = async () => {
     if (!classId || rows.length === 0) {
-      await alert('Select a class with students before saving.', {
-        title: 'Nothing to save',
+      await alert('Select a class with students before submitting.', {
+        title: 'Nothing to submit',
         type: 'warning',
       });
       return;
+    }
+
+    const unmarked = rows.filter((r) => !r.status);
+    if (unmarked.length > 0) {
+      const proceed = await confirm(
+        `${unmarked.length} student(s) have no status. They will be marked absent. Continue?`,
+        { title: 'Unmarked students', type: 'warning', confirmText: 'Submit' }
+      );
+      if (!proceed) return;
     }
 
     setSaving(true);
@@ -287,7 +434,7 @@ export default function MarkStudentAttendancePanel({
       const attendance_records = rows.map((r) => ({
         student_id: r.id,
         date: markDate,
-        status: r.present ? r.status : 'absent',
+        status: r.status || 'absent',
       }));
 
       const response = await fetch('/api/attendance/students', {
@@ -298,23 +445,25 @@ export default function MarkStudentAttendancePanel({
 
       const data = await response.json();
       if (data.success) {
-        await alert(`Attendance saved for ${data.data.length} students.`, {
-          title: 'Saved',
+        localStorage.removeItem(draftKey(markDate, classId, sectionId));
+        await alert(`Attendance submitted for ${data.data.length} students.`, {
+          title: 'Submitted',
           type: 'success',
         });
         onSaved();
+        loadClassStudents();
       } else {
-        await alert(data.error || 'Failed to save attendance', { title: 'Error', type: 'error' });
+        await alert(data.error || 'Failed to submit attendance', { title: 'Error', type: 'error' });
       }
     } catch (error) {
-      console.error('Error saving class attendance:', error);
-      await alert('Failed to save attendance. Please try again.', { title: 'Error', type: 'error' });
+      console.error('Error submitting attendance:', error);
+      await alert('Failed to submit attendance.', { title: 'Error', type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
-  const saveIndividualAttendance = async () => {
+  const submitIndividual = async () => {
     if (!individualStudentId) {
       await alert('Please select a student.', { title: 'Student required', type: 'warning' });
       return;
@@ -335,7 +484,7 @@ export default function MarkStudentAttendancePanel({
 
       const data = await response.json();
       if (data.success) {
-        await alert('Attendance recorded successfully.', { title: 'Saved', type: 'success' });
+        await alert('Attendance recorded successfully.', { title: 'Submitted', type: 'success' });
         setIndividualRemarks('');
         onSaved();
       } else {
@@ -343,297 +492,74 @@ export default function MarkStudentAttendancePanel({
       }
     } catch (error) {
       console.error('Error saving individual attendance:', error);
-      await alert('Failed to save attendance. Please try again.', { title: 'Error', type: 'error' });
+      await alert('Failed to save attendance.', { title: 'Error', type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedClassName = classes.find((c) => c.id.toString() === classId)?.name;
+  const canSubmit =
+    variant === 'individual' ? !!individualStudentId : !!classId && rows.length > 0;
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Selection
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+  useEffect(() => {
+    onSubmitStateChange?.({ canSubmit, saving });
+  }, [canSubmit, saving, onSubmitStateChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      submit: () => {
+        if (variant === 'individual') void submitIndividual();
+        else void submitClassAttendance();
+      },
+    }),
+    [variant, individualStudentId, classId, rows, markDate, individualStatus, individualRemarks]
+  );
+
+  if (variant === 'individual') {
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 min-w-[200px]">
+            <label className="block text-sm">
+              <span className="text-gray-600 text-xs font-medium">Date</span>
               <input
                 type="date"
                 value={markDate}
                 onChange={(e) => setMarkDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-              <select
-                value={classId}
-                onChange={(e) => {
-                  setClassId(e.target.value);
-                  setSectionId('');
-                }}
-                disabled={mode === 'individual'}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
-              >
-                <option value="">Select class</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Section (optional)
-              </label>
-              <select
-                value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
-                disabled={!classId || mode === 'individual'}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
-              >
-                <option value="">All sections</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
+            </label>
           </div>
+          <SubmitAttendanceActions
+            onSubmit={submitIndividual}
+            saving={saving}
+            canSubmit={canSubmit}
+            showSaveDraft={false}
+            className="shrink-0"
+          />
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Mode
-          </h2>
-          <div className="space-y-3">
-            {MODE_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  mode === opt.value
-                    ? 'border-primary-400 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="attendance_mode"
-                  value={opt.value}
-                  checked={mode === opt.value}
-                  onChange={() => setMode(opt.value)}
-                  className="mt-1"
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{opt.label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{opt.description}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Summary
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between text-gray-600">
-              <span>Date</span>
-              <span className="font-medium text-gray-900">
-                {new Date(markDate).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-            {mode === 'class' && selectedClassName && (
-              <div className="flex justify-between text-gray-600">
-                <span>Class</span>
-                <span className="font-medium text-gray-900">{selectedClassName}</span>
-              </div>
-            )}
-            {mode === 'class' && (
-              <>
-                <div className="flex justify-between text-gray-600">
-                  <span>Total loaded</span>
-                  <span className="font-medium text-gray-900">{rows.length}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Present</span>
-                  <span className="font-medium text-green-700">{presentCount}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Absent</span>
-                  <span className="font-medium text-red-700">{rows.length - presentCount}</span>
-                </div>
-              </>
-            )}
-            {mode === 'individual' && (
-              <p className="text-gray-500 text-xs leading-relaxed">
-                Search and select a student below to record attendance for the chosen date.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {mode === 'class' && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <FiUsers className="text-primary-600" />
-              <h2 className="font-semibold text-gray-900">
-                Students
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({presentCount} of {rows.length} present)
-                </span>
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  value={listSearch}
-                  onChange={(e) => setListSearch(e.target.value)}
-                  placeholder="Search students..."
-                  className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-48"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={loadClassStudents}
-                disabled={!classId || loadingList}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
-                <FiRefreshCw className={loadingList ? 'animate-spin' : ''} />
-                Refresh
-              </button>
-              <button
-                type="button"
-                onClick={saveClassAttendance}
-                disabled={!classId || rows.length === 0 || saving}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FiSave className="w-4 h-4" />
-                {saving ? 'Saving...' : `Save ${rows.length} Student(s)`}
-              </button>
-            </div>
-          </div>
-
-          {!classId ? (
-            <div className="text-center py-16 text-gray-500 text-sm">
-              Select a class to load students.
-            </div>
-          ) : loadingList ? (
-            <div className="text-center py-16 text-gray-500 text-sm">Loading students...</div>
-          ) : rows.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 text-sm">
-              No active students found in the selected class/section.
-            </div>
-          ) : filteredRows.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 text-sm">
-              No students match your search.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-5 py-3 text-left w-10">
-                      <button type="button" onClick={toggleAllFiltered} className="text-gray-600">
-                        {allFilteredPresent ? (
-                          <FiCheckSquare size={18} className="text-primary-600" />
-                        ) : (
-                          <FiSquare size={18} />
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-5 py-3 text-left">Student</th>
-                    <th className="px-5 py-3 text-left">Admission No.</th>
-                    <th className="px-5 py-3 text-left">Roll No.</th>
-                    <th className="px-5 py-3 text-left">Current Class</th>
-                    <th className="px-5 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={`hover:bg-gray-50 ${row.present ? '' : 'bg-red-50/30'}`}
-                    >
-                      <td className="px-5 py-3">
-                        <button
-                          type="button"
-                          onClick={() => toggleRow(row.id)}
-                          className="text-gray-600"
-                        >
-                          {row.present ? (
-                            <FiCheckSquare size={18} className="text-primary-600" />
-                          ) : (
-                            <FiSquare size={18} />
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-5 py-3 font-medium text-gray-900">
-                        {studentFullName(row)}
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">{row.admission_number}</td>
-                      <td className="px-5 py-3 text-gray-600">{row.roll_number || '—'}</td>
-                      <td className="px-5 py-3 text-gray-600">
-                        {row.class_name || '—'}
-                        {row.section_name ? ` · ${row.section_name}` : ''}
-                      </td>
-                      <td className="px-5 py-3">
-                        <select
-                          value={row.status}
-                          onChange={(e) => setRowStatus(row.id, e.target.value as AttendanceStatus)}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-                        >
-                          {STATUS_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {mode === 'individual' && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900">Individual Student</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Record attendance for one student on {new Date(markDate).toLocaleDateString('en-IN')}
-            </p>
-          </div>
-          <div className="p-5 max-w-xl space-y-4">
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
-              <input
-                type="text"
-                value={individualSearch}
-                onChange={(e) => {
-                  setIndividualSearch(e.target.value);
-                  setShowIndividualDropdown(true);
-                  setIndividualStudentId('');
-                }}
-                onFocus={() => setShowIndividualDropdown(true)}
-                placeholder="Search by name or admission number..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-              {showIndividualDropdown && filteredIndividualStudents.length > 0 && !individualStudentId && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredIndividualStudents.slice(0, 20).map((student) => (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-2xl">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+            <input
+              type="text"
+              value={individualSearch}
+              onChange={(e) => {
+                setIndividualSearch(e.target.value);
+                setShowIndividualDropdown(true);
+                setIndividualStudentId('');
+              }}
+              onFocus={() => setShowIndividualDropdown(true)}
+              placeholder="Search by name or admission number..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+            {showIndividualDropdown &&
+              filteredIndividualStudents.length > 0 &&
+              !individualStudentId && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                  {filteredIndividualStudents.slice(0, 25).map((student) => (
                     <button
                       key={student.id}
                       type="button"
@@ -642,61 +568,323 @@ export default function MarkStudentAttendancePanel({
                         setIndividualSearch(studentFullName(student));
                         setShowIndividualDropdown(false);
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50"
+                      className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3"
                     >
-                      <div className="text-sm font-medium text-gray-900">{studentFullName(student)}</div>
-                      <div className="text-xs text-gray-500">
-                        {student.admission_number}
-                        {student.class_name ? ` · ${student.class_name}` : ''}
+                      <StudentAvatar student={student} />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {studentFullName(student)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {student.admission_number}
+                          {student.class_name ? ` · ${student.class_name}` : ''}
+                        </div>
                       </div>
                     </button>
                   ))}
                 </div>
               )}
-              {selectedIndividual && (
-                <p className="mt-1 text-xs text-gray-500">
+          </div>
+
+          {selectedIndividual && (
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
+              <StudentAvatar student={selectedIndividual} size="lg" />
+              <div>
+                <p className="font-semibold text-gray-900">{studentFullName(selectedIndividual)}</p>
+                <p className="text-xs text-gray-500">
                   {selectedIndividual.admission_number}
-                  {selectedIndividual.class_name ? ` · ${selectedIndividual.class_name}` : ''}
+                  {selectedIndividual.class_name
+                    ? ` · ${selectedIndividual.class_name}${selectedIndividual.section_name ? ` - ${selectedIndividual.section_name}` : ''}`
+                    : ''}
                 </p>
-              )}
+              </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={individualStatus}
-                onChange={(e) => setIndividualStatus(e.target.value as AttendanceStatus)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Attendance status</p>
+            <StatusButtons value={individualStatus} onChange={setIndividualStatus} />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-              <textarea
-                value={individualRemarks}
-                onChange={(e) => setIndividualRemarks(e.target.value)}
-                rows={3}
-                placeholder="Optional notes..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
+          <label className="block text-sm">
+            <span className="text-gray-700">Remarks (optional)</span>
+            <textarea
+              value={individualRemarks}
+              onChange={(e) => setIndividualRemarks(e.target.value)}
+              rows={2}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              placeholder="Optional notes..."
+            />
+          </label>
+        </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2"
+          >
+            Cancel
+          </button>
+          <SubmitAttendanceActions
+            onSubmit={submitIndividual}
+            saving={saving}
+            canSubmit={canSubmit}
+            showSaveDraft={false}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <label className="block text-sm">
+          <span className="text-gray-600 text-xs font-medium">Date</span>
+          <input
+            type="date"
+            value={markDate}
+            onChange={(e) => setMarkDate(e.target.value)}
+            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-gray-600 text-xs font-medium">Class</span>
+          <select
+            value={classId}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              setSectionId('');
+            }}
+            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">Select class</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-sm">
+          <span className="text-gray-600 text-xs font-medium">Section</span>
+          <select
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
+            disabled={!classId}
+            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-50"
+          >
+            <option value="">All sections</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="block text-sm">
+          <span className="text-gray-600 text-xs font-medium">Attendance Mode</span>
+          <div className="mt-1 flex rounded-lg border border-gray-300 overflow-hidden">
             <button
               type="button"
-              onClick={saveIndividualAttendance}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              onClick={() => setMarkMode('manual')}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium ${
+                markMode === 'manual'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
-              <FiSave className="w-4 h-4" />
-              {saving ? 'Saving...' : 'Save Attendance'}
+              <FiEdit3 size={15} />
+              Manual
+            </button>
+            <button
+              type="button"
+              onClick={() => setMarkMode('bulk')}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium border-l ${
+                markMode === 'bulk'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <FiUpload size={15} />
+              Bulk
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <SubmitAttendanceActions
+        onSaveDraft={saveDraft}
+        onSubmit={submitClassAttendance}
+        saving={saving}
+        canSubmit={canSubmit}
+        className="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3"
+      />
+
+      {markMode === 'bulk' && classId && rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 bg-slate-50 border rounded-lg px-4 py-3">
+          <span className="text-sm text-gray-600">Apply status to selected (or all if none selected):</span>
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value as AttendanceStatus)}
+            className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+          >
+            {STATUS_CONFIG.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={applyBulkToSelected}
+            className="bg-primary-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-primary-700"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      {classId && rows.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span className="font-semibold text-gray-900">
+              {selectedClassName}
+              {selectedSectionName ? ` - ${selectedSectionName}` : ''}
+            </span>
+            <span className="text-green-700">✓ {classCounts.present}</span>
+            <span className="text-red-600">✗ {classCounts.absent}</span>
+            <span className="text-amber-600">⏱ {classCounts.late}</span>
+            <span className="text-blue-600">📅 {classCounts.onLeave}</span>
+            <span className="text-gray-500">Total: {classCounts.total}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={markAllPresent}
+              className="text-sm border border-primary-300 text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50"
+            >
+              Mark All Present
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
+            >
+              Clear All
             </button>
           </div>
         </div>
       )}
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {!classId ? (
+          <div className="text-center py-16 text-gray-500 text-sm">
+            Select a class and section to load students.
+          </div>
+        ) : loadingList ? (
+          <div className="text-center py-16 text-gray-500 text-sm">Loading students...</div>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-16 text-gray-500 text-sm">
+            No active students in this class/section.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={rows.length > 0 && rows.every((r) => r.selected)}
+                      onChange={toggleAllSelected}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium w-40">Roll No.</th>
+                  <th className="px-4 py-3 text-left font-medium">Student Name</th>
+                  <th className="px-4 py-3 text-left font-medium min-w-[280px]">Attendance Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rows.map((row, index) => (
+                  <tr key={row.id} className="hover:bg-gray-50/80">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={row.selected}
+                        onChange={() => toggleRowSelected(row.id)}
+                        aria-label={`Select ${studentFullName(row)}`}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{row.roll_number || index + 1}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <StudentAvatar student={row} />
+                        <span className="font-medium text-gray-900">{studentFullName(row)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusButtons
+                        value={row.status}
+                        onChange={(status) => setRowStatus(row.id, status)}
+                        compact
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2"
+        >
+          Cancel
+        </button>
+        <div className="flex gap-2">
+          <SubmitAttendanceActions
+            onSaveDraft={saveDraft}
+            onSubmit={submitClassAttendance}
+            saving={saving}
+            canSubmit={canSubmit}
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export default MarkStudentAttendancePanel;
+
+function StudentAvatar({
+  student,
+  size = 'md',
+}: {
+  student: StudentOption;
+  size?: 'md' | 'lg';
+}) {
+  const dim = size === 'lg' ? 'h-12 w-12 text-sm' : 'h-9 w-9 text-xs';
+  if (student.photo_url?.trim()) {
+    return (
+      <img
+        src={student.photo_url}
+        alt=""
+        className={`${dim} rounded-full object-cover border border-gray-200 shrink-0`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${dim} rounded-full bg-primary-100 text-primary-700 font-semibold flex items-center justify-center shrink-0`}
+    >
+      {studentInitials(student)}
     </div>
   );
 }

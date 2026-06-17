@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import {
   clearPrimaryGuardian,
+  ensureDefaultStudentGuardians,
   isValidGuardianRelation,
   parseStudentId,
   studentExists,
@@ -22,6 +23,8 @@ export async function GET(
     if (!(await studentExists(db, studentId))) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
+
+    await ensureDefaultStudentGuardians(db, studentId);
 
     const result = await db.query<StudentGuardian>(
       `SELECT * FROM student_guardians

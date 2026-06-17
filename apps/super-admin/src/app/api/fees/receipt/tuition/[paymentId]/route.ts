@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { getPaymentReceiptByPaymentId } from '@/lib/payment-receipts';
 
+function parseMonthsFromRemarks(remarks: unknown): string[] {
+  const text = String(remarks || '');
+  if (!text) return [];
+  const match = text.match(/months?:\s*([A-Za-z,\s-]+)/i);
+  if (!match) return [];
+  return match[1]
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean)
+    .map((m) => m.replace(/\./g, ''));
+}
+
 // GET tuition-only receipt for a payment
 export async function GET(
   request: NextRequest,
@@ -104,20 +116,37 @@ export async function GET(
 
     // Fallback tuition-only payment
     const paymentDate = new Date(receiptData.payment_date);
+    const monthFromFee = receiptData.month || (paymentDate.getMonth() + 1);
+    const monthNameFromFee = monthFromFee
+      ? new Date(2000, Number(monthFromFee) - 1, 1).toLocaleString('en-IN', { month: 'long' })
+      : '';
+    const fallbackMonths = monthNameFromFee ? [monthNameFromFee] : parseMonthsFromRemarks(receiptData.remarks);
+    const baseYear = String(receiptData.academic_year || paymentDate.getFullYear());
     const feeBreakdown = [{
       fee_type: 'Tuition Fee',
-      month: receiptData.month || (paymentDate.getMonth() + 1),
-      year: receiptData.academic_year || paymentDate.getFullYear(),
+      month: fallbackMonths[0] || monthFromFee,
+      year: baseYear,
       amount: parseFloat(receiptData.amount_paid) - parseFloat(receiptData.late_fee_charged || 0),
       late_fee: 0
     }];
+
+    // Expand months if present in remarks for bulk payment fallback
+    const expandedFeeBreakdown = fallbackMonths.length > 1
+      ? fallbackMonths.map((monthName) => ({
+          fee_type: 'Tuition Fee',
+          month: monthName,
+          year: baseYear,
+          amount: (parseFloat(receiptData.amount_paid) - parseFloat(receiptData.late_fee_charged || 0)) / fallbackMonths.length,
+          late_fee: 0,
+        }))
+      : feeBreakdown;
 
     const tuitionPayment = {
       ...receiptData,
       receipt_number: `${receiptData.receipt_number}-TUITION`,
       amount_paid: parseFloat(receiptData.amount_paid) - parseFloat(receiptData.late_fee_charged || 0),
-      fee_breakdown: feeBreakdown,
-      months_paid: 1,
+      fee_breakdown: expandedFeeBreakdown,
+      months_paid: expandedFeeBreakdown.length,
       is_tuition_only: true
     };
 

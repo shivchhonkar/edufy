@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    phone: '',
+    login: '',
     password: '',
   });
 
@@ -67,23 +67,22 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Phone Number */}
+            {/* Student ID or Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                Student ID or Phone Number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FiUser className="text-gray-400" />
                 </div>
                 <input
-                  type="tel"
+                  type="text"
                   required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.login}
+                  onChange={(e) => setFormData({ ...formData, login: e.target.value })}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your phone number"
-                  maxLength={10}
+                  placeholder="Admission number or parent phone"
                 />
               </div>
             </div>
@@ -164,11 +163,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Demo Credentials */}
+        {/* Help */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm font-medium text-blue-900 mb-2">Demo Credentials:</p>
-          <p className="text-sm text-blue-700">Phone: 9999999999</p>
-          <p className="text-sm text-blue-700">Password: parent123</p>
+          <p className="text-sm font-medium text-blue-900 mb-2">How to sign in</p>
+          <p className="text-sm text-blue-700">Use your admission number or parent phone number with the password set by your school.</p>
         </div>
       </div>
     </div>

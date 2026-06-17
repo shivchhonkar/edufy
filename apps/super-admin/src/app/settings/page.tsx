@@ -1050,6 +1050,7 @@ function SettingsPageContent() {
                   ))}
               </div>
             </div>
+
           </div>
         )}
 

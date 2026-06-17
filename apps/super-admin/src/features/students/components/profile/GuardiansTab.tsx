@@ -268,45 +268,76 @@ export default function GuardiansTab({ studentId }: GuardiansTabProps) {
           <p className="text-gray-500 text-sm">No guardians added yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {guardians.map((g) => (
-            <div key={g.id} className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-xs font-semibold uppercase text-primary-600">
-                    {GUARDIAN_RELATION_LABELS[g.relation_type]}
-                  </span>
-                  {g.is_primary_contact && (
-                    <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                      Primary
-                    </span>
-                  )}
-                  <h4 className="font-semibold text-gray-900 mt-1">{g.name}</h4>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(g)}
-                    className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(g.id)}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                {g.mobile && <p>Mobile: {g.mobile}</p>}
-                {g.email && <p>Email: {g.email}</p>}
-                {g.occupation && <p>Occupation: {g.occupation}</p>}
-              </div>
-            </div>
-          ))}
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    S.N.
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Relationship
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Guardian Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Contact Number
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {guardians.map((g, index) => (
+                  <tr key={g.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-500 tabular-nums">{index + 1}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-semibold uppercase text-primary-600">
+                        {GUARDIAN_RELATION_LABELS[g.relation_type]}
+                      </span>
+                      {g.is_primary_contact && (
+                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          Primary
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{g.name}</td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {g.mobile || '—'}
+                      {g.alternate_mobile ? (
+                        <span className="block text-xs text-gray-500">Alt: {g.alternate_mobile}</span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(g)}
+                          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded"
+                          aria-label={`Edit ${g.name}`}
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                        {g.relation_type === 'guardian' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(g.id)}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                            aria-label={`Delete ${g.name}`}
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

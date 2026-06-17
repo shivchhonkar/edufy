@@ -41,6 +41,9 @@ export interface Student {
   parent_name?: string;
   parent_phone?: string;
   parent_email?: string;
+  mother_name?: string;
+  mother_phone?: string;
+  mother_email?: string;
   emergency_contact?: string;
   photo_url?: string;
   remarks?: string;

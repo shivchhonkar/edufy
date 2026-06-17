@@ -364,7 +364,7 @@ export default function DashboardPage() {
           <PanelCard
             title="Today's Classes"
             subtitle={`${s.classes_conducted_today} periods scheduled`}
-            href="/timetable"
+            href="/academics/timetable"
           >
             {s.todays_classes.length === 0 ? (
               <div className="text-center py-10 text-gray-500 text-sm">

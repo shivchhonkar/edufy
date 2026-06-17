@@ -153,7 +153,7 @@ export default function TransferCertificatesHistoryPage() {
               Refresh
             </button>
             <Link
-              href="/students"
+              href="/students/transfer-certificates/generate"
               className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 text-sm"
             >
               Generate New TC

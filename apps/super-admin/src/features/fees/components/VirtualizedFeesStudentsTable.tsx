@@ -20,6 +20,8 @@ export interface FeeStudentRow {
   last_name: string;
   admission_number: string;
   parent_name?: string | null;
+  class_id?: number | null;
+  section_id?: number | null;
   class_name?: string | null;
   section_name?: string | null;
   parent_phone?: string | null;

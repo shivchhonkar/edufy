@@ -1,19 +1,23 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import LayoutWrapper from '@/components/LayoutWrapper';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
+import './globals.css'
+import LayoutWrapper from '@/components/LayoutWrapper'
+import { fetchSchoolBranding } from '@/lib/school-info'
+import { buildRootMetadata } from '@/lib/site-seo'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'Shribi Edufy - Parent Portal',
-  description: 'View your child\'s progress, attendance, fees, and homework',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const host = headers().get('host')
+  const branding = await fetchSchoolBranding(host)
+  return buildRootMetadata(branding)
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
@@ -21,6 +25,5 @@ export default function RootLayout({
         <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
-  );
+  )
 }
-

@@ -75,7 +75,7 @@ export default function TeacherTimetablePage() {
             <h1 className="text-xl flex items-center gap-2"><FiCalendar className="text-primary-600" /> Teacher Timetable</h1>
             <p className="text-sm text-gray-600 mt-1">Weekly schedule for an individual teacher</p>
           </div>
-          <Link href="/timetable" className="text-sm text-primary-600 hover:underline">Edit class timetable →</Link>
+          <Link href="/academics/timetable" className="text-sm text-primary-600 hover:underline">Edit class timetable →</Link>
         </div>
 
         <div className="mb-4">
@@ -104,7 +104,7 @@ export default function TeacherTimetablePage() {
 
         {staffId && !loading && periods.length === 0 && (
           <div className="text-center py-12 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-            No periods configured. <Link href="/timetable" className="text-primary-600 underline">Set up periods</Link> first.
+            No periods configured. <Link href="/academics/timetable" className="text-primary-600 underline">Set up periods</Link> first.
           </div>
         )}
 

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get students with parent phone numbers
-    const result = await query(
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
+    const result = await db.query(
       `SELECT 
         s.id,
         s.admission_number,

@@ -4,6 +4,7 @@ import './globals.css';
 import { rootMetadata } from '@/lib/site-seo';
 import { SettingsProvider } from '@/shared/SettingsContext';
 import { DialogProvider } from '@/shared/context/DialogContext';
+import { StaffAccessProvider } from '@/shared/context/StaffAccessContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,9 +19,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <SettingsProvider>
-          <DialogProvider>
-            {children}
-          </DialogProvider>
+          <StaffAccessProvider>
+            <DialogProvider>
+              {children}
+            </DialogProvider>
+          </StaffAccessProvider>
         </SettingsProvider>
       </body>
     </html>

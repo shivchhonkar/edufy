@@ -1,5 +1,32 @@
 type Db = { query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }> };
 
+const DEFAULT_TIMETABLE_PERIODS = [
+  { name: 'Period 1', start_time: '08:00', end_time: '08:40', sort_order: 1 },
+  { name: 'Period 2', start_time: '08:40', end_time: '09:20', sort_order: 2 },
+  { name: 'Period 3', start_time: '09:20', end_time: '10:00', sort_order: 3 },
+  { name: 'Period 4', start_time: '10:00', end_time: '10:40', sort_order: 4 },
+  { name: 'Period 5', start_time: '10:40', end_time: '11:20', sort_order: 5 },
+  { name: 'Period 6', start_time: '11:20', end_time: '12:00', sort_order: 6 },
+  { name: 'Period 7', start_time: '12:00', end_time: '12:40', sort_order: 7 },
+  { name: 'Period 8', start_time: '12:40', end_time: '13:20', sort_order: 8 },
+  { name: 'Period 9', start_time: '13:20', end_time: '14:00', sort_order: 9 },
+] as const;
+
+export async function seedDefaultTimetablePeriods(db: Db) {
+  const countResult = await db.query<{ count: string }>(
+    'SELECT COUNT(*)::text AS count FROM timetable_periods',
+  );
+  if (parseInt(countResult.rows[0]?.count || '0', 10) > 0) return;
+
+  for (const period of DEFAULT_TIMETABLE_PERIODS) {
+    await db.query(
+      `INSERT INTO timetable_periods (name, start_time, end_time, sort_order, is_active)
+       VALUES ($1, $2, $3, $4, true)`,
+      [period.name, period.start_time, period.end_time, period.sort_order],
+    );
+  }
+}
+
 export async function ensureTimetableSchema(db: Db) {
   await db.query(`
     CREATE TABLE IF NOT EXISTS timetable_periods (
@@ -26,4 +53,6 @@ export async function ensureTimetableSchema(db: Db) {
       UNIQUE (class_id, section_id, day_of_week, period_id, academic_year)
     );
   `);
+
+  await seedDefaultTimetablePeriods(db);
 }

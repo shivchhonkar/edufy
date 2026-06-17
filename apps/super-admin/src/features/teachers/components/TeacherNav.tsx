@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const links = [
-  { href: '/teachers', label: 'Overview' },
-  { href: '/hr/teacher-assignments', label: 'Subject Assignment' },
+  { href: '/teachers', label: 'Dashboard' },
+  { href: '/academics/teacher-assignments', label: 'Subject Assignment' },
   { href: '/teachers/timetable', label: 'Timetable' },
   { href: '/teachers/daily-activities', label: 'Daily Activities' },
   { href: '/teachers/performance', label: 'Performance' },
   { href: '/teachers/ranking', label: 'Top Ranking' },
-  { href: '/teachers/syllabus', label: 'Syllabus Progress' },
+  { href: '/academics/syllabus', label: 'Syllabus Progress' },
 ];
 
 export default function TeacherNav() {

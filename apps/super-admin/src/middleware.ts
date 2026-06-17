@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/register-school', '/verify'];
 
+/** Legacy academic URLs → /academics/* (query string preserved) */
+const ACADEMIC_ROUTE_REDIRECTS: [string, string][] = [
+  ['/classes', '/academics/classes'],
+  ['/subjects', '/academics/subjects'],
+  ['/timetable', '/academics/timetable'],
+  ['/homework', '/academics/homework'],
+  ['/teachers/syllabus', '/academics/syllabus'],
+  ['/hr/teacher-assignments', '/academics/teacher-assignments'],
+];
+
+/** Legacy fee tab URLs → new task-based routes */
+const FEE_TAB_REDIRECTS: Record<string, string> = {
+  overview: '/fees/dashboard',
+  students: '/fees/collect',
+  structures: '/fees/setup/structures',
+};
+
 const PUBLIC_API_PATHS = [
   '/api/auth/login',
   '/api/platform/schools/register',
@@ -48,6 +65,24 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPublicPage = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const isApiRoute = pathname.startsWith('/api');
+
+  if (!isApiRoute) {
+    for (const [from, to] of ACADEMIC_ROUTE_REDIRECTS) {
+      if (pathname === from) {
+        const url = request.nextUrl.clone();
+        url.pathname = to;
+        return NextResponse.redirect(url);
+      }
+    }
+
+    if (pathname === '/fees') {
+      const tab = request.nextUrl.searchParams.get('tab');
+      const url = request.nextUrl.clone();
+      url.pathname = tab && FEE_TAB_REDIRECTS[tab] ? FEE_TAB_REDIRECTS[tab] : '/fees/dashboard';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (isApiRoute) {
     if (PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {

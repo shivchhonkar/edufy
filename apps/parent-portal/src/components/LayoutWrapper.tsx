@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { usePathname } from 'next/navigation';
+import { SchoolBrandingProvider } from '@/contexts/SchoolBrandingContext';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -21,7 +22,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   // Don't show sidebar layout on login or home page
   if (pathname === '/login' || pathname === '/') {
-    return <>{children}</>;
+    return <SchoolBrandingProvider>{children}</SchoolBrandingProvider>;
   }
 
   const marginLeft = isLargeScreen
@@ -29,19 +30,20 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     : '0';
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar onToggle={setSidebarCollapsed} />
-      
-      {/* Main content */}
-      <div 
-        className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
-        style={{ marginLeft }}
-      >
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+    <SchoolBrandingProvider>
+      <div className="flex h-screen overflow-hidden bg-gray-50">
+        <Sidebar onToggle={setSidebarCollapsed} />
+
+        <div
+          className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
+          style={{ marginLeft }}
+        >
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SchoolBrandingProvider>
   );
 }
 

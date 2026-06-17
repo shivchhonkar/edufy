@@ -154,24 +154,28 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                   <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
                     {group.title}
                   </p>
-                  {group.items.map((item) => (
-                    <Link
-                      key={`${group.id}-${item.path}`}
-                      href={item.path}
-                      className={`flex items-center justify-between gap-2 px-3 py-2 text-sm ${
-                        isNavLinkActive(pathname, item.path)
-                          ? 'bg-primary-50 text-primary-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                    >
-                      <span>{item.name}</span>
-                      {item.comingSoon && (
-                        <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">
-                          Soon
-                        </span>
-                      )}
-                    </Link>
-                  ))}
+                  {group.items.map((item) => {
+                    const ItemIcon = item.icon;
+                    return (
+                      <Link
+                        key={`${group.id}-${item.path}`}
+                        href={item.path}
+                        className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
+                          isNavLinkActive(pathname, item.path)
+                            ? 'bg-primary-50 text-primary-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <ItemIcon className="w-4 h-4 shrink-0 opacity-80" />
+                        <span className="flex-1 min-w-0">{item.name}</span>
+                        {item.comingSoon && (
+                          <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
+                            Soon
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -206,17 +210,23 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                   </p>
                   {group.items.map((item) => {
                     const itemActive = isNavLinkActive(pathname, item.path);
+                    const ItemIcon = item.icon;
                     return (
                       <Link
                         key={`${group.id}-${item.path}`}
                         href={item.path}
-                        className={`flex items-center justify-between gap-2 pl-10 pr-4 py-1.5 text-sm transition-colors ${
+                        className={`flex items-center gap-2.5 pl-8 pr-4 py-1.5 text-sm transition-colors ${
                           itemActive
                             ? 'text-primary-700 bg-primary-50 border-r-2 border-primary-600 font-medium'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
-                        <span>{item.name}</span>
+                        <ItemIcon
+                          className={`w-4 h-4 shrink-0 ${
+                            itemActive ? 'text-primary-600' : 'text-gray-400'
+                          }`}
+                        />
+                        <span className="flex-1 min-w-0">{item.name}</span>
                         {item.comingSoon && (
                           <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
                             Soon

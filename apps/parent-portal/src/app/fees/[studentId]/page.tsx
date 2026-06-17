@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { FiArrowLeft, FiDollarSign, FiCalendar, FiDownload, FiCreditCard } from 'react-icons/fi';
+import { FiArrowLeft, FiCalendar, FiDownload, FiCreditCard } from 'react-icons/fi';
+import RupeeIcon from '@/components/icons/RupeeIcon';
 import { formatCurrency } from '@edulakhya/utils';
 
 export default function FeesPage() {
@@ -104,41 +105,46 @@ export default function FeesPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-blue-50 rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Total Fees</p>
-                <p className="text-xl text-blue-700 mt-1">
+                <p className="text-sm font-medium text-slate-500">Total Fees</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">
                   {formatCurrency(summary?.total || 0)}
                 </p>
               </div>
-              <FiDollarSign className="w-8 h-8 text-blue-600" />
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                <RupeeIcon className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-green-50 rounded-lg p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Paid</p>
-                <p className="text-xl text-green-700 mt-1">
+                <p className="text-sm font-medium text-slate-500">Paid</p>
+                <p className="text-2xl font-bold text-green-700 mt-1">
                   {formatCurrency(summary?.paid || 0)}
                 </p>
               </div>
-              <FiDollarSign className="w-8 h-8 text-green-600" />
+              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                <RupeeIcon className="w-6 h-6 text-green-600" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-red-50 rounded-lg p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-red-600">Pending</p>
-                <p className="text-xl text-red-700 mt-1">
+                <p className="text-sm font-medium text-slate-500">Pending</p>
+                <p className="text-2xl font-bold text-red-700 mt-1">
                   {formatCurrency(summary?.pending || 0)}
                 </p>
               </div>
-              <FiDollarSign className="w-8 h-8 text-red-600" />
+              <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                <RupeeIcon className="w-6 h-6 text-red-600" />
+              </div>
             </div>
           </div>
         </div>

@@ -192,7 +192,7 @@ export default function SetupSubjectsPage() {
                   <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
                     <p className="text-blue-800 font-semibold mb-2">✅ Next Steps:</p>
                     <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                      <li>Go to <a href="/subjects" className="underline">Subjects Page</a></li>
+                      <li>Go to <a href="/academics/subjects" className="underline">Subjects Page</a></li>
                       <li>Try assigning subjects to classes</li>
                       <li>Create homework with subjects</li>
                     </ol>

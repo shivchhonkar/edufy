@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/require-student-api';
 
 export async function GET(request: NextRequest) {
   try {
+    const dbResult = await getRequestDbOrError(request);
+    if (dbResult instanceof NextResponse) return dbResult;
+    const { db } = dbResult;
+
     const authResult = requireStudentFromQuery(request);
     if (authResult instanceof NextResponse) return authResult;
     const { studentId } = authResult;
 
-    const studentResult = await query(
+    const studentResult = await db.query(
       `SELECT s.*,
         COALESCE(c.name, c2.name) AS class_name,
         COALESCE(sec.name, sec2.name) AS section_name
@@ -32,13 +36,13 @@ export async function GET(request: NextRequest) {
     const student = studentResult.rows[0];
 
     // Get current academic year
-    const academicYearResult = await query(
+    const academicYearResult = await db.query(
       'SELECT academic_year FROM system_settings ORDER BY id DESC LIMIT 1'
     );
     const academicYear = academicYearResult.rows[0]?.academic_year || '2025-26';
 
     // Get all fees for the student
-    const feesResult = await query(
+    const feesResult = await db.query(
       `SELECT sf.*, fs.fee_type, fc.name as category_name
        FROM student_fees sf
        LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id

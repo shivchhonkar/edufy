@@ -1,29 +1,68 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import { FiUser, FiCalendar, FiClock } from 'react-icons/fi';
+import type { PortalPermissionMap } from '@/lib/portal-access';
+
+type EssTab = 'attendance' | 'leaves' | 'payslips';
+
+const TAB_CONFIG: { id: EssTab; label: string; icon: typeof FiClock; moduleKey: string }[] = [
+  { id: 'attendance', label: 'Attendance', icon: FiClock, moduleKey: 'attendance' },
+  { id: 'leaves', label: 'Leaves', icon: FiCalendar, moduleKey: 'leaves' },
+  { id: 'payslips', label: 'Payslips', icon: RupeeIcon, moduleKey: 'payslips' },
+];
 
 export default function EssPage() {
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
-  const [tab, setTab] = useState<'attendance' | 'leaves' | 'payslips'>('attendance');
+  const [tab, setTab] = useState<EssTab>('attendance');
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<{ id: number; name: string }[]>([]);
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ leave_type_id: '', start_date: '', end_date: '', reason: '' });
   const [message, setMessage] = useState('');
 
+  const permissions = profile?.effective_permissions as PortalPermissionMap | undefined;
+  const portalEnabled = profile?.portal_access_enabled !== false;
+
+  const allowedTabs = useMemo(
+    () =>
+      TAB_CONFIG.filter(
+        (t) => portalEnabled && permissions && permissions[t.moduleKey] !== false,
+      ),
+    [portalEnabled, permissions],
+  );
+
   useEffect(() => {
-    fetch('/api/ess/profile').then((r) => r.json()).then((d) => { if (d.success) setProfile(d.data); });
-    fetch('/api/leave-types').then((r) => r.json()).then((d) => { if (d.success) setLeaveTypes(d.data); });
+    fetch('/api/ess/profile')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setProfile(d.data);
+      });
+    fetch('/api/leave-types')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setLeaveTypes(d.data);
+      });
   }, []);
 
+  useEffect(() => {
+    if (allowedTabs.length && !allowedTabs.some((t) => t.id === tab)) {
+      setTab(allowedTabs[0].id);
+    }
+  }, [allowedTabs, tab]);
+
   const fetchTab = useCallback(async () => {
+    if (!portalEnabled || !allowedTabs.some((t) => t.id === tab)) {
+      setItems([]);
+      return;
+    }
     const res = await fetch(`/api/ess?type=${tab}`);
     const data = await res.json();
     if (data.success) setItems(data.data);
-  }, [tab]);
+    else if (data.error) setMessage(data.error);
+  }, [tab, portalEnabled, allowedTabs]);
 
   useEffect(() => { fetchTab(); }, [fetchTab]);
 
@@ -42,8 +81,6 @@ export default function EssPage() {
       setMessage(data.error || 'Failed');
     }
   };
-
-  const now = new Date();
 
   return (
     <DashboardLayout>
@@ -66,25 +103,36 @@ export default function EssPage() {
           </div>
         )}
 
-        <div className="flex gap-2 border-b pb-2">
-          {[
-            { id: 'attendance' as const, label: 'Attendance', icon: FiClock },
-            { id: 'leaves' as const, label: 'Leaves', icon: FiCalendar },
-            { id: 'payslips' as const, label: 'Payslips', icon: RupeeIcon },
-          ].map((t) => (
-            <button key={t.id} type="button" onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${tab === t.id ? 'bg-primary-600 text-white' : 'bg-gray-100'}`}>
-              <t.icon className="w-4 h-4" /> {t.label}
-            </button>
-          ))}
-        </div>
+        {profile && !portalEnabled && (
+          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+            Staff portal access has been disabled. Contact school administration.
+          </p>
+        )}
+
+        {profile && portalEnabled && allowedTabs.length > 0 && (
+          <div className="flex gap-2 border-b pb-2">
+            {allowedTabs.map((t) => (
+              <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${tab === t.id ? 'bg-primary-600 text-white' : 'bg-gray-100'}`}>
+                <t.icon className="w-4 h-4" /> {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {profile && portalEnabled && allowedTabs.length === 0 && (
+          <p className="text-sm text-gray-600 bg-gray-50 border px-4 py-3 rounded-lg">
+            No ESS modules are enabled for your account.
+          </p>
+        )}
 
         {message && <p className="text-sm text-primary-700 bg-primary-50 px-4 py-2 rounded-lg">{message}</p>}
 
-        {tab === 'leaves' && (
+        {tab === 'leaves' && portalEnabled && permissions?.leaves !== false && (
           <button type="button" onClick={() => setShowLeaveForm(true)} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Apply for Leave</button>
         )}
 
+        {portalEnabled && allowedTabs.length > 0 && (
         <div className="bg-white border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
@@ -131,6 +179,7 @@ export default function EssPage() {
             </tbody>
           </table>
         </div>
+        )}
 
         {showLeaveForm && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

@@ -92,7 +92,7 @@ export default function ProfilePage() {
     setLoading(true);
     const headers = getAuthHeaders();
     try {
-      if (activeTab === 'overview' || !profile) {
+      if (activeTab === 'overview') {
         const res = await fetch(`/api/students/${studentId}/profile`, { headers });
         const data = await res.json();
         if (data.success) setProfile(data.data);
@@ -122,7 +122,7 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, studentId, profile]);
+  }, [activeTab, studentId]);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -131,6 +131,13 @@ export default function ProfilePage() {
     }
     fetchTabData();
   }, [fetchTabData, router]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab') as TabId | null;
+    if (tab && TABS.some((t) => t.id === tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
 
   const setTab = (tab: TabId) => {
     setActiveTab(tab);

@@ -47,3 +47,104 @@ export async function clearPrimaryGuardian(db: RequestDb, studentId: number): Pr
     [studentId]
   );
 }
+
+export async function ensureStudentMotherColumns(db: RequestDb): Promise<void> {
+  await db.query(`
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS mother_name VARCHAR(255);
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS mother_phone VARCHAR(20);
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS mother_email VARCHAR(255);
+  `);
+}
+
+async function upsertDefaultGuardianRow(
+  db: RequestDb,
+  studentId: number,
+  relationType: GuardianRelationType,
+  name: string | null | undefined,
+  mobile: string | null | undefined,
+  email: string | null | undefined,
+  isPrimary: boolean,
+): Promise<void> {
+  const displayName = name?.trim() || '—';
+  const existing = await db.query<{ id: number; name: string }>(
+    `SELECT id, name FROM student_guardians
+     WHERE student_id = $1 AND relation_type = $2
+     LIMIT 1`,
+    [studentId, relationType]
+  );
+
+  if (existing.rows.length === 0) {
+    await db.query(
+      `INSERT INTO student_guardians (
+        student_id, relation_type, name, mobile, email, is_primary_contact
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        studentId,
+        relationType,
+        displayName,
+        mobile?.trim() || null,
+        email?.trim() || null,
+        isPrimary,
+      ]
+    );
+    return;
+  }
+
+  const row = existing.rows[0];
+  const shouldSyncFromProfile = !row.name?.trim() || row.name.trim() === '—';
+
+  if (shouldSyncFromProfile && displayName !== '—') {
+    await db.query(
+      `UPDATE student_guardians
+       SET name = $1,
+           mobile = COALESCE($2, mobile),
+           email = COALESCE($3, email),
+           is_primary_contact = CASE WHEN $4 THEN true ELSE is_primary_contact END,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5`,
+      [displayName, mobile?.trim() || null, email?.trim() || null, isPrimary, row.id]
+    );
+  }
+}
+
+export async function ensureDefaultStudentGuardians(
+  db: RequestDb,
+  studentId: number,
+): Promise<void> {
+  await ensureStudentMotherColumns(db);
+
+  const studentRes = await db.query<{
+    parent_name: string | null;
+    parent_phone: string | null;
+    parent_email: string | null;
+    mother_name: string | null;
+    mother_phone: string | null;
+    mother_email: string | null;
+  }>(
+    `SELECT parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email
+     FROM students WHERE id = $1`,
+    [studentId]
+  );
+
+  if (!studentRes.rows[0]) return;
+  const student = studentRes.rows[0];
+
+  await upsertDefaultGuardianRow(
+    db,
+    studentId,
+    'father',
+    student.parent_name,
+    student.parent_phone,
+    student.parent_email,
+    true,
+  );
+  await upsertDefaultGuardianRow(
+    db,
+    studentId,
+    'mother',
+    student.mother_name,
+    student.mother_phone,
+    student.mother_email,
+    false,
+  );
+}

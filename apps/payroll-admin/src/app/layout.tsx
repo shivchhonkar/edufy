@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import AuthWrapper from '@/components/AuthWrapper';
+import LayoutWrapper from '@/components/LayoutWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Shribi Edufy - Fee Management',
+  title: 'Fees Management Portal',
   description: 'Manage student fees, payments, and receipts',
 };
 
@@ -16,7 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthWrapper>
+          <LayoutWrapper>{children}</LayoutWrapper>
+        </AuthWrapper>
+      </body>
     </html>
   );
 }

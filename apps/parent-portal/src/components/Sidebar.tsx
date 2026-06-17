@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { 
   FiHome, 
-  FiDollarSign, 
   FiBook, 
   FiCalendar, 
   FiFileText,
@@ -15,14 +14,29 @@ import {
   FiLogOut,
   FiAward
 } from 'react-icons/fi';
+import RupeeIcon from '@/components/icons/RupeeIcon';
+import SchoolLogo from '@/components/SchoolLogo';
+import { useSchoolBranding } from '@/contexts/SchoolBrandingContext';
+import { PARENT_PORTAL_LABEL } from '@/lib/site-seo';
+import { isModuleAllowed, type PortalPermissionMap } from '@/lib/portal-access';
 
 interface SidebarProps {
   onToggle?: (collapsed: boolean) => void;
 }
 
+type MenuItem = {
+  name: string;
+  icon: typeof FiHome;
+  path: string;
+  moduleKey: string;
+};
+
 export default function Sidebar({ onToggle }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { branding } = useSchoolBranding();
+  const schoolName = branding.school_name?.trim() || 'School';
+  const schoolLogo = branding.logo_url?.trim() || '';
   
   // Initialize state from localStorage
   const initialCollapsedState = useMemo(() => {
@@ -39,7 +53,21 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsedState);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<PortalPermissionMap | null>(null);
   
+  const resolvePermissions = (childId: string | null) => {
+    if (typeof window === 'undefined' || !childId) return null;
+    const userData = localStorage.getItem('user');
+    if (!userData) return null;
+    try {
+      const user = JSON.parse(userData);
+      const child = user.children?.find((c: { id: number }) => c.id.toString() === childId);
+      return child?.effective_permissions ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   // Get selected child from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -48,6 +76,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
       
       if (savedChildId) {
         setSelectedChildId(savedChildId);
+        setPermissions(resolvePermissions(savedChildId));
       } else {
         // Fallback to first child if no selection saved
         const userData = localStorage.getItem('user');
@@ -58,6 +87,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
               const firstChildId = user.children[0].id.toString();
               setSelectedChildId(firstChildId);
               localStorage.setItem('selectedChildId', firstChildId);
+              setPermissions(user.children[0].effective_permissions ?? null);
             }
           } catch (error) {
             console.error('Error parsing user data:', error);
@@ -70,22 +100,24 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'selectedChildId' && e.newValue) {
         setSelectedChildId(e.newValue);
+        setPermissions(resolvePermissions(e.newValue));
       }
     };
 
     // Listen for custom event when child is selected
-    const handleChildSelected = (e: any) => {
-      if (e.detail && e.detail.childId) {
+    const handleChildSelected = (e: CustomEvent<{ childId: string }>) => {
+      if (e.detail?.childId) {
         setSelectedChildId(e.detail.childId);
+        setPermissions(resolvePermissions(e.detail.childId));
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('childSelected', handleChildSelected);
+    window.addEventListener('childSelected', handleChildSelected as EventListener);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('childSelected', handleChildSelected);
+      window.removeEventListener('childSelected', handleChildSelected as EventListener);
     };
   }, []);
 
@@ -101,15 +133,19 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     return null;
   }
 
-  const menuItems = [
-    { name: 'Dashboard', icon: FiHome, path: '/dashboard' },
-    { name: 'Profile', icon: FiUser, path: selectedChildId ? `/profile/${selectedChildId}` : '/dashboard' },
-    { name: 'Homework', icon: FiBook, path: selectedChildId ? `/homework/${selectedChildId}` : '/dashboard' },
-    { name: 'Fees', icon: FiDollarSign, path: selectedChildId ? `/fees/${selectedChildId}` : '/dashboard' },
-    { name: 'Attendance', icon: FiCalendar, path: selectedChildId ? `/attendance/${selectedChildId}` : '/dashboard' },
-    { name: 'Results', icon: FiAward, path: '/results' },
-    { name: 'Report Card', icon: FiFileText, path: selectedChildId ? `/grades/${selectedChildId}` : '/dashboard' },
+  const allMenuItems: MenuItem[] = [
+    { name: 'Dashboard', icon: FiHome, path: '/dashboard', moduleKey: 'dashboard' },
+    { name: 'Profile', icon: FiUser, path: selectedChildId ? `/profile/${selectedChildId}` : '/dashboard', moduleKey: 'profile' },
+    { name: 'Homework', icon: FiBook, path: selectedChildId ? `/homework/${selectedChildId}` : '/dashboard', moduleKey: 'homework' },
+    { name: 'Fees', icon: RupeeIcon, path: selectedChildId ? `/fees/${selectedChildId}` : '/dashboard', moduleKey: 'fees' },
+    { name: 'Attendance', icon: FiCalendar, path: selectedChildId ? `/attendance/${selectedChildId}` : '/dashboard', moduleKey: 'attendance' },
+    { name: 'Results', icon: FiAward, path: '/results', moduleKey: 'results' },
+    { name: 'Report Card', icon: FiFileText, path: selectedChildId ? `/grades/${selectedChildId}` : '/dashboard', moduleKey: 'report_card' },
   ];
+
+  const menuItems = permissions
+    ? allMenuItems.filter((item) => isModuleAllowed(permissions, item.moduleKey))
+    : allMenuItems;
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -137,9 +173,19 @@ export default function Sidebar({ onToggle }: SidebarProps) {
       }}
     >
       {/* Header */}
-      <div className="p-6">
+      <div className={isCollapsed ? 'p-4' : 'px-5 py-4'}>
         {isCollapsed ? (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/40 p-1.5"
+              title={schoolName}
+            >
+              <SchoolLogo
+                variant="sidebar-collapsed"
+                src={schoolLogo}
+                alt={schoolName}
+              />
+            </div>
             <button
               onClick={toggleSidebar}
               className="relative p-2 hover:bg-blue-600 rounded-lg transition-all duration-300"
@@ -149,25 +195,28 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FiUser className="text-white" size={24} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-lg font-bold text-white truncate">Shribi Edufy</h1>
-                  <p className="text-xs text-blue-200 truncate">Parent Portal</p>
-                </div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/40 p-1.5">
+                <SchoolLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
               </div>
-              <button
-                onClick={toggleSidebar}
-                className="flex-shrink-0 p-2 hover:bg-blue-600 rounded-lg transition-all duration-300 ml-2"
-                title="Collapse Menu"
-              >
-                <FiChevronsLeft size={20} className="text-blue-200" />
-              </button>
+              <div className="min-w-0 flex-1">
+                <h1
+                  className="text-sm font-bold text-white leading-snug line-clamp-2"
+                  title={schoolName}
+                >
+                  {schoolName}
+                </h1>
+                <p className="text-xs text-blue-200 truncate">{PARENT_PORTAL_LABEL}</p>
+              </div>
             </div>
+            <button
+              onClick={toggleSidebar}
+              className="flex-shrink-0 p-2 hover:bg-blue-600 rounded-lg transition-all duration-300 mt-0.5"
+              title="Collapse Menu"
+            >
+              <FiChevronsLeft size={20} className="text-blue-200" />
+            </button>
           </div>
         )}
       </div>

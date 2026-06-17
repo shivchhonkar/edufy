@@ -45,6 +45,46 @@ async function autoCleanupOrphanedTransportFees(db: RequestDb, academicYear: str
   }
 }
 
+type RangeFilter = 'this_week' | 'this_month' | 'custom' | null;
+
+function buildPaymentDateFilter(
+  range: RangeFilter,
+  startDate: string | null,
+  endDate: string | null,
+  dateColumn: string,
+  startParamIndex: number,
+) {
+  if (range === 'this_week') {
+    return {
+      clause: `${dateColumn} >= DATE_TRUNC('week', CURRENT_DATE) AND ${dateColumn} < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'`,
+      params: [] as string[],
+      nextIndex: startParamIndex,
+    };
+  }
+
+  if (range === 'this_month') {
+    return {
+      clause: `EXTRACT(MONTH FROM ${dateColumn}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateColumn}) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+      params: [] as string[],
+      nextIndex: startParamIndex,
+    };
+  }
+
+  if (range === 'custom' && startDate && endDate) {
+    return {
+      clause: `${dateColumn} >= $${startParamIndex}::date AND ${dateColumn} < ($${startParamIndex + 1}::date + INTERVAL '1 day')`,
+      params: [startDate, endDate],
+      nextIndex: startParamIndex + 2,
+    };
+  }
+
+  return {
+    clause: '',
+    params: [] as string[],
+    nextIndex: startParamIndex,
+  };
+}
+
 // GET fee statistics
 export async function GET(request: NextRequest) {
   try {
@@ -54,6 +94,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const academicYear = searchParams.get('academic_year') || new Date().getFullYear().toString();
     const month = searchParams.get('month');
+    const range = (searchParams.get('range') as RangeFilter) || null;
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
 
     let currentAcademicYear = academicYear;
     if (academicYear === new Date().getFullYear().toString()) {
@@ -105,6 +148,18 @@ export async function GET(request: NextRequest) {
       paramCount++;
       collectedQuery += ` AND EXTRACT(MONTH FROM payment_date) = $${paramCount}`;
       collectedParams.push(month);
+    }
+    const collectedDateFilter = buildPaymentDateFilter(
+      range,
+      startDate,
+      endDate,
+      'payment_date',
+      paramCount + 1,
+    );
+    if (collectedDateFilter.clause) {
+      collectedQuery += ` AND ${collectedDateFilter.clause}`;
+      collectedParams.push(...collectedDateFilter.params);
+      paramCount = collectedDateFilter.nextIndex - 1;
     }
 
     const collectedResult = await db.query(collectedQuery, collectedParams);
@@ -191,17 +246,26 @@ export async function GET(request: NextRequest) {
     );
 
     // Recent payments (last 10) - filter by academic year
+    const recentPaymentsDateFilter = buildPaymentDateFilter(
+      range,
+      startDate,
+      endDate,
+      'fp.payment_date',
+      2,
+    );
     const recentPaymentsResult = await db.query(
       `SELECT fp.*, s.first_name, s.last_name, s.admission_number,
-              c.name as class_name
+              c.name as class_name, sec.name as section_name
        FROM fee_payments fp
        JOIN students s ON fp.student_id = s.id
        LEFT JOIN classes c ON s.class_id = c.id
+       LEFT JOIN sections sec ON s.section_id = sec.id
        WHERE fp.status = 'completed'
        AND (fp.academic_year = $1 OR fp.academic_year IS NULL)
+       ${recentPaymentsDateFilter.clause ? `AND ${recentPaymentsDateFilter.clause}` : ''}
        ORDER BY fp.payment_date DESC
        LIMIT 10`,
-      [currentAcademicYear]
+      [currentAcademicYear, ...recentPaymentsDateFilter.params]
     );
 
     // Students with pending fees - based on actual assigned fees (any unpaid fees in academic year)
@@ -215,18 +279,179 @@ export async function GET(request: NextRequest) {
       [currentAcademicYear]
     );
 
-    // Fee collection by category - filter by academic year
-    const categoryCollectionResult = await db.query(
-      `SELECT COALESCE(fc.name, 'Uncategorized') as category, COALESCE(SUM(fp.amount_paid), 0) as total
-       FROM fee_payments fp
-       LEFT JOIN fee_structures fs ON fp.fee_structure_id = fs.id
-       LEFT JOIN fee_categories fc ON fs.category_id = fc.id
-       WHERE fp.status = 'completed'
-       AND (fp.academic_year = $1 OR fp.academic_year IS NULL)
-       GROUP BY COALESCE(fc.name, 'Uncategorized')
-       ORDER BY total DESC`,
-      [currentAcademicYear]
+    // Fee collection by category - prefer payment_receipts breakup when available
+    let categoryCollectionResult;
+    const categoryDateFilter = buildPaymentDateFilter(
+      range,
+      startDate,
+      endDate,
+      'payment_date',
+      2,
     );
+    const categoryDateFilterWithAlias = buildPaymentDateFilter(
+      range,
+      startDate,
+      endDate,
+      'fp.payment_date',
+      2,
+    );
+    try {
+      categoryCollectionResult = await db.query(
+        `WITH receipt_totals AS (
+           SELECT 'Tuition Fee'::text AS category, COALESCE(SUM(total_tuition_paid), 0)::numeric AS total
+           FROM payment_receipts
+           WHERE academic_year = $1
+             ${categoryDateFilter.clause ? `AND ${categoryDateFilter.clause}` : ''}
+           UNION ALL
+           SELECT 'Transport Fee'::text AS category, COALESCE(SUM(total_transport_paid), 0)::numeric AS total
+           FROM payment_receipts
+           WHERE academic_year = $1
+             ${categoryDateFilter.clause ? `AND ${categoryDateFilter.clause}` : ''}
+           UNION ALL
+           SELECT 'Examination & Activity Fee'::text AS category, COALESCE(SUM(total_other_paid), 0)::numeric AS total
+           FROM payment_receipts
+           WHERE academic_year = $1
+             ${categoryDateFilter.clause ? `AND ${categoryDateFilter.clause}` : ''}
+         ),
+         payment_base AS (
+           SELECT fp.*
+           FROM fee_payments fp
+           WHERE fp.status = 'completed'
+             AND (fp.academic_year = $1 OR fp.academic_year IS NULL)
+             ${categoryDateFilterWithAlias.clause ? `AND ${categoryDateFilterWithAlias.clause}` : ''}
+             AND NOT EXISTS (SELECT 1 FROM payment_receipts pr WHERE pr.payment_id = fp.id)
+         ),
+         mapped_categories AS (
+           SELECT
+             pb.id,
+             COALESCE(
+               CASE
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%tuition%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%tution%' THEN ARRAY['Tuition Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%transport%' THEN ARRAY['Transport Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%registration%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%admission%' THEN ARRAY['Registration Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%exam%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%activity%' THEN ARRAY['Examination & Activity Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%library%' THEN ARRAY['Library Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%sport%' THEN ARRAY['Sports Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%late%' THEN ARRAY['Late Fee']
+                 ELSE NULL
+               END,
+               (
+                 SELECT ARRAY_AGG(DISTINCT
+                   CASE
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%tuition%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%tution%' THEN 'Tuition Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%transport%' THEN 'Transport Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%registration%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%admission%' THEN 'Registration Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%exam%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%activity%' THEN 'Examination & Activity Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%library%' THEN 'Library Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%sport%' THEN 'Sports Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%late%' THEN 'Late Fee'
+                     ELSE NULL
+                   END
+                 )
+                 FROM student_fees sf2
+                 LEFT JOIN fee_structures fs2 ON fs2.id = sf2.fee_structure_id
+                 WHERE sf2.student_id = pb.student_id
+                   AND sf2.academic_year = COALESCE(pb.academic_year, $1)
+                   AND DATE(sf2.updated_at) = DATE(pb.payment_date)
+                   AND sf2.amount_paid > 0
+               ),
+               ARRAY['Uncategorized']
+             ) AS categories,
+             COALESCE(pb.amount_paid, 0)::numeric AS amount_paid
+           FROM payment_base pb
+           LEFT JOIN fee_structures fs ON pb.fee_structure_id = fs.id
+         ),
+         inferred_totals AS (
+           SELECT
+             COALESCE(cat.category, 'Uncategorized')::text AS category,
+             SUM(
+               CASE
+                 WHEN COALESCE(array_length(mc.categories, 1), 0) > 0
+                 THEN mc.amount_paid / array_length(mc.categories, 1)
+                 ELSE mc.amount_paid
+               END
+             )::numeric AS total
+           FROM mapped_categories mc
+           LEFT JOIN LATERAL unnest(mc.categories) AS cat(category) ON true
+           GROUP BY COALESCE(cat.category, 'Uncategorized')
+         )
+         SELECT category, SUM(total) AS total
+         FROM (
+           SELECT * FROM receipt_totals
+           UNION ALL
+           SELECT * FROM inferred_totals
+         ) merged
+         GROUP BY category
+         HAVING SUM(total) > 0
+         ORDER BY total DESC`,
+        [currentAcademicYear, ...categoryDateFilter.params]
+      );
+    } catch (error) {
+      // Fallback for tenants without payment_receipts table
+      categoryCollectionResult = await db.query(
+        `WITH payment_base AS (
+           SELECT fp.*
+           FROM fee_payments fp
+           WHERE fp.status = 'completed'
+             AND (fp.academic_year = $1 OR fp.academic_year IS NULL)
+             ${categoryDateFilterWithAlias.clause ? `AND ${categoryDateFilterWithAlias.clause}` : ''}
+         ),
+         mapped_categories AS (
+           SELECT
+             pb.id,
+             COALESCE(
+               CASE
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%tuition%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%tution%' THEN ARRAY['Tuition Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%transport%' THEN ARRAY['Transport Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%registration%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%admission%' THEN ARRAY['Registration Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%exam%' OR LOWER(COALESCE(fs.fee_type, '')) LIKE '%activity%' THEN ARRAY['Examination & Activity Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%library%' THEN ARRAY['Library Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%sport%' THEN ARRAY['Sports Fee']
+                 WHEN LOWER(COALESCE(fs.fee_type, '')) LIKE '%late%' THEN ARRAY['Late Fee']
+                 ELSE NULL
+               END,
+               (
+                 SELECT ARRAY_AGG(DISTINCT
+                   CASE
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%tuition%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%tution%' THEN 'Tuition Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%transport%' THEN 'Transport Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%registration%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%admission%' THEN 'Registration Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%exam%' OR LOWER(COALESCE(fs2.fee_type, '')) LIKE '%activity%' THEN 'Examination & Activity Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%library%' THEN 'Library Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%sport%' THEN 'Sports Fee'
+                     WHEN LOWER(COALESCE(fs2.fee_type, '')) LIKE '%late%' THEN 'Late Fee'
+                     ELSE NULL
+                   END
+                 )
+                 FROM student_fees sf2
+                 LEFT JOIN fee_structures fs2 ON fs2.id = sf2.fee_structure_id
+                 WHERE sf2.student_id = pb.student_id
+                   AND sf2.academic_year = COALESCE(pb.academic_year, $1)
+                   AND DATE(sf2.updated_at) = DATE(pb.payment_date)
+                   AND sf2.amount_paid > 0
+               ),
+               ARRAY['Uncategorized']
+             ) AS categories,
+             COALESCE(pb.amount_paid, 0)::numeric AS amount_paid
+           FROM payment_base pb
+           LEFT JOIN fee_structures fs ON pb.fee_structure_id = fs.id
+         )
+         SELECT
+           COALESCE(cat.category, 'Uncategorized') AS category,
+           SUM(
+             CASE
+               WHEN COALESCE(array_length(mc.categories, 1), 0) > 0
+               THEN mc.amount_paid / array_length(mc.categories, 1)
+               ELSE mc.amount_paid
+             END
+           ) AS total
+         FROM mapped_categories mc
+         LEFT JOIN LATERAL unnest(mc.categories) AS cat(category) ON true
+         GROUP BY COALESCE(cat.category, 'Uncategorized')
+         ORDER BY total DESC`,
+        [currentAcademicYear, ...categoryDateFilterWithAlias.params]
+      );
+    }
 
     // Monthly collection trend (last 12 months) - filter by academic year
     const monthlyTrendResult = await db.query(

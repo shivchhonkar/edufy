@@ -29,7 +29,7 @@ export default function HrOverviewPage() {
 
   const cards = [
     { label: 'Active Staff', value: stats.active, icon: FiUsers, href: '/staff', color: 'text-blue-600' },
-    { label: 'Pending Leaves', value: stats.pendingLeaves, icon: FiCalendar, href: '/hr/leaves', color: 'text-amber-600' },
+    { label: 'Pending Leaves', value: stats.pendingLeaves, icon: FiCalendar, href: '/hr/leave-management', color: 'text-amber-600' },
     { label: 'Pending Resignations', value: stats.pendingResignations, icon: FiBriefcase, href: '/hr/resignations', color: 'text-red-600' },
     { label: 'Payroll', value: '0', icon: RupeeIcon, href: '/payroll', color: 'text-green-600' },
   ];

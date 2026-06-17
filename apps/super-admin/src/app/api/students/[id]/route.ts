@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import { parseStudentId } from '@/lib/student-profile-api';
+import { parseStudentId, ensureDefaultStudentGuardians, ensureStudentMotherColumns } from '@/lib/student-profile-api';
 import { Student } from '@/shared/types';
 
 // GET single student
@@ -83,10 +83,15 @@ export async function PUT(
       parent_name,
       parent_phone,
       parent_email,
+      mother_name,
+      mother_phone,
+      mother_email,
       emergency_contact,
       photo_url,
       status,
     } = body;
+
+    await ensureStudentMotherColumns(db);
 
     const result = await db.query<Student>(
       `UPDATE students SET
@@ -115,18 +120,21 @@ export async function PUT(
         parent_name = COALESCE($23, parent_name),
         parent_phone = COALESCE($24, parent_phone),
         parent_email = COALESCE($25, parent_email),
-        emergency_contact = COALESCE($26, emergency_contact),
-        photo_url = COALESCE($27, photo_url),
-        status = COALESCE($28, status),
+        mother_name = COALESCE($26, mother_name),
+        mother_phone = COALESCE($27, mother_phone),
+        mother_email = COALESCE($28, mother_email),
+        emergency_contact = COALESCE($29, emergency_contact),
+        photo_url = COALESCE($30, photo_url),
+        status = COALESCE($31, status),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $29
+      WHERE id = $32
       RETURNING *`,
       [
         first_name, last_name, middle_name, student_code, date_of_birth, gender, blood_group,
         aadhaar_no, religion, caste, category, nationality, mother_tongue, remarks,
         address, city, state, pincode, admission_date, class_id, section_id, roll_number,
-        parent_name, parent_phone, parent_email, emergency_contact, photo_url,
-        status, studentId,
+        parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email,
+        emergency_contact, photo_url, status, studentId,
       ]
     );
 
@@ -135,6 +143,12 @@ export async function PUT(
         { success: false, error: 'Student not found' },
         { status: 404 }
       );
+    }
+
+    try {
+      await ensureDefaultStudentGuardians(db, studentId);
+    } catch (guardianError) {
+      console.error('Error syncing default guardians after student update:', guardianError);
     }
 
     return NextResponse.json({
