@@ -10,20 +10,29 @@ type PortalPageShellProps = {
 }
 
 export function PortalPageShell({ title, subtitle, greeting, children }: PortalPageShellProps) {
+  const headerContent = (
+    <div className="min-w-0">
+      {greeting && <p className="portal-page-header-muted text-xs">{greeting}</p>}
+      <h1 className="text-lg sm:text-xl font-semibold tracking-tight">{title}</h1>
+      {subtitle && <p className="portal-page-header-muted text-xs sm:text-sm">{subtitle}</p>}
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white">
-      <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-indigo-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
+    <div className="portal-page-shell min-h-full flex-1">
+      <div className="portal-page-header lg:hidden">
+        <div className="px-3 sm:px-6 py-3">{headerContent}</div>
+      </div>
+      <div className="portal-page-header hidden lg:block">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 leading-tight">
-            <div>
-              {greeting && <p className="text-blue-100 text-xs">{greeting}</p>}
-              <h1 className="text-lg sm:text-xl font-semibold tracking-tight">{title}</h1>
-              {subtitle && <p className="text-blue-100/90 text-xs">{subtitle}</p>}
-            </div>
+            {headerContent}
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-w-0">{children}</div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8 min-w-0">
+        {children}
+      </div>
     </div>
   )
 }
@@ -31,7 +40,7 @@ export function PortalPageShell({ title, subtitle, greeting, children }: PortalP
 export function PortalLoadingSpinner() {
   return (
     <div className="min-h-[40vh] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent" />
+      <div className="portal-spinner animate-spin rounded-full h-10 w-10 border-2 border-t-transparent" />
     </div>
   )
 }

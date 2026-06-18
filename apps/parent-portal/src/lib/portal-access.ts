@@ -4,6 +4,7 @@ export const PARENT_PORTAL_MODULES = [
   { key: 'homework', label: 'Homework', pathPrefix: '/homework' },
   { key: 'fees', label: 'Fees', pathPrefix: '/fees' },
   { key: 'attendance', label: 'Attendance', pathPrefix: '/attendance' },
+  { key: 'calendar', label: 'Calendar', path: '/calendar' },
   { key: 'results', label: 'Results', path: '/results' },
   { key: 'report_card', label: 'Report Card', pathPrefix: '/grades' },
 ] as const

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import { parseStudentId, ensureDefaultStudentGuardians, ensureStudentMotherColumns } from '@/lib/student-profile-api';
+import { parseStudentId, ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncCurrentEnrollmentFromStudent } from '@/lib/student-profile-api';
 import { Student } from '@/shared/types';
 
 // GET single student
@@ -149,6 +149,12 @@ export async function PUT(
       await ensureDefaultStudentGuardians(db, studentId);
     } catch (guardianError) {
       console.error('Error syncing default guardians after student update:', guardianError);
+    }
+
+    try {
+      await syncCurrentEnrollmentFromStudent(db, studentId, class_id, section_id, roll_number);
+    } catch (enrollmentError) {
+      console.error('Error syncing current enrollment after student update:', enrollmentError);
     }
 
     return NextResponse.json({

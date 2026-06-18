@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
 export interface ParentSession {
-  phone: string;
+  login?: string;
+  phone?: string;
   studentIds: number[];
   role: 'parent';
 }
@@ -58,5 +59,11 @@ export function requireParentStudentAccess(
   const session = getParentSession(request);
   if (!session) return unauthorizedResponse();
   if (!parentCanAccessStudent(session, studentId)) return forbiddenResponse();
+  return session;
+}
+
+export function requireParentSession(request: NextRequest): ParentSession | NextResponse {
+  const session = getParentSession(request);
+  if (!session) return unauthorizedResponse();
   return session;
 }

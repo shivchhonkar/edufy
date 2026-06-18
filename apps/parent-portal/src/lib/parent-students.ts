@@ -13,7 +13,7 @@ const CHILDREN_SELECT = `
     s.middle_name,
     s.last_name,
     s.admission_number,
-    s.roll_number,
+    COALESCE(s.roll_number, e.roll_number) AS roll_number,
     s.gender,
     s.date_of_birth,
     s.blood_group,
@@ -21,15 +21,15 @@ const CHILDREN_SELECT = `
     s.status,
     COALESCE(s.portal_access_enabled, true) AS portal_access_enabled,
     s.portal_permissions,
-    COALESCE(c.name, c2.name) AS class_name,
-    COALESCE(sec.name, sec2.name) AS section_name,
+    COALESCE(sc.name, ec.name) AS class_name,
+    COALESCE(ss.name, es.name) AS section_name,
     COALESCE(e.academic_year, '') AS current_academic_year
   FROM students s
   LEFT JOIN student_enrollments e ON e.student_id = s.id AND e.is_current = true
-  LEFT JOIN classes c ON e.class_id = c.id
-  LEFT JOIN sections sec ON e.section_id = sec.id
-  LEFT JOIN classes c2 ON s.class_id = c2.id
-  LEFT JOIN sections sec2 ON s.section_id = sec2.id
+  LEFT JOIN classes sc ON s.class_id = sc.id
+  LEFT JOIN sections ss ON s.section_id = ss.id
+  LEFT JOIN classes ec ON e.class_id = ec.id
+  LEFT JOIN sections es ON e.section_id = es.id
 `
 
 export async function resolveParentStudentIds(db: RequestDb, phone: string): Promise<number[]> {
@@ -174,6 +174,34 @@ export async function resolvePortalChildrenIds(
     if (siblingIds.length) return siblingIds
   }
   return [matched.id]
+}
+
+export async function resolvePortalChildrenForLogin(
+  db: RequestDb,
+  login: string,
+  fallbackIds: number[],
+): Promise<number[]> {
+  const trimmed = login.trim()
+  if (!trimmed) return fallbackIds
+
+  const candidates = await findPortalLoginCandidates(db, trimmed)
+  if (!candidates.length) return fallbackIds
+
+  const idSet = new Set<number>()
+  for (const candidate of candidates) {
+    const ids = await resolvePortalChildrenIds(db, candidate)
+    ids.forEach((id) => idSet.add(id))
+  }
+  return Array.from(idSet)
+}
+
+export async function refreshPortalChildren(
+  db: RequestDb,
+  login: string,
+  fallbackIds: number[],
+): Promise<PortalChild[]> {
+  const studentIds = await resolvePortalChildrenForLogin(db, login, fallbackIds)
+  return fetchChildrenByIds(db, studentIds)
 }
 
 export async function fetchChildrenByIds(db: RequestDb, studentIds: number[]): Promise<PortalChild[]> {

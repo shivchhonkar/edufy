@@ -48,7 +48,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen portal-login-page flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
@@ -81,7 +81,7 @@ export default function LoginPage() {
                   required
                   value={formData.login}
                   onChange={(e) => setFormData({ ...formData, login: e.target.value })}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg portal-focus-ring focus:ring-2 focus:border-transparent"
                   placeholder="Admission number or parent phone"
                 />
               </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg portal-focus-ring focus:ring-2 focus:border-transparent"
                   placeholder="Enter your password"
                 />
                 <button
@@ -123,11 +123,11 @@ export default function LoginPage() {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 portal-text-accent portal-focus-ring focus:ring-2 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
+              <a href="#" className="text-sm portal-link-accent">
                 Forgot password?
               </a>
             </div>
@@ -136,7 +136,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full portal-btn-primary py-3 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 portal-focus-ring disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <span className="flex items-center justify-center">

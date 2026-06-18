@@ -1,0 +1,316 @@
+:root {
+  --theme-primary-50: #ebf5fc;
+  --theme-primary-100: #d1eaf9;
+  --theme-primary-200: #a3d5f3;
+  --theme-primary-300: #6bc0ed;
+  --theme-primary-400: #4dc4f0;
+  --theme-primary-500: #2380d6;
+  --theme-primary-600: #2380d6;
+  --theme-primary-700: #1a73c7;
+  --theme-primary-800: #0d3d75;
+  --theme-primary-900: #082f5c;
+  --theme-secondary: #4dc4f0;
+  --theme-accent: #2380d6;
+  --theme-brand-dark: #0d3d75;
+  --theme-bg: #f4f7f9;
+  --theme-surface: #ffffff;
+  --theme-font: #111827;
+  --theme-muted-font: #6b7280;
+  --theme-sidebar-bg: #0d3d75;
+  --theme-sidebar-text: #ffffff;
+  --theme-sidebar-active-bg: rgba(77, 196, 240, 0.18);
+  --theme-sidebar-active-text: #4dc4f0;
+  --theme-header-bg: #ffffff;
+}
+
+body {
+  color: var(--theme-font);
+  background: var(--theme-bg);
+}
+
+.portal-workspace {
+  background-color: var(--theme-bg) !important;
+}
+
+.portal-mobile-topbar {
+  background-color: var(--theme-header-bg) !important;
+  border-color: color-mix(in srgb, var(--theme-font) 12%, transparent) !important;
+}
+
+.portal-mobile-topbar p {
+  color: var(--theme-font);
+}
+
+.portal-mobile-topbar .portal-mobile-topbar-muted {
+  color: var(--theme-muted-font);
+}
+
+.portal-mobile-menu-btn {
+  color: var(--theme-font) !important;
+}
+
+.portal-mobile-menu-btn:hover {
+  background-color: color-mix(in srgb, var(--theme-font) 8%, transparent) !important;
+  color: var(--theme-font) !important;
+}
+
+.portal-sidebar {
+  background-color: var(--theme-sidebar-bg) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+.portal-sidebar-title {
+  color: var(--theme-sidebar-text) !important;
+}
+
+.portal-sidebar-muted {
+  color: color-mix(in srgb, var(--theme-sidebar-text) 72%, transparent) !important;
+}
+
+.portal-sidebar-btn {
+  color: color-mix(in srgb, var(--theme-sidebar-text) 85%, transparent);
+}
+
+.portal-sidebar-btn:hover {
+  background-color: color-mix(in srgb, var(--theme-sidebar-text) 12%, transparent) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+.portal-nav-link {
+  color: color-mix(in srgb, var(--theme-sidebar-text) 88%, transparent);
+}
+
+.portal-nav-link:hover {
+  background-color: color-mix(in srgb, var(--theme-sidebar-text) 12%, transparent) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+.portal-nav-link-active {
+  background-color: var(--theme-sidebar-active-bg) !important;
+  color: var(--theme-sidebar-active-text) !important;
+}
+
+.portal-page-shell {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--theme-bg) 92%, white),
+    var(--theme-bg),
+    white
+  );
+}
+
+.portal-page-header {
+  background-color: var(--theme-header-bg) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-font) 12%, transparent);
+  color: var(--theme-font);
+}
+
+.portal-page-header-muted {
+  color: var(--theme-muted-font);
+}
+
+.portal-login-page {
+  background: linear-gradient(
+    to bottom right,
+    color-mix(in srgb, var(--theme-bg) 88%, white),
+    color-mix(in srgb, var(--theme-secondary) 22%, white)
+  );
+}
+
+.portal-btn-primary {
+  background-color: var(--theme-accent) !important;
+  color: #ffffff !important;
+}
+
+.portal-btn-primary:hover {
+  background-color: var(--theme-brand-dark) !important;
+}
+
+.portal-btn-primary:disabled {
+  opacity: 0.5;
+}
+
+.portal-spinner {
+  border-color: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  border-top-color: var(--theme-accent);
+}
+
+.portal-focus-ring:focus {
+  --tw-ring-color: var(--theme-accent);
+}
+
+.portal-border-accent {
+  border-color: color-mix(in srgb, var(--theme-accent) 25%, transparent) !important;
+}
+
+.portal-sidebar-divider {
+  border-color: color-mix(in srgb, var(--theme-sidebar-text) 18%, transparent) !important;
+}
+
+.portal-text-accent {
+  color: var(--theme-accent) !important;
+}
+
+.portal-link-accent {
+  color: var(--theme-accent);
+}
+
+.portal-link-accent:hover {
+  color: var(--theme-brand-dark);
+}
+
+.portal-text {
+  color: var(--theme-font);
+}
+
+.portal-text-muted {
+  color: var(--theme-muted-font);
+}
+
+.portal-card {
+  background-color: var(--theme-surface);
+  border: 1px solid color-mix(in srgb, var(--theme-font) 10%, transparent);
+}
+
+.portal-header-control {
+  background-color: var(--theme-surface);
+  border: 1px solid color-mix(in srgb, var(--theme-font) 12%, transparent);
+  color: var(--theme-font);
+}
+
+.portal-header-control:hover {
+  background-color: color-mix(in srgb, var(--theme-bg) 65%, var(--theme-surface));
+}
+
+.portal-child-tab {
+  border: 1px solid color-mix(in srgb, var(--theme-font) 12%, transparent);
+  background-color: var(--theme-surface);
+  color: var(--theme-muted-font);
+}
+
+.portal-child-tab:hover {
+  border-color: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+  background-color: color-mix(in srgb, var(--theme-accent) 6%, var(--theme-surface));
+}
+
+.portal-child-tab-active {
+  border-color: var(--theme-accent);
+  background-color: color-mix(in srgb, var(--theme-accent) 10%, var(--theme-surface));
+  color: var(--theme-brand-dark);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+}
+
+.portal-profile-banner {
+  background: linear-gradient(
+    135deg,
+    var(--theme-brand-dark),
+    var(--theme-accent),
+    color-mix(in srgb, var(--theme-secondary) 65%, var(--theme-accent))
+  );
+  color: #ffffff;
+}
+
+.portal-profile-photo-frame {
+  background-color: color-mix(in srgb, white 92%, var(--theme-secondary));
+  border: 1px solid color-mix(in srgb, white 70%, transparent);
+  border-radius: 0.75rem;
+}
+
+.portal-link-action {
+  color: var(--theme-accent);
+  font-weight: 600;
+}
+
+.portal-link-action:hover {
+  color: var(--theme-brand-dark);
+}
+
+.portal-icon-chip {
+  background-color: color-mix(in srgb, var(--theme-accent) 12%, var(--theme-surface));
+  color: var(--theme-accent);
+}
+
+.portal-chip-success {
+  background-color: color-mix(in srgb, #22c55e 14%, var(--theme-surface));
+  color: #16a34a;
+}
+
+.portal-chip-warning {
+  background-color: color-mix(in srgb, #f97316 14%, var(--theme-surface));
+  color: #ea580c;
+}
+
+.portal-chip-danger {
+  background-color: color-mix(in srgb, #ef4444 14%, var(--theme-surface));
+  color: #dc2626;
+}
+
+.portal-chip-info {
+  background-color: color-mix(in srgb, var(--theme-accent) 14%, var(--theme-surface));
+  color: var(--theme-accent);
+}
+
+.portal-chip-purple {
+  background-color: color-mix(in srgb, #a855f7 14%, var(--theme-surface));
+  color: #9333ea;
+}
+
+.portal-progress-track {
+  background-color: color-mix(in srgb, var(--theme-font) 8%, var(--theme-surface));
+}
+
+.portal-progress-paid {
+  background-color: #22c55e;
+}
+
+.portal-trend-bar {
+  background-color: color-mix(in srgb, var(--theme-accent) 82%, white);
+}
+
+.portal-attendance-ring-track {
+  stroke: color-mix(in srgb, var(--theme-font) 12%, transparent);
+}
+
+.portal-attendance-ring-progress {
+  stroke: #22c55e;
+}
+
+.portal-quick-pill {
+  border: 1px solid color-mix(in srgb, var(--theme-font) 12%, transparent);
+  background-color: var(--theme-surface);
+  color: var(--theme-font);
+}
+
+.portal-quick-pill:hover {
+  border-color: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+  background-color: color-mix(in srgb, var(--theme-accent) 8%, var(--theme-surface));
+}
+
+.portal-divider {
+  border-color: color-mix(in srgb, var(--theme-font) 8%, transparent) !important;
+}
+
+.portal-profile-btn {
+  background-color: #ffffff;
+  color: var(--theme-font);
+}
+
+.portal-profile-btn:hover {
+  background-color: color-mix(in srgb, white 95%, var(--theme-accent));
+}
+
+.portal-badge-pending {
+  background-color: color-mix(in srgb, #ef4444 12%, var(--theme-surface));
+  color: #dc2626;
+}
+
+.portal-badge-done {
+  background-color: color-mix(in srgb, #22c55e 12%, var(--theme-surface));
+  color: #16a34a;
+}
+
+.portal-stat-cell {
+  background-color: color-mix(in srgb, var(--theme-font) 4%, var(--theme-surface));
+  border: 1px solid color-mix(in srgb, var(--theme-font) 8%, transparent);
+  border-radius: 0.75rem;
+}

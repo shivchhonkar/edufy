@@ -9,6 +9,15 @@ export {
   PortalLoadingSpinner,
   PortalQuickActionCard,
 } from './components/PortalPageShell';
+export { PortalSidebarBackdrop, PortalMobileTopBar } from './components/PortalMobileChrome';
+export { PortalThemeProvider } from './components/PortalThemeProvider';
+export { portalNavLinkClass } from './lib/portal-nav';
+export { usePortalSidebar } from './hooks/usePortalSidebar';
+export {
+  getPortalSidebarDrawerClasses,
+  getPortalMainOffsetClass,
+} from './lib/portal-layout';
+export type { PortalSidebarProps } from './lib/portal-layout';
 
 // Export types
 export type { StatCardProps } from './components/StatCard';

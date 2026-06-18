@@ -148,3 +148,36 @@ export async function ensureDefaultStudentGuardians(
     false,
   );
 }
+
+/** Keep current enrollment aligned when class/section is edited on the student record. */
+export async function syncCurrentEnrollmentFromStudent(
+  db: RequestDb,
+  studentId: number,
+  classId: number | null | undefined,
+  sectionId: number | null | undefined,
+  rollNumber: string | null | undefined,
+): Promise<void> {
+  if (classId === undefined && sectionId === undefined && rollNumber === undefined) {
+    return;
+  }
+
+  const current = await db.query<{ id: number }>(
+    `SELECT id FROM student_enrollments
+     WHERE student_id = $1 AND is_current = true
+     ORDER BY id DESC
+     LIMIT 1`,
+    [studentId],
+  );
+
+  if (current.rows.length === 0) return;
+
+  await db.query(
+    `UPDATE student_enrollments
+     SET class_id = COALESCE($2, class_id),
+         section_id = COALESCE($3, section_id),
+         roll_number = COALESCE($4, roll_number),
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [current.rows[0].id, classId ?? null, sectionId ?? null, rollNumber ?? null],
+  );
+}

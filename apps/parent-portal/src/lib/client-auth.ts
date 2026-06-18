@@ -12,9 +12,9 @@ export function formatParentDate(date: string | Date | null | undefined): string
 }
 
 export function studentFullName(student: {
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
+  first_name: string
+  middle_name?: string | null
+  last_name?: string | null
 }): string {
   return [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ');
 }

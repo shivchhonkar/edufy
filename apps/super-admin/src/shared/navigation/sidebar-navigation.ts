@@ -206,6 +206,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'SMS', path: '/communications?tab=sms', icon: FiMessageCircle },
       { name: 'WhatsApp', path: '/communications?tab=whatsapp', icon: FiMessageSquare },
       { name: 'Circulars', path: '/communications?tab=circulars', icon: FiBell },
+      { name: 'Event Calendar', path: '/event-calendar', icon: FiCalendar },
       { name: 'Notifications', path: '/communications?tab=notifications', icon: FiBell },
       { name: 'Email Campaigns', path: '/communications?tab=email', icon: FiMail },
       { name: 'Message History', path: '/communications?tab=history', icon: FiClock },

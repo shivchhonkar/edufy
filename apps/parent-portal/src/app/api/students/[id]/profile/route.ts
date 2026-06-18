@@ -21,15 +21,15 @@ export async function GET(
         s.student_code, s.roll_number, s.gender, s.date_of_birth, s.blood_group,
         s.category, s.nationality, s.mother_tongue, s.photo_url, s.status,
         s.address, s.city, s.state, s.pincode,
-        COALESCE(c.name, c2.name) AS class_name,
-        COALESCE(sec.name, sec2.name) AS section_name,
+        COALESCE(sc.name, ec.name) AS class_name,
+        COALESCE(ss.name, es.name) AS section_name,
         COALESCE(e.academic_year, '') AS current_academic_year
       FROM students s
       LEFT JOIN student_enrollments e ON e.student_id = s.id AND e.is_current = true
-      LEFT JOIN classes c ON e.class_id = c.id
-      LEFT JOIN sections sec ON e.section_id = sec.id
-      LEFT JOIN classes c2 ON s.class_id = c2.id
-      LEFT JOIN sections sec2 ON s.section_id = sec2.id
+      LEFT JOIN classes sc ON s.class_id = sc.id
+      LEFT JOIN sections ss ON s.section_id = ss.id
+      LEFT JOIN classes ec ON e.class_id = ec.id
+      LEFT JOIN sections es ON e.section_id = es.id
       WHERE s.id = $1`,
       [studentId]
     );

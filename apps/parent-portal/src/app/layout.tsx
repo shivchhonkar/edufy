@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
+import '@edulakhya/ui/src/styles/portal-theme.css'
 import './globals.css'
 import LayoutWrapper from '@/components/LayoutWrapper'
 import { fetchSchoolBranding } from '@/lib/school-info'
 import { buildRootMetadata } from '@/lib/site-seo'
+import { PortalThemeProvider } from '@edulakhya/ui'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <LayoutWrapper>{children}</LayoutWrapper>
+        <PortalThemeProvider>
+          <LayoutWrapper>{children}</LayoutWrapper>
+        </PortalThemeProvider>
       </body>
     </html>
   )

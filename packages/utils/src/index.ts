@@ -13,6 +13,46 @@ export function formatDate(date: Date | string): string {
   });
 }
 
+const DEFAULT_SCHOOL_TIMEZONE =
+  process.env.SCHOOL_TIMEZONE || process.env.TZ || 'Asia/Kolkata'
+
+/** YYYY-MM-DD in the school timezone (defaults to Asia/Kolkata). */
+export function getCalendarDateString(
+  date: Date = new Date(),
+  timeZone: string = DEFAULT_SCHOOL_TIMEZONE,
+): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(date)
+}
+
+export function getSchoolTimezone(): string {
+  return DEFAULT_SCHOOL_TIMEZONE
+}
+
+function getHourInTimeZone(date: Date, timeZone: string): number {
+  const hourPart = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: 'numeric',
+    hour12: false,
+  })
+    .formatToParts(date)
+    .find((part) => part.type === 'hour')
+
+  return hourPart ? parseInt(hourPart.value, 10) : date.getHours()
+}
+
+/** Time-of-day greeting using the school timezone (defaults to Asia/Kolkata). */
+export function getTimeOfDayGreeting(
+  date: Date = new Date(),
+  timeZone: string = DEFAULT_SCHOOL_TIMEZONE,
+): string {
+  const hour = getHourInTimeZone(date, timeZone)
+
+  if (hour >= 5 && hour < 12) return 'Good Morning'
+  if (hour >= 12 && hour < 17) return 'Good Afternoon'
+  if (hour >= 17 && hour < 21) return 'Good Evening'
+  return 'Good Night'
+}
+
 // Format currency
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -135,6 +175,17 @@ export {
   RECEIPT_PRINT_DOCUMENT_STYLES,
   RECEIPT_PREVIEW_STYLES,
 } from './print-layout'
+
+export {
+  DEFAULT_THEME_SETTINGS,
+  THEME_PRESETS,
+  THEME_COLOR_FIELDS,
+  mergeThemeSettings,
+  applyThemeToDocument,
+  getThemePreset,
+} from './theme-settings'
+
+export type { ThemeSettings, ThemePreset, ThemePresetId } from './theme-settings'
 
 export function resolveSchoolAssetUrl(
   assetPath: string | null | undefined,

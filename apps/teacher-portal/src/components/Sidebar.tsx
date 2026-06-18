@@ -15,8 +15,9 @@ import {
 import SchoolLogo from '@/components/SchoolLogo'
 import { useSchoolBranding } from '@/contexts/SchoolBrandingContext'
 import { TEACHER_PORTAL_LABEL } from '@/lib/site-seo'
+import { getPortalSidebarDrawerClasses, portalNavLinkClass, type PortalSidebarProps } from '@edulakhya/ui'
 
-interface SidebarProps {
+interface SidebarProps extends PortalSidebarProps {
   onToggle?: (collapsed: boolean) => void
 }
 
@@ -27,7 +28,7 @@ const menuItems = [
   { name: 'Leave', icon: FiClipboard, path: '/leaves' },
 ]
 
-export default function Sidebar({ onToggle }: SidebarProps) {
+export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { branding } = useSchoolBranding()
@@ -73,15 +74,14 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     router.push('/login')
   }
 
+  const displayCollapsed = isCollapsed && !mobileOpen
+
   return (
     <div
-      className={`h-full text-white fixed left-0 top-0 overflow-y-auto transition-all duration-300 z-50 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-      style={{ backgroundColor: '#047857' }}
+      className={getPortalSidebarDrawerClasses(mobileOpen, isCollapsed, 'portal-sidebar')}
     >
-      <div className={isCollapsed ? 'p-4' : 'px-5 py-4'}>
-        {isCollapsed ? (
+      <div className={displayCollapsed ? 'p-4' : 'px-5 py-4'}>
+        {displayCollapsed ? (
           <div className="flex flex-col items-center gap-3">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/95 p-1 shadow-sm"
@@ -91,10 +91,10 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             </div>
             <button
               onClick={toggleSidebar}
-              className="p-2 hover:bg-emerald-600 rounded-lg transition-all duration-300"
+              className="hidden lg:block portal-sidebar-btn p-2 rounded-lg transition-all duration-300"
               title="Expand Menu"
             >
-              <FiMenu size={22} className="text-emerald-200" />
+              <FiMenu size={22} className="portal-sidebar-muted" />
             </button>
           </div>
         ) : (
@@ -104,18 +104,18 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                 <SchoolLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-sm font-bold text-white leading-snug line-clamp-2" title={schoolName}>
+                <h1 className="text-sm font-bold portal-sidebar-title leading-snug line-clamp-2" title={schoolName}>
                   {schoolName}
                 </h1>
-                <p className="text-xs text-emerald-200 truncate">{TEACHER_PORTAL_LABEL}</p>
+                <p className="text-xs portal-sidebar-muted truncate">{TEACHER_PORTAL_LABEL}</p>
               </div>
             </div>
             <button
               onClick={toggleSidebar}
-              className="flex-shrink-0 p-2 hover:bg-emerald-600 rounded-lg transition-all duration-300 mt-0.5"
+              className="hidden lg:flex flex-shrink-0 portal-sidebar-btn p-2 rounded-lg transition-all duration-300 mt-0.5"
               title="Collapse Menu"
             >
-              <FiChevronsLeft size={20} className="text-emerald-200" />
+              <FiChevronsLeft size={20} className="portal-sidebar-muted" />
             </button>
           </div>
         )}
@@ -129,30 +129,27 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             <Link
               key={item.name}
               href={item.path}
-              className={`group relative flex items-center my-1 px-3 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-emerald-100 hover:bg-emerald-600 hover:text-white'
-              } ${isCollapsed ? 'justify-center' : ''}`}
-              title={isCollapsed ? item.name : ''}
+              onClick={() => onMobileClose?.()}
+              className={portalNavLinkClass(isActive, displayCollapsed)}
+              title={displayCollapsed ? item.name : ''}
             >
-              <item.icon className={`flex-shrink-0 ${isCollapsed ? '' : 'mr-3'}`} size={20} />
-              {!isCollapsed && <span className="text-sm font-medium truncate flex-1">{item.name}</span>}
+              <item.icon className={`flex-shrink-0 ${displayCollapsed ? '' : 'mr-3'}`} size={20} />
+              {!displayCollapsed && <span className="text-sm font-medium truncate flex-1">{item.name}</span>}
             </Link>
           )
         })}
       </nav>
 
-      <div className="p-3 border-t border-emerald-600">
+      <div className="p-3 border-t portal-sidebar-divider">
         <button
           onClick={handleLogout}
-          className={`group relative flex items-center w-full px-3 py-3 rounded-lg transition-all duration-200 text-emerald-100 hover:bg-emerald-600 hover:text-white ${
-            isCollapsed ? 'justify-center' : ''
+          className={`portal-sidebar-btn group relative flex items-center w-full px-3 py-3 rounded-lg transition-all duration-200 ${
+            displayCollapsed ? 'justify-center' : ''
           }`}
-          title={isCollapsed ? 'Logout' : ''}
+          title={displayCollapsed ? 'Logout' : ''}
         >
-          <FiLogOut className={`flex-shrink-0 ${isCollapsed ? '' : 'mr-3'}`} size={20} />
-          {!isCollapsed && <span className="text-sm font-medium truncate flex-1">Logout</span>}
+          <FiLogOut className={`flex-shrink-0 ${displayCollapsed ? '' : 'mr-3'}`} size={20} />
+          {!displayCollapsed && <span className="text-sm font-medium truncate flex-1">Logout</span>}
         </button>
       </div>
     </div>

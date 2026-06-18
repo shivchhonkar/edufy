@@ -17,12 +17,13 @@ import {
   FiChevronDown,
   FiChevronRight,
 } from 'react-icons/fi';
+import type { PortalSidebarProps } from '@edulakhya/ui';
 
-interface SidebarProps {
+interface SidebarProps extends PortalSidebarProps {
   onToggle?: (collapsed: boolean) => void;
 }
 
-export default function Sidebar({ onToggle }: SidebarProps) {
+export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { settings } = useSettings();
   const schoolLogo = settings.logo_url;
@@ -76,14 +77,16 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     return group?.items.some((item) => isNavLinkActive(pathname, item.path)) ?? false;
   };
 
+  const displayCollapsed = isCollapsed && !mobileOpen;
+
   return (
     <div
-      className={`sidebar-container flex-shrink-0 h-full bg-gray-50 border-r border-gray-200 text-gray-700 overflow-y-auto transition-all duration-300 z-40 text-sm shadow-sm ${
-        isCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
-      }`}
+      className={`sidebar-container flex-shrink-0 h-full bg-gray-50 border-r border-gray-200 text-gray-700 overflow-y-auto transition-transform duration-300 z-50 text-sm shadow-sm fixed inset-y-0 left-0 lg:relative ${
+        displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
+      } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
-      <div className={`border-b border-gray-200 ${isCollapsed ? 'px-3 py-4' : 'px-4 py-4'}`}>
-        {isCollapsed ? (
+      <div className={`border-b border-gray-200 ${displayCollapsed ? 'px-3 py-4' : 'px-4 py-4'}`}>
+        {displayCollapsed ? (
           <div className="flex flex-col items-center gap-3">
             <Link
               href="/dashboard"
@@ -94,7 +97,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             </Link>
             <button
               onClick={toggleSidebar}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300"
+              className="hidden lg:block p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300"
               title="Expand Menu"
             >
               <FiMenu size={20} className="text-primary-600" />
@@ -121,7 +124,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             </Link>
             <button
               onClick={toggleSidebar}
-              className="relative mt-0.5 p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300 group flex-shrink-0"
+              className="hidden lg:flex relative mt-0.5 p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300 group flex-shrink-0"
               title="Collapse Menu"
             >
               <FiChevronsLeft size={18} className="text-gray-500" />
@@ -136,7 +139,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
           const expanded = expandedGroups[group.id];
           const active = isGroupActive(group.id);
 
-          if (isCollapsed) {
+          if (displayCollapsed) {
             return (
               <div key={group.id} className="relative group">
                 <button
@@ -160,6 +163,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                       <Link
                         key={`${group.id}-${item.path}`}
                         href={item.path}
+                        onClick={() => onMobileClose?.()}
                         className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
                           isNavLinkActive(pathname, item.path)
                             ? 'bg-primary-50 text-primary-700 font-medium'
@@ -188,12 +192,12 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                 onClick={() => toggleGroup(group.id)}
                 className={`sidebar-nav-link flex items-center w-full px-4 py-2 transition-colors ${
                   active
-                    ? 'text-primary-700'
+                    ? 'text-primary-700 font-semibold'
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
                 <Icon className="sidebar-nav-icon w-4 h-4 flex-shrink-0 text-gray-400" />
-                <span className="whitespace-nowrap flex-1 text-left text-[13px] font-semibold uppercase tracking-wide leading-snug ml-2">
+                <span className="whitespace-nowrap flex-1 text-left text-[13px] uppercase tracking-wide leading-snug ml-2">
                   {group.title}
                 </span>
                 {expanded ? (
@@ -215,6 +219,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
                       <Link
                         key={`${group.id}-${item.path}`}
                         href={item.path}
+                        onClick={() => onMobileClose?.()}
                         className={`flex items-center gap-2.5 pl-8 pr-4 py-1.5 text-sm transition-colors ${
                           itemActive
                             ? 'text-primary-700 bg-primary-50 border-r-2 border-primary-600 font-medium'

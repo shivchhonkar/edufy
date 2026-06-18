@@ -19,8 +19,9 @@ import SchoolLogo from '@/components/SchoolLogo';
 import { useSchoolBranding } from '@/contexts/SchoolBrandingContext';
 import { PARENT_PORTAL_LABEL } from '@/lib/site-seo';
 import { isModuleAllowed, type PortalPermissionMap } from '@/lib/portal-access';
+import { getPortalSidebarDrawerClasses, portalNavLinkClass, type PortalSidebarProps } from '@edulakhya/ui';
 
-interface SidebarProps {
+interface SidebarProps extends PortalSidebarProps {
   onToggle?: (collapsed: boolean) => void;
 }
 
@@ -31,7 +32,7 @@ type MenuItem = {
   moduleKey: string;
 };
 
-export default function Sidebar({ onToggle }: SidebarProps) {
+export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { branding } = useSchoolBranding();
@@ -139,6 +140,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     { name: 'Homework', icon: FiBook, path: selectedChildId ? `/homework/${selectedChildId}` : '/dashboard', moduleKey: 'homework' },
     { name: 'Fees', icon: RupeeIcon, path: selectedChildId ? `/fees/${selectedChildId}` : '/dashboard', moduleKey: 'fees' },
     { name: 'Attendance', icon: FiCalendar, path: selectedChildId ? `/attendance/${selectedChildId}` : '/dashboard', moduleKey: 'attendance' },
+    { name: 'Calendar', icon: FiCalendar, path: '/calendar', moduleKey: 'calendar' },
     { name: 'Results', icon: FiAward, path: '/results', moduleKey: 'results' },
     { name: 'Report Card', icon: FiFileText, path: selectedChildId ? `/grades/${selectedChildId}` : '/dashboard', moduleKey: 'report_card' },
   ];
@@ -162,19 +164,15 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     router.push('/login');
   };
 
+  const displayCollapsed = isCollapsed && !mobileOpen;
+
   return (
     <div 
-      className={`sidebar-container h-full text-white fixed left-0 top-0 overflow-y-auto transition-all duration-300 z-50 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-      style={{ 
-        backgroundColor: '#1e40af', // blue-700
-        color: 'white'
-      }}
+      className={getPortalSidebarDrawerClasses(mobileOpen, isCollapsed, 'portal-sidebar')}
     >
       {/* Header */}
-      <div className={isCollapsed ? 'p-4' : 'px-5 py-4'}>
-        {isCollapsed ? (
+      <div className={displayCollapsed ? 'p-4' : 'px-5 py-4'}>
+        {displayCollapsed ? (
           <div className="flex flex-col items-center gap-3">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/95 p-1 shadow-sm"
@@ -188,10 +186,10 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             </div>
             <button
               onClick={toggleSidebar}
-              className="relative p-2 hover:bg-blue-600 rounded-lg transition-all duration-300"
+              className="relative hidden lg:block portal-sidebar-btn p-2 rounded-lg transition-all duration-300"
               title="Expand Menu"
             >
-              <FiMenu size={22} className="text-blue-200" />
+              <FiMenu size={22} className="portal-sidebar-muted" />
             </button>
           </div>
         ) : (
@@ -202,20 +200,20 @@ export default function Sidebar({ onToggle }: SidebarProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <h1
-                  className="text-sm font-bold text-white leading-snug line-clamp-2"
+                  className="text-sm font-bold portal-sidebar-title leading-snug line-clamp-2"
                   title={schoolName}
                 >
                   {schoolName}
                 </h1>
-                <p className="text-xs text-blue-200 truncate">{PARENT_PORTAL_LABEL}</p>
+                <p className="text-xs portal-sidebar-muted truncate">{PARENT_PORTAL_LABEL}</p>
               </div>
             </div>
             <button
               onClick={toggleSidebar}
-              className="flex-shrink-0 p-2 hover:bg-blue-600 rounded-lg transition-all duration-300 mt-0.5"
+              className="hidden lg:flex flex-shrink-0 portal-sidebar-btn p-2 rounded-lg transition-all duration-300 mt-0.5"
               title="Collapse Menu"
             >
-              <FiChevronsLeft size={20} className="text-blue-200" />
+              <FiChevronsLeft size={20} className="portal-sidebar-muted" />
             </button>
           </div>
         )}
@@ -229,26 +227,23 @@ export default function Sidebar({ onToggle }: SidebarProps) {
             <Link
               key={item.name}
               href={item.path}
-              className={`group relative flex items-center my-1 px-3 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-blue-100 hover:bg-blue-600 hover:text-white'
-              } ${isCollapsed ? 'justify-center' : ''}`}
-              title={isCollapsed ? item.name : ''}
+              onClick={() => onMobileClose?.()}
+              className={portalNavLinkClass(isActive, displayCollapsed)}
+              title={displayCollapsed ? item.name : ''}
             >
               <item.icon 
-                className={`flex-shrink-0 ${isCollapsed ? '' : 'mr-3'}`} 
+                className={`flex-shrink-0 ${displayCollapsed ? '' : 'mr-3'}`} 
                 size={20}
                 style={{ minWidth: '20px' }}
               />
-              {!isCollapsed && (
+              {!displayCollapsed && (
                 <span className="text-sm font-medium truncate flex-1">
                   {item.name}
                 </span>
               )}
               
               {/* Tooltip for collapsed state */}
-              {isCollapsed && (
+              {displayCollapsed && (
                 <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
                   {item.name}
                   <div className="absolute top-1/2 right-full -translate-y-1/2 w-0 h-0 border-4 border-transparent border-r-gray-800"></div>
@@ -260,27 +255,27 @@ export default function Sidebar({ onToggle }: SidebarProps) {
       </nav>
 
       {/* Logout Button */}
-      <div className="p-3 border-t border-blue-600">
+      <div className="p-3 border-t portal-sidebar-divider">
         <button
           onClick={handleLogout}
-          className={`group relative flex items-center w-full px-3 py-3 rounded-lg transition-all duration-200 text-blue-100 hover:bg-blue-600 hover:text-white ${
-            isCollapsed ? 'justify-center' : ''
+          className={`portal-sidebar-btn group relative flex items-center w-full px-3 py-3 rounded-lg transition-all duration-200 ${
+            displayCollapsed ? 'justify-center' : ''
           }`}
-          title={isCollapsed ? 'Logout' : ''}
+          title={displayCollapsed ? 'Logout' : ''}
         >
           <FiLogOut 
-            className={`flex-shrink-0 ${isCollapsed ? '' : 'mr-3'}`} 
+            className={`flex-shrink-0 ${displayCollapsed ? '' : 'mr-3'}`} 
             size={20}
             style={{ minWidth: '20px' }}
           />
-          {!isCollapsed && (
+          {!displayCollapsed && (
             <span className="text-sm font-medium truncate flex-1">
               Logout
             </span>
           )}
           
           {/* Tooltip for collapsed state */}
-          {isCollapsed && (
+          {displayCollapsed && (
             <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
               Logout
               <div className="absolute top-1/2 right-full -translate-y-1/2 w-0 h-0 border-4 border-transparent border-r-gray-800"></div>

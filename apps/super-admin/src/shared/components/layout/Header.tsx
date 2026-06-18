@@ -15,8 +15,10 @@ import {
   FiSettings,
   FiSliders,
   FiTool,
+  FiMenu,
 } from 'react-icons/fi'
 import { clearClientSession, getClientUser, getClientUserRole, isAdminRole } from '@/lib/client-auth'
+import { getTimeOfDayGreeting } from '@edulakhya/utils'
 import {
   getReadTransactionIds,
   markAllTransactionsRead,
@@ -81,13 +83,6 @@ function searchTypeBadge(type: QuickSearchResult['type']) {
   return 'bg-blue-100 text-blue-700'
 }
 
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good Morning'
-  if (hour < 17) return 'Good Afternoon'
-  return 'Good Evening'
-}
-
 function formatRole(role: string): string {
   return role
     .replace(/_/g, ' ')
@@ -121,7 +116,7 @@ const ADMIN_PROFILE_LINKS = [
   { href: '/settings/reports', label: 'Report Settings', icon: FiFileText },
 ] as const
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter()
   const searchRef = useRef<HTMLInputElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
@@ -130,6 +125,7 @@ export default function Header() {
   const [user, setUser] = useState<Record<string, unknown> | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [greeting, setGreeting] = useState('Welcome')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<QuickSearchResult[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
@@ -169,6 +165,24 @@ export default function Header() {
     setShortcutLabel(/Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘K' : 'Ctrl+K')
     loadRecentTransactions()
   }, [loadRecentTransactions])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const refreshGreeting = () => setGreeting(getTimeOfDayGreeting())
+    refreshGreeting()
+
+    const intervalId = window.setInterval(refreshGreeting, 60_000)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshGreeting()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [mounted])
 
   useEffect(() => {
     const query = searchQuery.trim()
@@ -306,11 +320,21 @@ export default function Header() {
   }
 
   return (
-    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-4">
-      <div className="flex items-center gap-4 lg:gap-6">
-        <div className="min-w-0 shrink-0">
-          <h1 className="text-xl text-gray-900 truncate">
-            {mounted ? `${getGreeting()}, ${displayName}` : `Welcome, ${displayName}`}
+    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-3 sm:py-4">
+      <div className="flex items-center gap-3 lg:gap-6">
+        {onMenuClick ? (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 lg:hidden"
+            aria-label="Open menu"
+          >
+            <FiMenu className="h-5 w-5" />
+          </button>
+        ) : null}
+        <div className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
+          <h1 className="text-base sm:text-xl text-gray-900 truncate">
+            {mounted ? `${greeting}, ${displayName}` : `Welcome, ${displayName}`}
             <span aria-hidden className="ml-1.5">
               👋
             </span>

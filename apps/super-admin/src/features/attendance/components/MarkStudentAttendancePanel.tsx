@@ -21,6 +21,7 @@ import {
 import { useDialog } from '@/shared/context/DialogContext';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
 import { sortClassesByName } from '@/lib/class-sort';
+import { getCalendarDateString } from '@edulakhya/utils';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'on_leave';
 type MarkMode = 'manual' | 'bulk';
@@ -191,7 +192,7 @@ const MarkStudentAttendancePanel = forwardRef<
   ref
 ) {
   const { alert, confirm } = useDialog();
-  const today = new Date().toISOString().split('T')[0];
+  const today = getCalendarDateString();
 
   const [markDate, setMarkDate] = useState(today);
   const [classId, setClassId] = useState('');
