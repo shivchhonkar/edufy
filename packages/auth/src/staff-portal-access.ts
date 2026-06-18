@@ -1,5 +1,5 @@
 export const STAFF_ESS_MODULE_KEYS = ['attendance', 'leaves', 'payslips'] as const
-export const STAFF_EXTERNAL_PORTAL_KEYS = ['transport', 'fees', 'inventory'] as const
+export const STAFF_EXTERNAL_PORTAL_KEYS = ['transport', 'fees', 'inventory', 'teacher'] as const
 
 export type StaffExternalPortalKey = (typeof STAFF_EXTERNAL_PORTAL_KEYS)[number]
 
@@ -15,6 +15,7 @@ export function defaultStaffPortalPermissions(): Record<string, boolean> {
     transport: false,
     fees: false,
     inventory: false,
+    teacher: false,
   }
 }
 
@@ -92,4 +93,5 @@ export const PORTAL_LOGIN_PRIVILEGED_ROLES: Record<PortalLoginModule, string[]> 
   transport: ['super_admin', 'admin', 'transport_manager'],
   fees: ['super_admin', 'admin'],
   inventory: ['super_admin', 'admin', 'inventory_manager'],
+  teacher: ['super_admin', 'admin', 'teacher'],
 }

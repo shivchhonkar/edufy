@@ -38,6 +38,13 @@ export const STAFF_EXTERNAL_PORTALS = [
     path: '/login',
     description: 'Manage stock, sales, and inventory transactions',
   },
+  {
+    key: 'teacher',
+    label: 'Teacher Portal',
+    port: 7005,
+    path: '/login',
+    description: 'Mark attendance, assign homework, and apply for leave',
+  },
 ] as const
 
 export const STAFF_PORTAL_MODULES = [...STAFF_ESS_MODULES, ...STAFF_EXTERNAL_PORTALS] as const
