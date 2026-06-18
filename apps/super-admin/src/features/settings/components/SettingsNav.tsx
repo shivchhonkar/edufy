@@ -10,6 +10,7 @@ const links = [
   { href: '/settings/user-access', label: 'User Access' },
   { href: '/settings/staff-access', label: 'Staff Access' },
   { href: '/settings/reports', label: 'Report Settings' },
+  { href: '/settings/theme', label: 'Theme Settings' },
 ];
 
 function navLinkClass(active: boolean) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
+import { studentCountSearchSql, studentSearchSql } from '@/lib/student-search';
 import type { RequestDb } from '@/lib/request-db';
 import { Student } from '@/shared/types';
 import { generateAdmissionNumber, getPaginationParams } from '@/lib/utils';
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       paramCount++;
-      queryText += ` AND (s.first_name ILIKE $${paramCount} OR s.last_name ILIKE $${paramCount} OR s.admission_number ILIKE $${paramCount} OR s.parent_phone ILIKE $${paramCount})`;
+      queryText += ` AND ${studentSearchSql(paramCount)}`;
       queryParams.push(`%${search}%`);
     }
 
@@ -169,7 +170,7 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       countParamCount++;
-      countQuery += ` AND (first_name ILIKE $${countParamCount} OR last_name ILIKE $${countParamCount} OR admission_number ILIKE $${countParamCount} OR parent_phone ILIKE $${countParamCount})`;
+      countQuery += ` AND ${studentCountSearchSql(countParamCount)}`;
       countParams.push(`%${search}%`);
     }
 

@@ -3,14 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 249, 250, 251;
-  --background-end-rgb: 255, 255, 255;
+  --theme-primary-50: #EBF5FC;
+  --theme-primary-100: #D1EAF9;
+  --theme-primary-200: #A3D5F3;
+  --theme-primary-300: #6BC0ED;
+  --theme-primary-400: #4DC4F0;
+  --theme-primary-500: #2380D6;
+  --theme-primary-600: #2380D6;
+  --theme-primary-700: #1A73C7;
+  --theme-primary-800: #0D3D75;
+  --theme-primary-900: #082F5C;
+  --theme-secondary: #4DC4F0;
+  --theme-accent: #2380D6;
+  --theme-brand-dark: #0D3D75;
+  --theme-bg: #f4f7f9;
+  --theme-surface: #ffffff;
+  --theme-font: #111827;
+  --theme-muted-font: #6b7280;
+  --theme-sidebar-bg: #0D3D75;
+  --theme-sidebar-text: #ffffff;
+  --theme-sidebar-active-bg: rgba(77, 196, 240, 0.18);
+  --theme-sidebar-active-text: #4DC4F0;
+  --theme-header-bg: #ffffff;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  color: var(--theme-font);
+  background: var(--theme-bg);
 }
 
 /* Ensure input fields always have proper contrast */
@@ -25,20 +44,63 @@ input, textarea, select {
   }
 }
 
-/* Sidebar — light theme */
+.theme-header {
+  background-color: var(--theme-header-bg) !important;
+}
+
+.theme-workspace {
+  background-color: var(--theme-bg) !important;
+}
+
+/* Sidebar — themeable */
 .sidebar-container {
-  background-color: #ffffff !important;
-  color: #374151 !important;
+  background-color: var(--theme-sidebar-bg) !important;
+  color: var(--theme-sidebar-text) !important;
+  border-color: color-mix(in srgb, var(--theme-sidebar-text) 12%, transparent) !important;
 }
 
-/* Ensure sidebar navigation items have proper flex layout */
-.sidebar-container nav a {
-  flex-direction: row !important;
-  align-items: center !important;
-  display: flex !important;
+.sidebar-container .border-gray-200,
+.sidebar-container .border-gray-100 {
+  border-color: color-mix(in srgb, var(--theme-sidebar-text) 12%, transparent) !important;
 }
 
-/* Sidebar nav — icon + label spacing */
+.sidebar-container .text-gray-900,
+.sidebar-container .text-gray-800,
+.sidebar-container .text-gray-700,
+.sidebar-container .text-gray-600,
+.sidebar-container .text-gray-500 {
+  color: var(--theme-sidebar-text) !important;
+}
+
+.sidebar-container .hover\:bg-gray-50:hover,
+.sidebar-container .hover\:bg-gray-100:hover {
+  background-color: color-mix(in srgb, var(--theme-sidebar-text) 8%, transparent) !important;
+}
+
+.sidebar-container .hover\:bg-white\/80:hover,
+.sidebar-container .hover\:border-primary-200:hover,
+.sidebar-container .hover\:bg-primary-50\/40:hover {
+  background-color: color-mix(in srgb, var(--theme-sidebar-text) 10%, transparent) !important;
+}
+
+.sidebar-container .bg-white,
+.sidebar-container .bg-gray-50 {
+  background-color: color-mix(in srgb, var(--theme-sidebar-text) 10%, var(--theme-sidebar-bg)) !important;
+}
+
+.sidebar-container .bg-primary-50 {
+  background-color: var(--theme-sidebar-active-bg) !important;
+}
+
+.sidebar-container .text-primary-600,
+.sidebar-container .text-primary-700 {
+  color: var(--theme-sidebar-active-text) !important;
+}
+
+.sidebar-container .border-primary-600 {
+  border-color: var(--theme-secondary) !important;
+}
+
 .sidebar-container nav a svg,
 .sidebar-container nav button svg.sidebar-nav-icon {
   margin-right: 12px !important;
@@ -46,6 +108,7 @@ input, textarea, select {
   width: 20px !important;
   height: 20px !important;
 }
+
 .sidebar-container .sidebar-nav-link svg.sidebar-nav-icon {
   flex-shrink: 0 !important;
   stroke-width: 1.75;
@@ -55,24 +118,27 @@ input, textarea, select {
   margin-right: 0 !important;
 }
 
+.sidebar-container nav a {
+  flex-direction: row !important;
+  align-items: center !important;
+  display: flex !important;
+}
+
 /* Ensure modals appear above sidebar */
 .modal-overlay {
   z-index: 60 !important;
 }
 
-/* Ensure modal content appears above overlay */
 .modal-content {
   z-index: 61 !important;
 }
 
-/* Confirm dialogs must sit above sidebar (z-50) and all drawers */
 .confirm-dialog-overlay {
   z-index: 99999 !important;
   position: fixed;
   inset: 0;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -91,7 +157,6 @@ input, textarea, select {
   background: #9ca3af;
 }
 
-/* Custom scrollbar for holidays slider */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -105,7 +170,6 @@ input, textarea, select {
   background: #a5b4fc;
 }
 
-/* Horizontal scrollbar for class names */
 .class-names-scroll::-webkit-scrollbar {
   height: 6px;
 }
@@ -124,7 +188,6 @@ input, textarea, select {
   background: #9ca3af;
 }
 
-/* Shake animation for invalid fields */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
@@ -134,4 +197,3 @@ input, textarea, select {
 .shake {
   animation: shake 0.5s ease-in-out;
 }
-

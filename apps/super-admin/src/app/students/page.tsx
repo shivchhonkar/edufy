@@ -61,6 +61,13 @@ function StudentsPageContent() {
   }, []);
 
   useEffect(() => {
+    const query = searchParams.get('search')?.trim();
+    if (query) {
+      setSearch(query);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     fetchStudents();
   }, [search, classFilter, sectionFilter]);
 
