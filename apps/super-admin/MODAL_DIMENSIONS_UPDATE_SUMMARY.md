@@ -6,7 +6,7 @@ Apply consistent modal dimensions to all modals:
 ```css
 style={{ 
   width: sidebarCollapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 256px)', 
-  height: 'calc(100vh - 60px)' 
+  height: 'calc(100vh - 20px)' 
 }}
 ```
 
@@ -54,13 +54,13 @@ style={{
   sidebarCollapsed ? 'left-20' : 'left-64'
 }`} style={{ 
   width: sidebarCollapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 256px)', 
-  height: 'calc(100vh - 60px)' 
+  height: 'calc(100vh - 20px)' 
 }}>
 ```
 
 ### **Modal (Inner div):**
 ```tsx
-<div className="bg-white shadow-2xl w-full h-full overflow-y-auto rounded-tl-xl" style={{ height: 'calc(100vh - 60px)' }}>
+<div className="bg-white shadow-2xl w-full h-full overflow-y-auto rounded-tl-xl" style={{ height: 'calc(100vh - 20px)' }}>
 ```
 
 ---

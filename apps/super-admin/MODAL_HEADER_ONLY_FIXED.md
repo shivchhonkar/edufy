@@ -12,7 +12,7 @@
 ### **Modal Structure:**
 
 ```tsx
-<div className="bg-white shadow-2xl rounded-tl-xl w-full flex flex-col" style={{ height: 'calc(100vh - 60px)' }}>
+<div className="bg-white shadow-2xl rounded-tl-xl w-full flex flex-col" style={{ height: 'calc(100vh - 20px)' }}>
   
   {/* Fixed Header */}
   <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">

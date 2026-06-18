@@ -390,7 +390,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   return (
     <div className={`fixed top-3 bottom-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
       sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 60px)' }}>
+    }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 20px)' }}>
         <div ref={modalContentRef} className="bg-white shadow-2xl rounded-tl-xl w-full flex flex-col" style={{ height: 'calc(100vh - 20px)' }}>
         {/* Fixed Header */}
         <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">
