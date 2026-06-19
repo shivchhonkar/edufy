@@ -5,6 +5,7 @@ import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { getCalendarDateString } from '@edulakhya/utils'
 import { getAuthHeaders } from '@/lib/client-auth'
 import type { CalendarEvent } from '@/lib/school-calendar'
+import ParentEventListRow from '@/features/calendar/components/ParentEventListRow'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -31,20 +32,8 @@ function formatDisplayDate(date: string) {
   })
 }
 
-function formatEventDateRange(event: CalendarEvent): string {
-  if (event.start_date === event.end_date) {
-    return formatDisplayDate(event.start_date)
-  }
-  return `${formatDisplayDate(event.start_date)} – ${formatDisplayDate(event.end_date)}`
-}
-
 function eventOverlapsDate(event: CalendarEvent, date: string): boolean {
   return event.start_date <= date && event.end_date >= date
-}
-
-function eventTypeLabel(event: CalendarEvent): string {
-  if (event.kind === 'holiday') return 'Holiday'
-  return event.event_type
 }
 
 function toLocalDateKey(d: Date): string {
@@ -52,50 +41,6 @@ function toLocalDateKey(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
-}
-
-function EventCard({
-  event,
-  highlighted = false,
-  muted = false,
-}: {
-  event: CalendarEvent
-  highlighted?: boolean
-  muted?: boolean
-}) {
-  return (
-    <li
-      className={`rounded-xl border portal-divider p-3 sm:p-4 transition-colors ${
-        highlighted
-          ? 'border-[var(--theme-primary)]/40 bg-primary-50/70'
-          : muted
-            ? 'opacity-75'
-            : ''
-      }`}
-    >
-      <span
-        className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize ${eventColor(event)}`}
-      >
-        {eventTypeLabel(event)}
-      </span>
-      <p className="font-medium portal-text mt-2">{event.title}</p>
-      <p className="text-xs portal-text-muted mt-1">{formatEventDateRange(event)}</p>
-      {!event.all_day && event.start_time && (
-        <p className="text-xs portal-text-muted mt-0.5">
-          {event.start_time.slice(0, 5)}
-          {event.end_time ? ` – ${event.end_time.slice(0, 5)}` : ''}
-        </p>
-      )}
-      {event.location && (
-        <p className="text-sm portal-text-muted mt-2">Venue: {event.location}</p>
-      )}
-      {event.description && (
-        <p className="text-sm portal-text-muted mt-2 leading-relaxed line-clamp-3">
-          {event.description}
-        </p>
-      )}
-    </li>
-  )
 }
 
 export default function ParentCalendarView() {
@@ -316,9 +261,21 @@ export default function ParentCalendarView() {
                 <div className="h-16 rounded-xl bg-black/5 animate-pulse" />
               </div>
             ) : todayEvents.length > 0 ? (
-              <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {todayEvents.map((event) => (
-                  <EventCard key={`today-${event.kind}-${event.id}`} event={event} highlighted />
+              <ul className="divide-y portal-divider max-h-52 overflow-y-auto -mx-1">
+                {todayEvents.map((event, index) => (
+                  <ParentEventListRow
+                    key={`today-${event.kind}-${event.id}`}
+                    event={{
+                      title: event.title,
+                      start_date: event.start_date,
+                      start_time: event.start_time,
+                      all_day: event.all_day,
+                      event_type: event.event_type,
+                      kind: event.kind,
+                    }}
+                    index={index}
+                    highlighted
+                  />
                 ))}
               </ul>
             ) : (
@@ -355,8 +312,8 @@ export default function ParentCalendarView() {
                 ))}
               </div>
             ) : sortedAllEvents.length > 0 ? (
-              <ul className="space-y-2.5 pb-1">
-                {sortedAllEvents.map((event) => {
+              <ul className="divide-y portal-divider pb-1 -mx-1">
+                {sortedAllEvents.map((event, index) => {
                   const isHighlighted = selectedDate
                     ? eventOverlapsDate(event, selectedDate)
                     : false
@@ -364,9 +321,17 @@ export default function ParentCalendarView() {
                     (item) => item.kind === event.kind && item.id === event.id,
                   )
                   return (
-                    <EventCard
+                    <ParentEventListRow
                       key={`${event.kind}-${event.id}`}
-                      event={event}
+                      event={{
+                        title: event.title,
+                        start_date: event.start_date,
+                        start_time: event.start_time,
+                        all_day: event.all_day,
+                        event_type: event.event_type,
+                        kind: event.kind,
+                      }}
+                      index={index}
                       highlighted={isHighlighted}
                       muted={!isInViewedMonth && !isHighlighted}
                     />

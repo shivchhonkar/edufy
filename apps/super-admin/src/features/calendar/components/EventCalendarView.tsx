@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiPlus } from 'react-icons/fi';
+import { getCalendarDateString } from '@edulakhya/utils';
 import type { CalendarEvent } from '@/lib/school-calendar';
 import AddCalendarEventModal from './AddCalendarEventModal';
+import CalendarEventListRow from './CalendarEventListRow';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -23,27 +25,15 @@ function eventColor(event: CalendarEvent): string {
 
 function formatDisplayDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', {
-    weekday: 'short',
+    weekday: 'long',
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   });
 }
 
-function formatEventDateRange(event: CalendarEvent): string {
-  if (event.start_date === event.end_date) {
-    return formatDisplayDate(event.start_date);
-  }
-  return `${formatDisplayDate(event.start_date)} – ${formatDisplayDate(event.end_date)}`;
-}
-
 function eventOverlapsDate(event: CalendarEvent, date: string): boolean {
   return event.start_date <= date && event.end_date >= date;
-}
-
-function eventTypeLabel(event: CalendarEvent): string {
-  if (event.kind === 'holiday') return `Holiday · ${event.event_type}`;
-  return event.event_type;
 }
 
 export default function EventCalendarView() {
@@ -146,12 +136,19 @@ export default function EventCalendarView() {
     return map;
   }, [monthEvents]);
 
+  const todayKey = getCalendarDateString();
+
   const selectedEvents = useMemo(
     () =>
       selectedDate
         ? allEvents.filter((event) => eventOverlapsDate(event, selectedDate))
         : [],
     [selectedDate, allEvents],
+  );
+
+  const todayEvents = useMemo(
+    () => allEvents.filter((event) => eventOverlapsDate(event, todayKey)),
+    [allEvents, todayKey],
   );
 
   const sortedAllEvents = useMemo(
@@ -206,13 +203,6 @@ export default function EventCalendarView() {
       alert('Failed to delete entry');
     }
   };
-
-  const todayKey = (() => {
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  })();
 
   return (
     <div className="space-y-6">
@@ -301,39 +291,67 @@ export default function EventCalendarView() {
         </div>
 
         <div className="bg-white border rounded-xl shadow-sm p-5 flex flex-col min-h-[28rem] lg:max-h-[calc(100vh-9rem)]">
-          <div className="shrink-0 mb-4">
-            <h3 className="font-semibold text-gray-900">All Events & Holidays</h3>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              {loadingAll ? '…' : `${allEvents.length} total ${allEvents.length === 1 ? 'entry' : 'entries'}`}
-              {!loadingMonth && (
-                <span className="normal-case font-normal text-gray-400">
-                  {' '}
-                  · {monthEventsInView.length} in {monthLabel}
-                </span>
-              )}
-            </p>
-            {selectedDate ? (
-              <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 px-3 py-2">
-                <p className="text-sm text-primary-900">
-                  <span className="font-medium">{formatDisplayDate(selectedDate)}</span>
-                  <span className="text-primary-700">
-                    {' '}
-                    · {selectedEvents.length} {selectedEvents.length === 1 ? 'entry' : 'entries'} this day
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => openCreate(selectedDate)}
-                  className="text-xs text-primary-700 hover:text-primary-800 font-medium shrink-0"
-                >
-                  Add on this day
-                </button>
-              </div>
+          <div className="shrink-0 space-y-4 mb-4">
+            <div>
+              <h3 className="font-semibold text-gray-900">Today&apos;s Events</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{formatDisplayDate(todayKey)}</p>
+            </div>
+
+            {loadingAll ? (
+              <div className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+            ) : todayEvents.length > 0 ? (
+              <ul className="divide-y divide-gray-100 max-h-52 overflow-y-auto -mx-1">
+                {todayEvents.map((event, index) => (
+                  <CalendarEventListRow
+                    key={`today-${event.kind}-${event.id}`}
+                    event={event}
+                    index={index}
+                    highlighted
+                    onEdit={openEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </ul>
             ) : (
-              <p className="mt-2 text-sm text-gray-500">
-                Every event and holiday across all months. Click a date on the calendar to highlight its entries.
+              <p className="text-sm text-gray-500 rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center">
+                No events or holidays scheduled for today.
               </p>
             )}
+
+            <div className="pt-3 border-t border-gray-100">
+              <h3 className="font-semibold text-gray-900">All Events & Holidays</h3>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {loadingAll ? '…' : `${allEvents.length} total ${allEvents.length === 1 ? 'entry' : 'entries'}`}
+                {!loadingMonth && (
+                  <span className="normal-case font-normal text-gray-400">
+                    {' '}
+                    · {monthEventsInView.length} in {monthLabel}
+                  </span>
+                )}
+              </p>
+              {selectedDate ? (
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 px-3 py-2">
+                  <p className="text-sm text-primary-900">
+                    <span className="font-medium">{formatDisplayDate(selectedDate)}</span>
+                    <span className="text-primary-700">
+                      {' '}
+                      · {selectedEvents.length} {selectedEvents.length === 1 ? 'entry' : 'entries'} this day
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openCreate(selectedDate)}
+                    className="text-xs text-primary-700 hover:text-primary-800 font-medium shrink-0"
+                  >
+                    Add on this day
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-gray-500">
+                  Every event and holiday across all months. Click a date on the calendar to highlight its entries.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1">
@@ -344,72 +362,22 @@ export default function EventCalendarView() {
                 ))}
               </div>
             ) : sortedAllEvents.length > 0 ? (
-              <ul className="space-y-2.5 pb-1">
-                {sortedAllEvents.map((event) => {
+              <ul className="divide-y divide-gray-100 pb-1 -mx-1">
+                {sortedAllEvents.map((event, index) => {
                   const isHighlighted = selectedDate ? eventOverlapsDate(event, selectedDate) : false;
                   const isInViewedMonth = monthEventsInView.some(
                     (item) => item.kind === event.kind && item.id === event.id,
                   );
                   return (
-                    <li
+                    <CalendarEventListRow
                       key={`${event.kind}-${event.id}`}
-                      className={`border rounded-lg p-3 transition-colors ${
-                        isHighlighted
-                          ? 'border-primary-300 bg-primary-50/60'
-                          : isInViewedMonth
-                            ? 'border-gray-200 bg-white'
-                            : 'border-gray-200 bg-gray-50/40'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize ${eventColor(event)}`}
-                            >
-                              {eventTypeLabel(event)}
-                            </span>
-                            {event.status && event.status !== 'published' && (
-                              <span className="text-[10px] uppercase tracking-wide text-gray-500">
-                                {event.status}
-                              </span>
-                            )}
-                          </div>
-                          <p className="font-medium text-gray-900">{event.title}</p>
-                          <p className="text-xs text-gray-500 mt-1">{formatEventDateRange(event)}</p>
-                          {!event.all_day && event.start_time && (
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {event.start_time.slice(0, 5)}
-                              {event.end_time ? ` – ${event.end_time.slice(0, 5)}` : ''}
-                            </p>
-                          )}
-                          {event.location && (
-                            <p className="text-xs text-gray-500 mt-1">Venue: {event.location}</p>
-                          )}
-                          {event.description && (
-                            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{event.description}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(event)}
-                            className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded"
-                            aria-label="Edit"
-                          >
-                            <FiEdit2 size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(event)}
-                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                            aria-label="Delete"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </li>
+                      event={event}
+                      index={index}
+                      highlighted={isHighlighted}
+                      muted={!isInViewedMonth && !isHighlighted}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                    />
                   );
                 })}
               </ul>

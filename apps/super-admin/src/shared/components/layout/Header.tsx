@@ -333,13 +333,13 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </button>
         ) : null}
         <div className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
-          <h1 className="text-base sm:text-xl text-gray-900 truncate">
+          <h1 className="text-base sm:text-sm text-gray-900 truncate">
             {mounted ? `${greeting}, ${displayName}` : `Welcome, ${displayName}`}
             <span aria-hidden className="ml-1.5">
               👋
             </span>
           </h1>
-          <p className="mt-0.5 text-sm text-gray-500" suppressHydrationWarning>
+          <p className="mt-0.5 text-xs text-gray-500" suppressHydrationWarning>
             {mounted ? formatHeaderDate(new Date()) : 'Loading date...'}
           </p>
         </div>

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { FiArrowRight, FiPlayCircle } from 'react-icons/fi';
 import { STATS } from '../data/landing-content';
@@ -10,15 +11,12 @@ export default function LandingHero() {
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-brand rounded-full blur-3xl" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 py-20 lg:py-28">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 py-12 sm:py-14 lg:py-16">
+        <div className="grid lg:grid-cols-[1fr_1.15fr] gap-10 lg:gap-12 items-center">
           <div>
-            {/* <span className="inline-block px-4 py-1.5 bg-white/10 border border-white/20 rounded-full text-sm font-medium mb-6">
-              Best School ERP Software in India
-            </span> */}
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl leading-tight mb-6">
-              Complete School Management,{' '}
-              <span className="text-brand-light">One Platform</span>
+            <h1 className="text-3xl sm:text-4xl lg:text-[2.625rem] xl:text-5xl tracking-tight leading-[1.25] sm:leading-[1.12] mb-5 sm:mb-6 max-w-xl">
+              <span className="block">Complete School Management,</span>
+              <span className="block text-brand-light mt-1.5 sm:mt-2">One Platform</span>
             </h1>
             <p className="text-lg text-primary-100 leading-relaxed mb-8 max-w-xl">
               Shribi Edufy is an advanced, user-friendly School ERP for admissions, academics,
@@ -41,30 +39,17 @@ export default function LandingHero() {
           </div>
 
           <div className="hidden lg:block">
-            <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 shadow-2xl">
-              <div className="bg-white rounded-xl p-4 shadow-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                  <span className="ml-2 text-xs text-gray-400">Shribi Edufy Dashboard</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {['Students', 'Fees', 'Staff'].map((label) => (
-                    <div key={label} className="bg-primary-50 rounded-lg p-3 text-center">
-                      <p className="text-2xl text-primary-700">
-                        {label === 'Students' ? '1.2K' : label === 'Fees' ? '₹8L' : '86'}
-                      </p>
-                      <p className="text-[10px] text-gray-500 uppercase">{label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  {[85, 62, 48].map((w, i) => (
-                    <div key={i} className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand rounded-full" style={{ width: `${w}%` }} />
-                    </div>
-                  ))}
+            <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-2.5 shadow-2xl">
+              <div className="bg-white rounded-xl p-2.5 shadow-lg">
+                <div className="relative w-full h-[340px] xl:h-[400px] 2xl:h-[440px] overflow-hidden rounded-lg">
+                  <Image
+                    src="/dashboard-shribi.png"
+                    alt="Shribi Edufy school dashboard preview"
+                    fill
+                    className="object-cover object-top"
+                    sizes="(max-width: 1280px) 52vw, 620px"
+                    priority
+                  />
                 </div>
               </div>
             </div>

@@ -19,6 +19,7 @@ import { formatCurrency } from '@edulakhya/utils'
 import RupeeIcon from '@/components/icons/RupeeIcon'
 import { useSchoolBranding } from '@/contexts/SchoolBrandingContext'
 import { studentFullName } from '@/lib/client-auth'
+import ParentEventListRow from '@/features/calendar/components/ParentEventListRow'
 
 export type DashboardChild = {
   id: number
@@ -62,7 +63,15 @@ export type DashboardStats = {
   }
   exam: { name: string; start_date: string; end_date: string } | null
   notice: { title: string; content: string; published_at?: string } | null
-  events: Array<{ title: string; content?: string; start_date?: string; event_type?: string; kind?: string }>
+  events: Array<{
+    title: string
+    content?: string
+    start_date?: string
+    event_type?: string
+    kind?: string
+    start_time?: string | null
+    all_day?: boolean
+  }>
   transport: { route_name?: string; stop_name?: string; vehicle_number?: string | null } | null
   schedule: Array<{
     period_name: string
@@ -526,21 +535,27 @@ export default function ParentDashboardView({
                 onAction={() => router.push('/calendar')}
               >
                 {stats.events.length > 0 ? (
-                  <ul className="divide-y portal-divider">
-                    {stats.events.map((event, index) => (
-                      <li key={`${event.title}-${index}`} className="py-2 first:pt-0 last:pb-0">
-                        <p className="font-medium portal-text">{event.title}</p>
-                        {event.start_date && (
-                          <p className="text-xs portal-text-muted mt-1">
-                            {new Date(event.start_date).toLocaleDateString('en-IN', {
-                              weekday: 'short',
-                              day: 'numeric',
-                              month: 'short',
-                            })}
-                          </p>
-                        )}
-                      </li>
-                    ))}
+                  <ul className="divide-y portal-divider -mx-1">
+                    {stats.events.map((event, index) =>
+                      event.start_date ? (
+                        <ParentEventListRow
+                          key={`${event.title}-${event.start_date}-${index}`}
+                          event={{
+                            title: event.title,
+                            start_date: event.start_date,
+                            start_time: event.start_time,
+                            all_day: event.all_day,
+                            event_type: event.event_type,
+                            kind: event.kind,
+                          }}
+                          index={index}
+                        />
+                      ) : (
+                        <li key={`${event.title}-${index}`} className="py-2.5">
+                          <p className="font-medium portal-text">{event.title}</p>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 ) : null}
               </InfoCard>

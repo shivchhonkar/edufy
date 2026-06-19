@@ -250,6 +250,8 @@ export async function fetchUpcomingEvents(db: RequestDb) {
       start_date: event.start_date,
       event_type: event.event_type,
       kind: event.kind,
+      start_time: event.start_time,
+      all_day: event.all_day,
     }))
   } catch {
     return []
