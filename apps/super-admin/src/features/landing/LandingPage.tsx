@@ -1,5 +1,6 @@
 import LandingHeader from './components/LandingHeader';
 import LandingHero from './components/LandingHero';
+import LandingWhyChooseUs from './components/LandingWhyChooseUs';
 import LandingAbout from './components/LandingAbout';
 import LandingModules from './components/LandingModules';
 import LandingCta from './components/LandingCta';
@@ -13,6 +14,7 @@ export default function LandingPage() {
       <LandingHeader />
       <main>
         <LandingHero />
+        <LandingWhyChooseUs />
         <LandingAbout />
         <LandingModules />
         <LandingCta />

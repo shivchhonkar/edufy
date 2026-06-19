@@ -211,6 +211,34 @@ export const MODULES: Record<
   ],
 };
 
+export const WHY_CHOOSE_US = [
+  {
+    title: 'Accessible, Anytime, Anywhere',
+    description: 'Cloud-based online software for easy access from school, home, or on the go.',
+  },
+  {
+    title: 'Instant Communication',
+    description: 'Dedicated service managers always ready to help when you need support.',
+  },
+  {
+    title: 'Affordable Price',
+    description: 'No module-wise or hidden charges — simple, predictable pricing for your school.',
+  },
+  {
+    title: 'Increased Transparency',
+    description:
+      'With an easy UI, management need not ask anything from employees — data is visible in real time.',
+  },
+  {
+    title: 'Efficient Time Management',
+    description: 'Workflows tailored as per your school’s requirements to save hours every week.',
+  },
+  {
+    title: 'Secure Data',
+    description: 'OTP-authenticated logins and encrypted passwords keep your school data protected.',
+  },
+];
+
 export const BENEFITS = [
   {
     title: 'All-in-One Platform',
@@ -232,6 +260,7 @@ export const BENEFITS = [
 
 export const NAV_LINKS = [
   { href: '#modules', label: 'Modules' },
+  { href: '#why-choose-us', label: 'Why Us' },
   { href: '#features', label: 'Features' },
   { href: '#about', label: 'About' },
   { href: '#contact', label: 'Contact' },
