@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
+import { usePreselectStudentIdsFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
 import StudentIdCard, {
   type StudentIdCardSchoolInfo,
 } from '@/features/students/components/StudentIdCard';
@@ -37,6 +38,20 @@ interface Section {
 }
 
 export default function StudentIdCardsPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+        </DashboardLayout>
+      }
+    >
+      <StudentIdCardsPageContent />
+    </Suspense>
+  );
+}
+
+function StudentIdCardsPageContent() {
   const { alert } = useDialog();
   const { settings } = useSettings();
   const [students, setStudents] = useState<Student[]>([]);
@@ -130,6 +145,8 @@ export default function StudentIdCardsPage() {
     () => students.filter((s) => selectedIds.has(s.id)),
     [students, selectedIds]
   );
+
+  usePreselectStudentIdsFromUrl(students, setSelectedIds);
 
   const toggleStudent = (id: number) => {
     setSelectedIds((prev) => {

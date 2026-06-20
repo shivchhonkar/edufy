@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureExamsSchema, fetchExamSubjects } from '@/lib/ensure-exams-schema';
+import { ensureExamResultEngineSchema } from '@/lib/ensure-exam-result-engine';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureExamsSchema(db);
+    await ensureExamResultEngineSchema(db);
     const searchParams = request.nextUrl.searchParams;
     const classId = searchParams.get('class_id');
     const subjectId = searchParams.get('subject_id');
@@ -27,7 +29,11 @@ export async function GET(request: NextRequest) {
            WHERE es.exam_id = e.id),
           s.name
         ) as subject_names,
-        (SELECT COUNT(*) FROM exam_subjects WHERE exam_id = e.id) as subject_count
+        (SELECT COUNT(*) FROM exam_subjects WHERE exam_id = e.id) as subject_count,
+        COALESCE(e.result_workflow_status, 'published') as result_workflow_status,
+        e.last_compiled_at,
+        e.published_at as results_published_at,
+        COALESCE(e.academic_year, c.academic_year, 'Unassigned Session') AS session_label
       FROM exams e
       LEFT JOIN classes c ON e.class_id = c.id
       LEFT JOIN subjects s ON e.subject_id = s.id
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureExamsSchema(db);
+    await ensureExamResultEngineSchema(db);
 
     const body = await request.json();
     const {
@@ -92,6 +99,7 @@ export async function POST(request: NextRequest) {
       exam_date,
       total_marks,
       passing_marks,
+      subject_marks,
       created_by,
     } = body;
 
@@ -109,8 +117,51 @@ export async function POST(request: NextRequest) {
     }
 
     const academicYear = await resolveAcademicYear(db, null);
-    const marks = parseInt(String(total_marks), 10);
-    const passMarks = parseInt(String(passing_marks), 10);
+    const defaultTotal = parseInt(String(total_marks), 10);
+    const defaultPass = parseInt(String(passing_marks), 10);
+
+    const marksBySubject = new Map<number, { total_marks: number; passing_marks: number }>();
+    if (Array.isArray(subject_marks)) {
+      for (const entry of subject_marks) {
+        const sid = parseInt(String(entry.subject_id), 10);
+        if (!Number.isFinite(sid)) continue;
+        marksBySubject.set(sid, {
+          total_marks: parseInt(String(entry.total_marks), 10),
+          passing_marks: parseInt(String(entry.passing_marks), 10),
+        });
+      }
+    }
+
+    const resolvedSubjects = ids.map((sid) => {
+      const custom = marksBySubject.get(sid);
+      return {
+        subject_id: sid,
+        total_marks: custom?.total_marks ?? defaultTotal,
+        passing_marks: custom?.passing_marks ?? defaultPass,
+      };
+    });
+
+    for (const entry of resolvedSubjects) {
+      if (!entry.total_marks || !entry.passing_marks) {
+        return NextResponse.json(
+          { success: false, error: 'Each subject must have total marks and passing marks' },
+          { status: 400 }
+        );
+      }
+      if (entry.passing_marks > entry.total_marks) {
+        return NextResponse.json(
+          { success: false, error: 'Passing marks cannot exceed total marks for any subject' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const examTotalMarks = Math.max(...resolvedSubjects.map((s) => s.total_marks));
+    const examPassMarks = resolvedSubjects.every(
+      (s) => s.passing_marks === resolvedSubjects[0].passing_marks,
+    )
+      ? resolvedSubjects[0].passing_marks
+      : defaultPass;
 
     await db.query('BEGIN');
     try {
@@ -118,8 +169,8 @@ export async function POST(request: NextRequest) {
         `INSERT INTO exams (
           name, class_id, subject_id, exam_type, exam_date,
           total_marks, passing_marks, created_by, academic_year,
-          start_date, end_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $5, $5)
+          start_date, end_date, result_workflow_status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $5, $5, 'draft')
         RETURNING *`,
         [
           name,
@@ -127,8 +178,8 @@ export async function POST(request: NextRequest) {
           ids[0],
           exam_type,
           exam_date,
-          marks,
-          passMarks,
+          examTotalMarks,
+          examPassMarks,
           created_by || null,
           academicYear,
         ]
@@ -136,14 +187,14 @@ export async function POST(request: NextRequest) {
 
       const exam = result.rows[0] as { id: number };
 
-      for (const sid of ids) {
+      for (const entry of resolvedSubjects) {
         await db.query(
           `INSERT INTO exam_subjects (exam_id, subject_id, total_marks, passing_marks, max_marks, pass_marks)
            VALUES ($1, $2, $3, $4, $3, $4)
            ON CONFLICT (exam_id, subject_id) DO UPDATE
            SET total_marks = EXCLUDED.total_marks, passing_marks = EXCLUDED.passing_marks,
                max_marks = EXCLUDED.max_marks, pass_marks = EXCLUDED.pass_marks`,
-          [exam.id, sid, marks, passMarks]
+          [exam.id, entry.subject_id, entry.total_marks, entry.passing_marks]
         );
       }
 

@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
 import UploadResultsModal from './UploadResultsModal';
-import { 
+import ContentAreaModal from '@/shared/components/common/ContentAreaModal';
+import PublishWorkflow from '@/features/exams/components/publish-workflow';
+import WorkflowBadge from '@/features/exams/components/workflow-badge';
+import ResultCompilationCard from '@/features/exams/components/result-compilation-card';
+import PromotionRecommendations from '@/features/exams/components/promotion-recommendations';
+import RankingTable from '@/features/exams/components/ranking-table';
+import ExamRawResultsTable from '@/features/exams/components/exam-raw-results-table';
+import {
   FiAward, 
   FiPlus, 
   FiEdit2, 
@@ -17,9 +25,67 @@ import {
   FiCalendar,
   FiBook,
   FiUsers,
-  FiCheckCircle,
-  FiXCircle
+  FiBarChart2,
 } from 'react-icons/fi';
+import type { ResultWorkflowStatus } from '@/lib/ensure-exam-result-engine';
+
+interface SubjectMarksEntry {
+  total_marks: string;
+  passing_marks: string;
+}
+
+interface ExamFormState {
+  name: string;
+  class_id: string;
+  subject_ids: string[];
+  exam_type: string;
+  exam_date: string;
+  total_marks: string;
+  passing_marks: string;
+  use_same_marks: boolean;
+  subject_marks: Record<string, SubjectMarksEntry>;
+}
+
+const DEFAULT_EXAM_FORM: ExamFormState = {
+  name: '',
+  class_id: '',
+  subject_ids: [],
+  exam_type: 'midterm',
+  exam_date: '',
+  total_marks: '100',
+  passing_marks: '40',
+  use_same_marks: true,
+  subject_marks: {},
+};
+
+function formatExamMarksSummary(exam: Exam) {
+  if (exam.subjects?.length) {
+    const first = exam.subjects[0];
+    const allSame = exam.subjects.every(
+      (s) => s.total_marks === first.total_marks && s.passing_marks === first.passing_marks,
+    );
+    if (!allSame) {
+      return exam.subjects
+        .map((s) => `${s.subject_name}: ${s.total_marks}/${s.passing_marks}`)
+        .join(' · ');
+    }
+  }
+  return `Total: ${exam.total_marks} | Pass: ${exam.passing_marks}`;
+}
+
+function buildSubjectMarksPayload(form: ExamFormState) {
+  return form.subject_ids.map((subjectId) => ({
+    subject_id: parseInt(subjectId, 10),
+    total_marks: parseInt(
+      form.use_same_marks ? form.total_marks : form.subject_marks[subjectId]?.total_marks || form.total_marks,
+      10,
+    ),
+    passing_marks: parseInt(
+      form.use_same_marks ? form.passing_marks : form.subject_marks[subjectId]?.passing_marks || form.passing_marks,
+      10,
+    ),
+  }));
+}
 
 interface ExamSubject {
   subject_id: number;
@@ -44,6 +110,59 @@ interface Exam {
   passing_marks: number;
   total_students: number;
   total_results: number;
+  result_workflow_status?: ResultWorkflowStatus | string;
+  last_compiled_at?: string | null;
+  academic_year?: string | null;
+  session_label?: string;
+}
+
+interface ClassExamSessionGroup {
+  session: string;
+  exams: Exam[];
+}
+
+interface ClassExamGroup {
+  classId: number;
+  className: string;
+  sessions: ClassExamSessionGroup[];
+}
+
+function groupExamsByClassAndSession(exams: Exam[]): ClassExamGroup[] {
+  const byClass = new Map<number, ClassExamGroup>();
+
+  for (const exam of exams) {
+    const session = exam.session_label || exam.academic_year || 'Unassigned Session';
+    let classGroup = byClass.get(exam.class_id);
+    if (!classGroup) {
+      classGroup = {
+        classId: exam.class_id,
+        className: exam.class_name || 'Unknown Class',
+        sessions: [],
+      };
+      byClass.set(exam.class_id, classGroup);
+    }
+
+    let sessionGroup = classGroup.sessions.find((entry) => entry.session === session);
+    if (!sessionGroup) {
+      sessionGroup = { session, exams: [] };
+      classGroup.sessions.push(sessionGroup);
+    }
+    sessionGroup.exams.push(exam);
+  }
+
+  return Array.from(byClass.values())
+    .sort((a, b) => a.className.localeCompare(b.className))
+    .map((classGroup) => ({
+      ...classGroup,
+      sessions: classGroup.sessions
+        .map((sessionGroup) => ({
+          ...sessionGroup,
+          exams: [...sessionGroup.exams].sort(
+            (a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime(),
+          ),
+        }))
+        .sort((a, b) => b.session.localeCompare(a.session)),
+    }));
 }
 
 interface ExamResult {
@@ -74,6 +193,18 @@ export default function ExamsPage() {
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [viewingExam, setViewingExam] = useState<Exam | null>(null);
+  const [viewSummaries, setViewSummaries] = useState<
+    Array<{
+      student_id: number;
+      first_name: string;
+      last_name: string;
+      percentage: number | string;
+      overall_grade: string;
+      result_status: string;
+      class_rank: number | null;
+      school_rank: number | null;
+    }>
+  >([]);
   const [viewResults, setViewResults] = useState<ExamResult[]>([]);
   const [viewLoading, setViewLoading] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
@@ -82,15 +213,7 @@ export default function ExamsPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
-  const [examForm, setExamForm] = useState({
-    name: '',
-    class_id: '',
-    subject_ids: [] as string[],
-    exam_type: 'midterm',
-    exam_date: '',
-    total_marks: '100',
-    passing_marks: '40',
-  });
+  const [examForm, setExamForm] = useState<ExamFormState>(DEFAULT_EXAM_FORM);
 
   useEffect(() => {
     fetchData();
@@ -127,6 +250,22 @@ export default function ExamsPage() {
       return;
     }
 
+    const subjectMarksPayload = buildSubjectMarksPayload(examForm);
+    for (const entry of subjectMarksPayload) {
+      if (!entry.total_marks || !entry.passing_marks) {
+        await alert('Each selected subject must have total marks and passing marks.', { title: 'Missing marks', type: 'warning' });
+        return;
+      }
+      if (entry.passing_marks > entry.total_marks) {
+        const subject = subjects.find((s) => s.id === entry.subject_id);
+        await alert(
+          `Passing marks cannot exceed total marks${subject ? ` for ${subject.name}` : ''}.`,
+          { title: 'Invalid marks', type: 'warning' },
+        );
+        return;
+      }
+    }
+
     try {
       const url = editingExam ? `/api/exams/${editingExam.id}` : '/api/exams';
       const method = editingExam ? 'PUT' : 'POST';
@@ -135,7 +274,14 @@ export default function ExamsPage() {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...examForm,
+          name: examForm.name,
+          class_id: examForm.class_id,
+          subject_ids: examForm.subject_ids,
+          exam_type: examForm.exam_type,
+          exam_date: examForm.exam_date,
+          total_marks: examForm.total_marks,
+          passing_marks: examForm.passing_marks,
+          subject_marks: subjectMarksPayload,
           created_by: 1, // TODO: Get from auth
         }),
       });
@@ -145,15 +291,7 @@ export default function ExamsPage() {
         await alert(data.message, { title: 'Success', type: 'success' });
         setShowExamModal(false);
         setEditingExam(null);
-        setExamForm({
-          name: '',
-          class_id: '',
-          subject_ids: [],
-          exam_type: 'midterm',
-          exam_date: '',
-          total_marks: '100',
-          passing_marks: '40',
-        });
+        setExamForm(DEFAULT_EXAM_FORM);
         fetchData();
       } else {
         await alert(data.error, { title: 'Error', type: 'error' });
@@ -193,21 +331,46 @@ export default function ExamsPage() {
       formattedDate = new Date(exam.exam_date).toISOString().split('T')[0];
     }
 
-    let subjectIds = exam.subjects?.map((s) => s.subject_id.toString()) || [];
+    let examSubjects: ExamSubject[] = exam.subjects || [];
+    let subjectIds = examSubjects.map((s) => s.subject_id.toString());
     if (!subjectIds.length && exam.subject_id) {
       subjectIds = [exam.subject_id.toString()];
     }
-    if (!subjectIds.length) {
+    if (!subjectIds.length || !examSubjects.length) {
       try {
         const res = await fetch(`/api/exams/${exam.id}`);
         const data = await res.json();
         if (data.success && data.data.subjects?.length) {
-          subjectIds = data.data.subjects.map((s: ExamSubject) => s.subject_id.toString());
+          examSubjects = data.data.subjects;
+          subjectIds = examSubjects.map((s: ExamSubject) => s.subject_id.toString());
         }
       } catch {
         // keep empty
       }
     }
+
+    const subject_marks: Record<string, SubjectMarksEntry> = {};
+    examSubjects.forEach((s) => {
+      subject_marks[s.subject_id.toString()] = {
+        total_marks: String(s.total_marks ?? exam.total_marks),
+        passing_marks: String(s.passing_marks ?? exam.passing_marks),
+      };
+    });
+    subjectIds.forEach((id) => {
+      if (!subject_marks[id]) {
+        subject_marks[id] = {
+          total_marks: exam.total_marks.toString(),
+          passing_marks: exam.passing_marks.toString(),
+        };
+      }
+    });
+
+    const firstSubject = examSubjects[0];
+    const use_same_marks = !examSubjects.length || examSubjects.every(
+      (s) =>
+        s.total_marks === firstSubject.total_marks &&
+        s.passing_marks === firstSubject.passing_marks,
+    );
 
     setExamForm({
       name: exam.name,
@@ -215,19 +378,88 @@ export default function ExamsPage() {
       subject_ids: subjectIds,
       exam_type: exam.exam_type,
       exam_date: formattedDate,
-      total_marks: exam.total_marks.toString(),
-      passing_marks: exam.passing_marks.toString(),
+      total_marks: use_same_marks && firstSubject
+        ? String(firstSubject.total_marks)
+        : exam.total_marks.toString(),
+      passing_marks: use_same_marks && firstSubject
+        ? String(firstSubject.passing_marks)
+        : exam.passing_marks.toString(),
+      use_same_marks,
+      subject_marks,
     });
     setShowExamModal(true);
   };
 
   const toggleSubjectSelection = (subjectId: string) => {
+    setExamForm((prev) => {
+      const isSelected = prev.subject_ids.includes(subjectId);
+      const subject_ids = isSelected
+        ? prev.subject_ids.filter((id) => id !== subjectId)
+        : [...prev.subject_ids, subjectId];
+
+      const subject_marks = { ...prev.subject_marks };
+      if (isSelected) {
+        delete subject_marks[subjectId];
+      } else {
+        subject_marks[subjectId] = {
+          total_marks: prev.total_marks,
+          passing_marks: prev.passing_marks,
+        };
+      }
+
+      return { ...prev, subject_ids, subject_marks };
+    });
+  };
+
+  const updateDefaultMarks = (field: 'total_marks' | 'passing_marks', value: string) => {
+    setExamForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (prev.use_same_marks) {
+        const subject_marks = { ...prev.subject_marks };
+        prev.subject_ids.forEach((id) => {
+          subject_marks[id] = {
+            total_marks: field === 'total_marks' ? value : subject_marks[id]?.total_marks ?? prev.total_marks,
+            passing_marks: field === 'passing_marks' ? value : subject_marks[id]?.passing_marks ?? prev.passing_marks,
+          };
+        });
+        next.subject_marks = subject_marks;
+      }
+      return next;
+    });
+  };
+
+  const updateSubjectMarks = (
+    subjectId: string,
+    field: 'total_marks' | 'passing_marks',
+    value: string,
+  ) => {
     setExamForm((prev) => ({
       ...prev,
-      subject_ids: prev.subject_ids.includes(subjectId)
-        ? prev.subject_ids.filter((id) => id !== subjectId)
-        : [...prev.subject_ids, subjectId],
+      subject_marks: {
+        ...prev.subject_marks,
+        [subjectId]: {
+          total_marks: prev.subject_marks[subjectId]?.total_marks ?? prev.total_marks,
+          passing_marks: prev.subject_marks[subjectId]?.passing_marks ?? prev.passing_marks,
+          [field]: value,
+        },
+      },
     }));
+  };
+
+  const toggleUseSameMarks = (useSame: boolean) => {
+    setExamForm((prev) => {
+      if (useSame) {
+        const subject_marks = { ...prev.subject_marks };
+        prev.subject_ids.forEach((id) => {
+          subject_marks[id] = {
+            total_marks: prev.total_marks,
+            passing_marks: prev.passing_marks,
+          };
+        });
+        return { ...prev, use_same_marks: true, subject_marks };
+      }
+      return { ...prev, use_same_marks: false };
+    });
   };
 
   const formatExamType = (type: string) => {
@@ -249,13 +481,19 @@ export default function ExamsPage() {
     setShowViewModal(true);
     setViewLoading(true);
     setViewResults([]);
+    setViewSummaries([]);
 
     try {
-      const resultsRes = await fetch(`/api/exams/${exam.id}/results`);
-      const resultsData = await resultsRes.json();
-      if (resultsData.success) {
-        setViewResults(resultsData.data);
-      }
+      const [resultsRes, summariesRes] = await Promise.all([
+        fetch(`/api/exams/${exam.id}/results`),
+        fetch(`/api/exams/${exam.id}/summaries`),
+      ]);
+      const [resultsData, summariesData] = await Promise.all([
+        resultsRes.json(),
+        summariesRes.json(),
+      ]);
+      if (resultsData.success) setViewResults(resultsData.data);
+      if (summariesData.success) setViewSummaries(summariesData.data);
     } catch (error) {
       console.error('Error loading exam details:', error);
     } finally {
@@ -414,6 +652,11 @@ export default function ExamsPage() {
     return typeMatch && classMatch;
   });
 
+  const groupedExams = useMemo(
+    () => (activeTab === 'all' ? groupExamsByClassAndSession(filteredExams) : []),
+    [activeTab, filteredExams],
+  );
+
   const getExamCountByType = (type: string) => {
     const classFilteredExams = selectedClass === 'all' 
       ? exams 
@@ -422,6 +665,92 @@ export default function ExamsPage() {
     if (type === 'all') return classFilteredExams.length;
     return classFilteredExams.filter(exam => exam.exam_type === type).length;
   };
+
+  const renderExamCard = (exam: Exam) => (
+    <div key={exam.id} className="bg-white rounded-lg shadow border border-gray-200 p-6">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <h3 className="text-xl text-gray-900">{exam.name}</h3>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full capitalize">
+              {formatExamType(exam.exam_type)}
+            </span>
+            <WorkflowBadge status={exam.result_workflow_status} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FiUsers className="text-gray-400 shrink-0" />
+              <span>{exam.class_name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+              <FiBook className="text-gray-400 shrink-0" />
+              <span className="truncate">{exam.subject_names || exam.subject_name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FiCalendar className="text-gray-400 shrink-0" />
+              <span>{new Date(exam.exam_date).toLocaleDateString('en-IN')}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FiAward className="text-gray-400 shrink-0" />
+              <span>{formatExamMarksSummary(exam)}</span>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="text-sm">
+              <span className="text-gray-600">Results: </span>
+              <span className="font-semibold text-gray-900">
+                {exam.total_results} / {exam.total_students} students
+              </span>
+            </div>
+            {exam.total_results > 0 && (
+              <div className="h-2 flex-1 max-w-xs bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500"
+                  style={{ width: `${(exam.total_results / exam.total_students) * 100}%` }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => handleUploadResults(exam)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm font-medium"
+          >
+            <FiUpload /> Upload Results
+          </button>
+          <button
+            onClick={() => handleViewExam(exam)}
+            title="View exam details"
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+          >
+            <FiEye />
+          </button>
+          <button
+            onClick={() => handleEditExam(exam)}
+            title="Edit exam"
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+          >
+            <FiEdit2 />
+          </button>
+          <button
+            onClick={() => handleDeleteExam(exam.id)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+          >
+            <FiTrash2 />
+          </button>
+        </div>
+      </div>
+      <PublishWorkflow
+        examId={exam.id}
+        status={exam.result_workflow_status}
+        onUpdated={fetchData}
+      />
+      {['annual', 'final'].includes(exam.exam_type) && (
+        <PromotionRecommendations examId={exam.id} classId={String(exam.class_id)} />
+      )}
+    </div>
+  );
 
   return (
     <DashboardLayout>
@@ -453,19 +782,17 @@ export default function ExamsPage() {
               </select>
             </div>
             
+            <Link
+              href="/exams/analytics"
+              className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <FiBarChart2 size={16} /> Analytics
+            </Link>
             {/* Create Exam Button */}
             <button
               onClick={() => {
                 setEditingExam(null);
-                setExamForm({
-                  name: '',
-                  class_id: '',
-                  subject_ids: [],
-                  exam_type: 'midterm',
-                  exam_date: '',
-                  total_marks: '100',
-                  passing_marks: '40',
-                });
+                setExamForm(DEFAULT_EXAM_FORM);
                 setShowExamModal(true);
               }}
               className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2"
@@ -569,106 +896,69 @@ export default function ExamsPage() {
               </button>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {filteredExams.map((exam) => (
-              <div key={exam.id} className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl  text-gray-900">{exam.name}</h3>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full capitalize">
-                        {exam.exam_type}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiUsers className="text-gray-400" />
-                        <span>{exam.class_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiBook className="text-gray-400" />
-                        <span>{exam.subject_names || exam.subject_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiCalendar className="text-gray-400" />
-                        <span>{new Date(exam.exam_date).toLocaleDateString('en-IN')}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FiAward className="text-gray-400" />
-                        <span>Total: {exam.total_marks} | Pass: {exam.passing_marks}</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center gap-4">
-                      <div className="text-sm">
-                        <span className="text-gray-600">Results: </span>
-                        <span className="font-semibold text-gray-900">
-                          {exam.total_results} / {exam.total_students} students
-                        </span>
-                      </div>
-                      {exam.total_results > 0 && (
-                        <div className="h-2 flex-1 max-w-xs bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500"
-                            style={{ width: `${(exam.total_results / exam.total_students) * 100}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleUploadResults(exam)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm font-medium"
-                    >
-                      <FiUpload /> Upload Results
-                    </button>
-                    <button
-                      onClick={() => handleViewExam(exam)}
-                      title="View exam details"
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                    >
-                      <FiEye />
-                    </button>
-                    <button
-                      onClick={() => handleEditExam(exam)}
-                      title="Edit exam"
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    >
-                      <FiEdit2 />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteExam(exam.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <FiTrash2 />
-                    </button>
+        ) : activeTab === 'all' ? (
+          <div className="space-y-8">
+            {groupedExams.map((classGroup) => (
+              <section key={classGroup.classId} className="space-y-5">
+                <div className="sticky top-0 z-10 rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold text-gray-900">{classGroup.className}</h2>
+                    <span className="text-xs text-gray-500">
+                      {classGroup.sessions.reduce((count, session) => count + session.exams.length, 0)} exam
+                      {classGroup.sessions.reduce((count, session) => count + session.exams.length, 0) !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
-              </div>
+
+                {classGroup.sessions.map((sessionGroup) => (
+                  <div key={`${classGroup.classId}-${sessionGroup.session}`} className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 px-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Session</span>
+                      <span className="rounded-full bg-primary-50 px-2.5 py-0.5 text-sm font-medium text-primary-800">
+                        {sessionGroup.session}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {sessionGroup.exams.length} exam{sessionGroup.exams.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      {sessionGroup.exams.map((exam) => renderExamCard(exam))}
+                    </div>
+                  </div>
+                ))}
+              </section>
             ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredExams.map((exam) => renderExamCard(exam))}
           </div>
         )}
 
         {/* Create/Edit Exam Modal */}
-        {showExamModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b flex justify-between items-center">
-                <h3 className="text-xl ">
-                  {editingExam ? 'Edit Exam' : 'Create New Exam'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowExamModal(false);
-                    setEditingExam(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <FiX className="text-2xl" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
+        <ContentAreaModal
+          open={showExamModal}
+          onClose={() => {
+            setShowExamModal(false);
+            setEditingExam(null);
+          }}
+        >
+          <div className="flex flex-col h-full w-full bg-white shadow-2xl">
+            <div className="p-4 sm:p-6 border-b flex justify-between items-center shrink-0">
+              <h3 className="text-xl ">
+                {editingExam ? 'Edit Exam' : 'Create New Exam'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowExamModal(false);
+                  setEditingExam(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FiX className="text-2xl" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Exam Name *
@@ -730,7 +1020,8 @@ export default function ExamsPage() {
                   </div>
                   {examForm.subject_ids.length > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {examForm.subject_ids.length} subject(s) selected — same marks apply to each
+                      {examForm.subject_ids.length} subject(s) selected
+                      {examForm.use_same_marks ? ' — same marks apply to each' : ' — marks configured per subject below'}
                     </p>
                   )}
                 </div>
@@ -766,59 +1057,137 @@ export default function ExamsPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Total Marks *
-                    </label>
-                    <input
-                      type="number"
-                      value={examForm.total_marks}
-                      onChange={(e) => setExamForm({ ...examForm, total_marks: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                    />
+                    <p className="text-sm font-medium text-gray-800">Marks configuration</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      By default, all selected subjects use the same total and passing marks.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Passing Marks *
-                    </label>
-                    <input
-                      type="number"
-                      value={examForm.passing_marks}
-                      onChange={(e) => setExamForm({ ...examForm, passing_marks: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Total Marks {examForm.use_same_marks ? '(all subjects)' : '(default)'} *
+                      </label>
+                      <input
+                        type="number"
+                        value={examForm.total_marks}
+                        onChange={(e) => updateDefaultMarks('total_marks', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Passing Marks {examForm.use_same_marks ? '(all subjects)' : '(default)'} *
+                      </label>
+                      <input
+                        type="number"
+                        value={examForm.passing_marks}
+                        onChange={(e) => updateDefaultMarks('passing_marks', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        min="1"
+                      />
+                    </div>
                   </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!examForm.use_same_marks}
+                      onChange={(e) => toggleUseSameMarks(!e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600"
+                    />
+                    Set different marks per subject
+                  </label>
+                  {!examForm.use_same_marks && examForm.subject_ids.length > 0 && (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="text-left px-4 py-2 font-medium text-gray-700">Subject</th>
+                            <th className="text-left px-4 py-2 font-medium text-gray-700">Total Marks</th>
+                            <th className="text-left px-4 py-2 font-medium text-gray-700">Passing Marks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {examForm.subject_ids.map((subjectId) => {
+                            const subject = subjects.find((s) => s.id.toString() === subjectId);
+                            const marks = examForm.subject_marks[subjectId] || {
+                              total_marks: examForm.total_marks,
+                              passing_marks: examForm.passing_marks,
+                            };
+                            const passingExceedsTotal =
+                              Number(marks.passing_marks) > Number(marks.total_marks);
+                            return (
+                              <tr key={subjectId} className="border-b last:border-0">
+                                <td className="px-4 py-2 font-medium text-gray-900">
+                                  {subject?.name || `Subject #${subjectId}`}
+                                </td>
+                                <td className="px-4 py-2">
+                                  <input
+                                    type="number"
+                                    value={marks.total_marks}
+                                    onChange={(e) => updateSubjectMarks(subjectId, 'total_marks', e.target.value)}
+                                    className="w-28 px-3 py-1.5 border border-gray-300 rounded-lg"
+                                    min="1"
+                                  />
+                                </td>
+                                <td className="px-4 py-2">
+                                  <input
+                                    type="number"
+                                    value={marks.passing_marks}
+                                    onChange={(e) => updateSubjectMarks(subjectId, 'passing_marks', e.target.value)}
+                                    className={`w-28 px-3 py-1.5 border rounded-lg ${
+                                      passingExceedsTotal ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    min="1"
+                                    title={passingExceedsTotal ? 'Passing marks cannot exceed total marks' : undefined}
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {!examForm.use_same_marks && examForm.subject_ids.length === 0 && (
+                    <p className="text-xs text-amber-700">Select at least one subject to configure per-subject marks.</p>
+                  )}
                 </div>
-              </div>
-              <div className="p-6 border-t flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowExamModal(false);
-                    setEditingExam(null);
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveExam}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <FiSave /> {editingExam ? 'Update' : 'Create'} Exam
-                </button>
-              </div>
+            </div>
+            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  setShowExamModal(false);
+                  setEditingExam(null);
+                }}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveExam}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <FiSave /> {editingExam ? 'Update' : 'Create'} Exam
+              </button>
             </div>
           </div>
-        )}
+        </ContentAreaModal>
 
         {/* View Exam Details Modal */}
-        {showViewModal && viewingExam && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b flex justify-between items-start gap-4">
+        <ContentAreaModal
+          open={showViewModal && !!viewingExam}
+          onClose={() => {
+            setShowViewModal(false);
+            setViewingExam(null);
+            setViewResults([]);
+          }}
+        >
+          {viewingExam && (
+          <div className="flex flex-col h-full w-full bg-white shadow-2xl">
+            <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
                 <div>
                   <h3 className="text-xl text-gray-900">{viewingExam.name}</h3>
                   <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full capitalize">
@@ -835,9 +1204,9 @@ export default function ExamsPage() {
                 >
                   <FiX className="text-2xl" />
                 </button>
-              </div>
+            </div>
 
-              <div className="p-6 space-y-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-xs text-gray-500 mb-1">Class</p>
@@ -855,13 +1224,21 @@ export default function ExamsPage() {
                         : '—'}
                     </p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">Total Marks</p>
-                    <p className="font-medium text-gray-900">{viewingExam.total_marks}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">Passing Marks</p>
-                    <p className="font-medium text-gray-900">{viewingExam.passing_marks}</p>
+                  <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                    <p className="text-xs text-gray-500 mb-1">Marks</p>
+                    {viewingExam.subjects?.length ? (
+                      <div className="space-y-1">
+                        {viewingExam.subjects.map((sub) => (
+                          <p key={sub.subject_id} className="font-medium text-gray-900 text-sm">
+                            {sub.subject_name}: total {sub.total_marks}, pass {sub.passing_marks}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        Total {viewingExam.total_marks} · Pass {viewingExam.passing_marks}
+                      </p>
+                    )}
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-xs text-gray-500 mb-1">Results Uploaded</p>
@@ -872,105 +1249,66 @@ export default function ExamsPage() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Student Results</h4>
-                  {viewLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-                    </div>
-                  ) : viewResults.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg text-gray-500 text-sm">
-                      No results uploaded yet for this exam.
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Compiled Summaries</h4>
+                  {viewSummaries.length === 0 ? (
+                    <div className="text-center py-6 bg-gray-50 rounded-lg text-gray-500 text-sm mb-4">
+                      No compiled summaries. Use <strong>Compile Results</strong> on the exam card.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto border rounded-lg">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-medium text-gray-700">Student</th>
-                            <th className="text-left px-4 py-3 font-medium text-gray-700">Subject</th>
-                            <th className="text-left px-4 py-3 font-medium text-gray-700">Admission No.</th>
-                            <th className="text-right px-4 py-3 font-medium text-gray-700">Marks</th>
-                            <th className="text-right px-4 py-3 font-medium text-gray-700">%</th>
-                            <th className="text-center px-4 py-3 font-medium text-gray-700">Grade</th>
-                            <th className="text-center px-4 py-3 font-medium text-gray-700">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewResults.map((result) => {
-                            const passed = !result.is_absent &&
-                              Number(result.marks_obtained) >= Number(viewingExam.passing_marks);
-                            return (
-                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                                <td className="px-4 py-3 text-gray-900">
-                                  {result.first_name} {result.last_name}
-                                </td>
-                                <td className="px-4 py-3 text-gray-600">{result.subject_name || '—'}</td>
-                                <td className="px-4 py-3 text-gray-600">{result.admission_number}</td>
-                                <td className="px-4 py-3 text-right font-medium">
-                                  {result.is_absent ? '—' : result.marks_obtained}
-                                </td>
-                                <td className="px-4 py-3 text-right text-gray-600">
-                                  {result.is_absent ? '—' : `${result.percentage}%`}
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  {result.is_absent ? (
-                                    <span className="text-gray-400">—</span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                                      {result.grade}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  {result.is_absent ? (
-                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">Absent</span>
-                                  ) : passed ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">
-                                      <FiCheckCircle className="w-3 h-3" /> Pass
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs">
-                                      <FiXCircle className="w-3 h-3" /> Fail
-                                    </span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div className="mb-6">
+                      <RankingTable rows={viewSummaries} limit={10} />
                     </div>
                   )}
                 </div>
-              </div>
 
-              <div className="p-6 border-t flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setViewingExam(null);
-                    setViewResults([]);
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    const exam = viewingExam;
-                    setShowViewModal(false);
-                    setViewingExam(null);
-                    setViewResults([]);
-                    handleUploadResults(exam);
-                  }}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                >
-                  <FiUpload /> Upload Results
-                </button>
-              </div>
+                <div>
+                  {viewLoading ? (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Student Results (Raw Marks)</h4>
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                      </div>
+                    </div>
+                  ) : viewResults.length === 0 ? (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Student Results (Raw Marks)</h4>
+                      <div className="text-center py-8 bg-gray-50 rounded-lg text-gray-500 text-sm">
+                        No results uploaded yet for this exam.
+                      </div>
+                    </div>
+                  ) : (
+                    <ExamRawResultsTable exam={viewingExam} results={viewResults} />
+                  )}
+                </div>
+            </div>
+
+            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setViewingExam(null);
+                  setViewResults([]);
+                }}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  const exam = viewingExam;
+                  setShowViewModal(false);
+                  setViewingExam(null);
+                  setViewResults([]);
+                  handleUploadResults(exam);
+                }}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <FiUpload /> Upload Results
+              </button>
             </div>
           </div>
-        )}
+          )}
+        </ContentAreaModal>
 
         {/* Upload Results Modal */}
         <UploadResultsModal

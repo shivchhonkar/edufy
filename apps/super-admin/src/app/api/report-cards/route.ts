@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureExamsSchema } from '@/lib/ensure-exams-schema';
+import { ensureExamResultEngineSchema } from '@/lib/ensure-exam-result-engine';
 import { mergeReportSettings } from '@/lib/report-settings';
-
-function overallGrade(percentage: number): string {
-  if (percentage >= 90) return 'A+';
-  if (percentage >= 75) return 'A';
-  if (percentage >= 60) return 'B';
-  if (percentage >= 40) return 'C';
-  return 'F';
-}
+import { loadGradingScale, gradeFromPercentage } from '@/services/exams/grading-engine';
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureExamsSchema(db);
+    await ensureExamResultEngineSchema(db);
 
     const studentId = request.nextUrl.searchParams.get('student_id');
     const classId = request.nextUrl.searchParams.get('class_id');
@@ -54,6 +49,7 @@ export async function GET(request: NextRequest) {
     ).catch(() => ({ rows: [{}] }));
 
     const reportSettings = mergeReportSettings(settings.rows[0]?.report_settings);
+    const gradingScale = await loadGradingScale(db);
 
     const reportCards = [];
 
@@ -122,7 +118,7 @@ export async function GET(request: NextRequest) {
           total_obtained: totalObtained,
           total_max: totalMax,
           percentage,
-          overall_grade: overallGrade(percentage),
+          overall_grade: gradeFromPercentage(percentage, gradingScale).grade,
         },
       });
     }

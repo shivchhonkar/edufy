@@ -27,7 +27,7 @@ const TENANT_MIGRATION_FILES = [
   'phase18_student_portal_password.sql',
   'phase19_portal_access.sql',
   'add_staff_attendance.sql',
-  'add_enhanced_fees.sql',
+  'phase21_exam_result_engine.sql',
 ]
 
 const OPTIONAL_SQL_FILES = ['create_inventory_tables.sql']

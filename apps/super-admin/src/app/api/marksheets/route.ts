@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
     await ensureSystemSettings(db);
 
     const classId = request.nextUrl.searchParams.get('class_id');
+    const studentId = request.nextUrl.searchParams.get('student_id');
     const halfYearlyExamId = request.nextUrl.searchParams.get('half_yearly_exam_id');
     const annualExamId = request.nextUrl.searchParams.get('annual_exam_id');
 
@@ -78,6 +79,14 @@ export async function GET(request: NextRequest) {
 
     const annualId = parseInt(annualExamId, 10);
     const halfId = halfYearlyExamId ? parseInt(halfYearlyExamId, 10) : null;
+    const parsedStudentId = studentId ? parseInt(studentId, 10) : null;
+
+    const studentQueryParams: number[] = [parseInt(classId, 10)];
+    let studentFilterSql = 'WHERE s.status = \'active\' AND s.class_id = $1';
+    if (parsedStudentId) {
+      studentQueryParams.push(parsedStudentId);
+      studentFilterSql += ` AND s.id = $${studentQueryParams.length}`;
+    }
 
     const [annualExam, halfExam, studentsRes, settingsRes] = await Promise.all([
       db.query('SELECT id, name, exam_type, exam_date, class_id FROM exams WHERE id = $1', [annualId]),
@@ -87,9 +96,9 @@ export async function GET(request: NextRequest) {
          FROM students s
          LEFT JOIN classes c ON s.class_id = c.id
          LEFT JOIN sections sec ON s.section_id = sec.id
-         WHERE s.status = 'active' AND s.class_id = $1
+         ${studentFilterSql}
          ORDER BY s.roll_number NULLS LAST, s.first_name, s.last_name`,
-        [parseInt(classId, 10)]
+        studentQueryParams
       ),
       db.query('SELECT school_name, school_address, school_phone, academic_year, report_settings FROM system_settings LIMIT 1'),
     ]);

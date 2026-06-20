@@ -1,0 +1,135 @@
+// Reference Prisma schema — Edufy uses SQL migrations + ensure-*-schema at runtime.
+// This file documents the exam result engine models for tooling/codegen only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Exam {
+  id                       Int       @id @default(autoincrement())
+  name                     String
+  class_id                 Int
+  subject_id               Int?
+  exam_type                String
+  exam_date                DateTime? @db.Date
+  total_marks              Int?
+  passing_marks            Int?
+  academic_year            String?
+  academic_year_id         Int?
+  result_workflow_status   String    @default("draft")
+  minimum_overall_percentage Decimal @default(33) @db.Decimal(5, 2)
+  last_compiled_at         DateTime?
+  last_compiled_by         Int?
+  submitted_for_review_at  DateTime?
+  submitted_for_review_by  Int?
+  approved_at              DateTime?
+  approved_by              Int?
+  published_at             DateTime?
+  published_by             Int?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  summaries StudentExamSummary[]
+  auditLogs ExamResultAuditLog[]
+}
+
+model StudentExamSummary {
+  id               Int      @id @default(autoincrement())
+  tenant_id        Int?
+  academic_year_id Int?
+  exam_id          Int
+  student_id       Int
+  class_id         Int
+  section_id       Int?
+  total_subjects   Int      @default(0)
+  passed_subjects  Int      @default(0)
+  failed_subjects  Int      @default(0)
+  total_marks      Decimal  @default(0) @db.Decimal(10, 2)
+  obtained_marks   Decimal  @default(0) @db.Decimal(10, 2)
+  percentage       Decimal  @default(0) @db.Decimal(6, 2)
+  overall_grade    String?
+  result_status    String   @default("FAIL")
+  class_rank       Int?
+  section_rank     Int?
+  school_rank      Int?
+  compiled_at      DateTime?
+  compiled_by      Int?
+  publish_status   String   @default("draft")
+  published_at     DateTime?
+  published_by     Int?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  exam Exam @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+
+  @@unique([exam_id, student_id])
+  @@index([exam_id])
+  @@index([student_id])
+  @@index([publish_status])
+}
+
+model GradingConfig {
+  id             Int      @id @default(autoincrement())
+  min_percentage Decimal  @db.Decimal(5, 2)
+  max_percentage Decimal  @db.Decimal(5, 2)
+  grade          String
+  grade_point    Decimal? @db.Decimal(4, 2)
+  remarks        String?
+  sort_order     Int      @default(0)
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
+model PromotionRule {
+  id                  Int      @id @default(autoincrement())
+  class_id            Int
+  academic_year_id    Int?
+  max_failed_subjects Int      @default(0)
+  minimum_percentage  Decimal  @default(33) @db.Decimal(5, 2)
+  promote_if_pass     Boolean  @default(true)
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@unique([class_id, academic_year_id])
+}
+
+model StudentPromotionRecommendation {
+  id               Int      @id @default(autoincrement())
+  tenant_id        Int?
+  academic_year_id Int?
+  exam_id          Int?
+  student_id       Int
+  class_id         Int
+  section_id       Int?
+  recommendation   String
+  percentage       Decimal? @db.Decimal(6, 2)
+  failed_subjects  Int      @default(0)
+  summary_id       Int?
+  notes            String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@unique([student_id, academic_year_id, exam_id])
+}
+
+model ExamResultAuditLog {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int?
+  exam_id         Int
+  action          String
+  actor_id        Int?
+  actor_role      String?
+  previous_status String?
+  new_status      String?
+  metadata        Json?
+  created_at      DateTime @default(now())
+
+  exam Exam @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+}

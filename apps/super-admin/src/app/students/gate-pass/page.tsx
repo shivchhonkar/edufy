@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
+import { usePreselectGatePassStudentFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
 import CollectorCameraModal from '@/features/students/components/CollectorCameraModal';
 import GatePassDocument from '@/features/students/components/GatePassDocument';
 import { printGatePassViaIframe } from '@/features/students/utils/gate-pass-print';
@@ -154,6 +155,20 @@ function readGatePassAdminAccess(): boolean {
 }
 
 export default function GatePassPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+        </DashboardLayout>
+      }
+    >
+      <GatePassPageContent />
+    </Suspense>
+  );
+}
+
+function GatePassPageContent() {
   const { alert, confirm } = useDialog();
   const { settings } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -365,6 +380,13 @@ export default function GatePassPage() {
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === selectedStudentId) ?? null,
     [students, selectedStudentId]
+  );
+
+  usePreselectGatePassStudentFromUrl(
+    students,
+    setSelectedStudentId,
+    setStudentPickerExpanded,
+    setActiveTab,
   );
 
   const issueStep: 1 | 2 | 3 = pendingPass ? 3 : selectedStudent ? 2 : 1;

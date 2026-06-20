@@ -143,6 +143,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     icon: FiAward,
     items: [
       { name: 'Exams', path: '/exams', icon: FiEdit },
+      { name: 'Exam Analytics', path: '/exams/analytics', icon: FiBarChart2 },
       { name: 'Marks Entry', path: '/exams', icon: FiEdit2 },
       { name: 'Grade Management', path: '/report-cards', icon: FiAward },
       { name: 'Report Cards', path: '/report-cards', icon: FiFileText },

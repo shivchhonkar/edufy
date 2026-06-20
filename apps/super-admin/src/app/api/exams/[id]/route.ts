@@ -62,6 +62,7 @@ export async function PUT(
       exam_date,
       total_marks,
       passing_marks,
+      subject_marks,
     } = body;
 
     const ids: number[] = subject_ids?.length
@@ -74,8 +75,51 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'At least one subject is required' }, { status: 400 });
     }
 
-    const marks = parseInt(String(total_marks), 10);
-    const passMarks = parseInt(String(passing_marks), 10);
+    const defaultTotal = parseInt(String(total_marks), 10);
+    const defaultPass = parseInt(String(passing_marks), 10);
+
+    const marksBySubject = new Map<number, { total_marks: number; passing_marks: number }>();
+    if (Array.isArray(subject_marks)) {
+      for (const entry of subject_marks) {
+        const sid = parseInt(String(entry.subject_id), 10);
+        if (!Number.isFinite(sid)) continue;
+        marksBySubject.set(sid, {
+          total_marks: parseInt(String(entry.total_marks), 10),
+          passing_marks: parseInt(String(entry.passing_marks), 10),
+        });
+      }
+    }
+
+    const resolvedSubjects = ids.map((sid) => {
+      const custom = marksBySubject.get(sid);
+      return {
+        subject_id: sid,
+        total_marks: custom?.total_marks ?? defaultTotal,
+        passing_marks: custom?.passing_marks ?? defaultPass,
+      };
+    });
+
+    for (const entry of resolvedSubjects) {
+      if (!entry.total_marks || !entry.passing_marks) {
+        return NextResponse.json(
+          { success: false, error: 'Each subject must have total marks and passing marks' },
+          { status: 400 }
+        );
+      }
+      if (entry.passing_marks > entry.total_marks) {
+        return NextResponse.json(
+          { success: false, error: 'Passing marks cannot exceed total marks for any subject' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const examTotalMarks = Math.max(...resolvedSubjects.map((s) => s.total_marks));
+    const examPassMarks = resolvedSubjects.every(
+      (s) => s.passing_marks === resolvedSubjects[0].passing_marks,
+    )
+      ? resolvedSubjects[0].passing_marks
+      : defaultPass;
 
     await db.query('BEGIN');
     try {
@@ -87,7 +131,7 @@ export async function PUT(
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $8
          RETURNING *`,
-        [name, parseInt(String(class_id), 10), ids[0], exam_type, exam_date, marks, passMarks, params.id]
+        [name, parseInt(String(class_id), 10), ids[0], exam_type, exam_date, examTotalMarks, examPassMarks, params.id]
       );
 
       if (!result.rows.length) {
@@ -102,22 +146,22 @@ export async function PUT(
 
       if (!hasResults.rows.length) {
         await db.query('DELETE FROM exam_subjects WHERE exam_id = $1', [params.id]);
-        for (const sid of ids) {
+        for (const entry of resolvedSubjects) {
           await db.query(
             `INSERT INTO exam_subjects (exam_id, subject_id, total_marks, passing_marks, max_marks, pass_marks)
              VALUES ($1, $2, $3, $4, $3, $4)`,
-            [params.id, sid, marks, passMarks]
+            [params.id, entry.subject_id, entry.total_marks, entry.passing_marks]
           );
         }
       } else {
-        for (const sid of ids) {
+        for (const entry of resolvedSubjects) {
           await db.query(
             `INSERT INTO exam_subjects (exam_id, subject_id, total_marks, passing_marks, max_marks, pass_marks)
              VALUES ($1, $2, $3, $4, $3, $4)
              ON CONFLICT (exam_id, subject_id) DO UPDATE
              SET total_marks = EXCLUDED.total_marks, passing_marks = EXCLUDED.passing_marks,
                  max_marks = EXCLUDED.max_marks, pass_marks = EXCLUDED.pass_marks`,
-            [params.id, sid, marks, passMarks]
+            [params.id, entry.subject_id, entry.total_marks, entry.passing_marks]
           );
         }
       }

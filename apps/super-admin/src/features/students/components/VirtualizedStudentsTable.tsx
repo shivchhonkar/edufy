@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Student } from '@/shared/types';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
 import { FiCheckSquare, FiEdit, FiSquare, FiTrash, FiEye } from 'react-icons/fi';
+import StudentRowMoreActions from '@/features/students/components/StudentRowMoreActions';
 
 const ROW_HEIGHT = 73;
 const OVERSCAN = 10;
@@ -263,8 +264,8 @@ function StudentRow({
         </span>
       </div>
 
-      <div className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex space-x-3">
+      <div className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onView(student)}
             className="text-primary-600 hover:text-primary-900 p-1"
@@ -286,6 +287,7 @@ function StudentRow({
           >
             <FiTrash size={18} />
           </button>
+          <StudentRowMoreActions student={student} />
         </div>
       </div>
     </div>

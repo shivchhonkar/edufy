@@ -59,12 +59,14 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
     if (onToggle) {
       onToggle(isCollapsed);
     }
+    window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: isCollapsed }));
   }, [isCollapsed, onToggle]);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('sidebarCollapsed', String(newState));
+    window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: newState }));
     onToggle?.(newState);
   };
 

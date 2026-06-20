@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureExamsSchema, fetchExamSubjects } from '@/lib/ensure-exams-schema';
-
-function calculateGrade(marksObtained: number, totalMarks: number): string {
-  if (totalMarks === 0) return 'F';
-  const percentage = (marksObtained / totalMarks) * 100;
-  if (percentage >= 90) return 'A+';
-  if (percentage >= 80) return 'A';
-  if (percentage >= 70) return 'B+';
-  if (percentage >= 60) return 'B';
-  if (percentage >= 50) return 'C';
-  if (percentage >= 40) return 'D';
-  return 'F';
-}
+import { gradeForSubjectMarks } from '@/services/exams/grading-engine';
 
 export async function GET(
   request: NextRequest,
@@ -89,7 +78,7 @@ export async function POST(
       const { student_id, marks_obtained, is_absent, remarks, subject_id } = result;
       const sid = subject_id != null ? parseInt(String(subject_id), 10) : defaultSubjectId;
       const totalMarks = sid != null ? (marksBySubject.get(sid) ?? defaultTotalMarks) : defaultTotalMarks;
-      const grade = calculateGrade(marks_obtained || 0, totalMarks);
+      const grade = await gradeForSubjectMarks(db, marks_obtained || 0, totalMarks);
 
       const insertResult = await db.query(
         `INSERT INTO exam_results (

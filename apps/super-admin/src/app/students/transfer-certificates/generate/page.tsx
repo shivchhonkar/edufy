@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
+import { usePreselectStudentIdsFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
 import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
 import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
 import { useSettings } from '@/shared/SettingsContext';
@@ -35,6 +37,20 @@ interface Section {
 }
 
 export default function GenerateTransferCertificatePage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+        </DashboardLayout>
+      }
+    >
+      <GenerateTransferCertificatePageContent />
+    </Suspense>
+  );
+}
+
+function GenerateTransferCertificatePageContent() {
   const { alert } = useDialog();
   const { settings } = useSettings();
   const [students, setStudents] = useState<Student[]>([]);
@@ -81,6 +97,8 @@ export default function GenerateTransferCertificatePage() {
     () => students.filter((s) => selectedIds.has(s.id)),
     [students, selectedIds]
   );
+
+  usePreselectStudentIdsFromUrl(students, setSelectedIds);
 
   useEffect(() => {
     fetch('/api/classes')

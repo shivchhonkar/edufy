@@ -484,7 +484,7 @@ export default function StudentAttendanceReportsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-2 max-w-7xl  mx-auto space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Student Attendance Reports</h1>
