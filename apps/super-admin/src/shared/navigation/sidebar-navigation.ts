@@ -88,19 +88,21 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Students', path: '/students', icon: FiUsers },
       { name: 'Promotions', path: '/promotions', icon: FiArrowUpCircle },
       {
-        name: 'Generate Transfer Certificate',
-        path: '/students/transfer-certificates/generate',
+        name: 'Transfer Certificate',
+        // path: '/students/transfer-certificates/generate',
+        path: '/students/transfer-certificates',
         icon: FiFilePlus,
       },
-      {
-        name: 'Transfer Certificate History',
-        path: '/students/transfer-certificates',
-        icon: FiArchive,
-      },
+      // {
+      //   name: 'Transfer Certificate History',
+      //   path: '/students/transfer-certificates',
+      //   icon: FiArchive,
+      // },
       // { name: 'Student Documents', path: '/students?hint=documents', icon: FiFolder },
       // { name: 'Student Health Records', path: '/students?hint=medical', icon: FiHeart },
       { name: 'Student ID Cards', path: '/students/id-cards', icon: FiCreditCard },
       { name: 'Gate Pass Exit', path: '/students/gate-pass', icon: FiShield },
+      { name: 'Visitor Mgmt.', path: '/visitor-management', icon: FiUserCheck },
     ],
   },
   {

@@ -1,6 +1,7 @@
 import type { RequestDb } from '@/lib/request-db';
 
 export type SmsAudienceType =
+  | 'all'
   | 'all_parents'
   | 'class_parents'
   | 'section_parents'
@@ -15,6 +16,7 @@ export interface SmsRecipient {
 }
 
 const AUDIENCE_TYPES: SmsAudienceType[] = [
+  'all',
   'all_parents',
   'class_parents',
   'section_parents',
@@ -46,6 +48,22 @@ export async function resolveSmsRecipients(
   sectionId?: number | null
 ): Promise<SmsRecipient[]> {
   const map = new Map<string, SmsRecipient>();
+
+  if (audienceType === 'all') {
+    const [parentRecipients, staffRecipients] = await Promise.all([
+      resolveSmsRecipients(db, 'all_parents', classId, sectionId),
+      resolveSmsRecipients(db, 'all_staff', classId, sectionId),
+    ]);
+    for (const recipient of [...parentRecipients, ...staffRecipients]) {
+      addRecipient(map, recipient.phone, {
+        name: recipient.name,
+        student_id: recipient.student_id,
+        student_name: recipient.student_name,
+        source: recipient.source,
+      });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   if (audienceType === 'all_staff') {
     const staffResult = await db.query<{

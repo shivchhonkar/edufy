@@ -13,6 +13,7 @@ import {
   fetchUpcomingExam,
   getStudentContext,
 } from '@/lib/dashboard-stats'
+import { fetchParentNotifications } from '@/lib/parent-notifications'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,16 +40,18 @@ export async function GET(request: NextRequest) {
       transport,
       schedule,
       unreadNotices,
+      notifications,
     ] = await Promise.all([
       fetchAttendanceStats(db, studentId),
       fetchFeeStats(db, studentId, ctx.academicYear),
       fetchHomeworkStats(db, studentId, ctx.classId),
       fetchUpcomingExam(db, studentId, ctx.classId),
-      fetchLatestNotice(db),
+      fetchLatestNotice(db, ctx.classId, ctx.sectionId),
       fetchUpcomingEvents(db),
       fetchTransportInfo(db, studentId),
       fetchTodaySchedule(db, ctx.classId, ctx.sectionId, ctx.academicYear),
-      fetchUnreadNoticesCount(db),
+      fetchUnreadNoticesCount(db, ctx.classId, ctx.sectionId),
+      fetchParentNotifications(db, ctx.classId, ctx.sectionId, 5),
     ])
 
     return NextResponse.json({
@@ -82,6 +85,7 @@ export async function GET(request: NextRequest) {
         transport,
         schedule,
         unreadNotices,
+        notifications,
       },
     })
   } catch (error: unknown) {

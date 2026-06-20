@@ -1,5 +1,10 @@
 import type { RequestDb } from '@/lib/request-db'
 import { getCalendarDateString } from '@edulakhya/utils'
+import {
+  fetchLatestParentCircular,
+  fetchParentNotifications,
+  fetchParentNotificationsCount,
+} from '@/lib/parent-notifications'
 
 type StudentContext = {
   studentId: number
@@ -205,20 +210,22 @@ export async function fetchUpcomingExam(db: RequestDb, studentId: number, classI
   }
 }
 
-export async function fetchLatestNotice(db: RequestDb) {
-  try {
-    const circular = await db.query<{ title: string; content: string; published_at: string }>(
-      `SELECT title, content, COALESCE(published_at, created_at)::text AS published_at
-       FROM school_circulars
-       WHERE status = 'published'
-         AND audience_type IN ('parents', 'all', 'students_parents')
-       ORDER BY published_at DESC NULLS LAST
-       LIMIT 1`,
-    )
-    if (circular.rows[0]) return circular.rows[0]
-  } catch {
-    /* table may not exist */
+export async function fetchLatestNotice(
+  db: RequestDb,
+  classId: number | null = null,
+  sectionId: number | null = null,
+) {
+  const notifications = await fetchParentNotifications(db, classId, sectionId, 1)
+  if (notifications[0]) {
+    return {
+      title: notifications[0].title,
+      content: notifications[0].message,
+      published_at: notifications[0].published_at || notifications[0].created_at,
+    }
   }
+
+  const circular = await fetchLatestParentCircular(db, classId, sectionId)
+  if (circular) return circular
 
   try {
     const announcements = await db.query<{ title: string; content: string; created_at: string }>(
@@ -325,16 +332,10 @@ export async function fetchTodaySchedule(
   }
 }
 
-export async function fetchUnreadNoticesCount(db: RequestDb) {
-  try {
-    const result = await db.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count
-       FROM school_notifications
-       WHERE status = 'active'
-         AND audience_type IN ('parents', 'all', 'students_parents')`,
-    )
-    return Number(result.rows[0]?.count) || 0
-  } catch {
-    return 0
-  }
+export async function fetchUnreadNoticesCount(
+  db: RequestDb,
+  classId: number | null = null,
+  sectionId: number | null = null,
+) {
+  return fetchParentNotificationsCount(db, classId, sectionId)
 }

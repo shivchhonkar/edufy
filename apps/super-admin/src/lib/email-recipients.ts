@@ -38,6 +38,22 @@ export async function resolveEmailRecipients(
 ): Promise<EmailRecipient[]> {
   const map = new Map<string, EmailRecipient>();
 
+  if (audienceType === 'all') {
+    const [parentRecipients, staffRecipients] = await Promise.all([
+      resolveEmailRecipients(db, 'all_parents', classId, sectionId),
+      resolveEmailRecipients(db, 'all_staff', classId, sectionId),
+    ]);
+    for (const recipient of [...parentRecipients, ...staffRecipients]) {
+      addRecipient(map, recipient.email, {
+        name: recipient.name,
+        student_id: recipient.student_id,
+        student_name: recipient.student_name,
+        source: recipient.source,
+      });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   if (audienceType === 'all_staff') {
     const staffResult = await db.query<{
       email: string | null;

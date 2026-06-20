@@ -1,4 +1,5 @@
 export const AUDIENCE_OPTIONS = [
+  { value: 'all', label: 'All (parents & staff)' },
   { value: 'all_parents', label: 'All parents' },
   { value: 'class_parents', label: 'Parents in a class' },
   { value: 'section_parents', label: 'Parents in a class section' },
@@ -24,7 +25,14 @@ export function formatAudienceLabel(
   className?: string | null,
   sectionName?: string | null
 ): string {
-  const base = audienceType.replace(/_/g, ' ');
+  const labels: Record<string, string> = {
+    all: 'All (parents & staff)',
+    all_parents: 'All parents',
+    class_parents: 'Parents in a class',
+    section_parents: 'Parents in a class section',
+    all_staff: 'All staff',
+  };
+  const base = labels[audienceType] || audienceType.replace(/_/g, ' ');
   if (className && sectionName) return `${base} · ${className} ${sectionName}`;
   if (className) return `${base} · ${className}`;
   return base;

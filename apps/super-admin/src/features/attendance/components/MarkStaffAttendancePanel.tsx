@@ -7,17 +7,24 @@ import React, {
   useMemo,
   useCallback,
   useImperativeHandle,
+  useRef,
 } from 'react';
 import {
   FiCalendar,
   FiCheck,
+  FiChevronDown,
   FiClock,
+  FiEdit3,
+  FiMoreVertical,
+  FiSearch,
   FiSend,
+  FiUpload,
   FiX,
 } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
+type MarkMode = 'manual' | 'bulk';
 
 interface DepartmentOption {
   id: number;
@@ -96,6 +103,9 @@ const STATUS_CONFIG: {
   },
 ];
 
+const PRIMARY_STATUSES: AttendanceStatus[] = ['present', 'absent', 'on_leave'];
+const OVERFLOW_STATUSES: AttendanceStatus[] = ['late', 'half_day'];
+
 function draftKey(date: string, departmentId: string) {
   return `staff-attendance-draft:${date}:${departmentId}`;
 }
@@ -112,6 +122,11 @@ function staffInitials(s: StaffOption) {
   return `${s.first_name?.[0] ?? ''}${s.last_name?.[0] ?? ''}`.toUpperCase() || '?';
 }
 
+function pct(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+}
+
 function StatusButtons({
   value,
   onChange,
@@ -121,24 +136,87 @@ function StatusButtons({
   onChange: (status: AttendanceStatus) => void;
   compact?: boolean;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
+
+  const visibleConfig = compact
+    ? STATUS_CONFIG.filter((opt) => PRIMARY_STATUSES.includes(opt.value))
+    : STATUS_CONFIG;
+  const overflowConfig = STATUS_CONFIG.filter((opt) => OVERFLOW_STATUSES.includes(opt.value));
+  const overflowActive = value !== null && OVERFLOW_STATUSES.includes(value);
+
   return (
-    <div className={`flex flex-wrap gap-1.5 ${compact ? '' : 'justify-end'}`}>
-      {STATUS_CONFIG.map((opt) => {
+    <div
+      ref={menuRef}
+      className={`flex flex-nowrap gap-1.5 items-center ${compact ? 'justify-end' : 'justify-end'}`}
+    >
+      {visibleConfig.map((opt) => {
         const active = value === opt.value;
         return (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors ${
+            className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors whitespace-nowrap shrink-0 ${
               compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs'
             } ${active ? opt.activeClass : opt.idleClass}`}
           >
             {opt.icon}
-            {opt.label}
+            <span className="whitespace-nowrap">{opt.label}</span>
           </button>
         );
       })}
+      {compact && (
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className={`p-1.5 rounded-md shrink-0 ${
+              overflowActive
+                ? 'text-primary-600 bg-primary-50 hover:bg-primary-100'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            }`}
+            aria-label="More status options"
+            aria-expanded={menuOpen}
+          >
+            <FiMoreVertical size={16} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-20 mt-0.5 min-w-[9rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+              {overflowConfig.map((opt) => {
+                const active = value === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 ${
+                      active
+                        ? 'bg-gray-50 font-medium text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.icon}
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -165,7 +243,7 @@ function SubmitAttendanceActions({
           type="button"
           onClick={onSaveDraft}
           disabled={!canSubmit}
-          className="border border-gray-300 text-primary-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+          className="border border-gray-200 text-primary-700 bg-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
         >
           Save Draft
         </button>
@@ -226,6 +304,11 @@ const MarkStaffAttendancePanel = forwardRef<
   const [individualStatus, setIndividualStatus] = useState<AttendanceStatus>('present');
   const [individualRemarks, setIndividualRemarks] = useState('');
   const [showIndividualDropdown, setShowIndividualDropdown] = useState(false);
+  const [staffSearch, setStaffSearch] = useState('');
+  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [markMode, setMarkMode] = useState<MarkMode>('manual');
+  const [bulkStatus, setBulkStatus] = useState<AttendanceStatus>('present');
+  const moreActionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/departments?active_only=true')
@@ -348,6 +431,27 @@ const MarkStaffAttendancePanel = forwardRef<
     return { present, absent, late, halfDay, onLeave, unmarked, total: rows.length };
   }, [rows]);
 
+  const filteredRows = useMemo(() => {
+    const q = staffSearch.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        staffName(r).toLowerCase().includes(q) ||
+        r.employee_id.toLowerCase().includes(q) ||
+        staffDepartment(r).toLowerCase().includes(q),
+    );
+  }, [rows, staffSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreActionsRef.current && !moreActionsRef.current.contains(e.target as Node)) {
+        setShowMoreActions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const filteredIndividualStaff = allStaff.filter((s) => {
     const q = individualSearch.toLowerCase();
     return (
@@ -369,13 +473,28 @@ const MarkStaffAttendancePanel = forwardRef<
     );
   };
 
-  const toggleAllSelected = () => {
-    const allSelected = rows.length > 0 && rows.every((r) => r.selected);
-    setRows((prev) => prev.map((r) => ({ ...r, selected: !allSelected })));
-  };
-
   const markAllPresent = () => {
     setRows((prev) => prev.map((r) => ({ ...r, status: 'present' as AttendanceStatus })));
+  };
+
+  const markAllAbsent = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'absent' as AttendanceStatus })));
+  };
+
+  const markAllLate = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'late' as AttendanceStatus })));
+  };
+
+  const markAllHalfDay = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'half_day' as AttendanceStatus })));
+  };
+
+  const applyBulkToSelected = () => {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.selected || prev.every((x) => !x.selected) ? { ...r, status: bulkStatus } : r,
+      ),
+    );
   };
 
   const clearAll = () => {
@@ -615,23 +734,23 @@ const MarkStaffAttendancePanel = forwardRef<
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <label className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Date</span>
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+        <label className="block text-xs">
+          <span className="text-gray-500 font-medium">Date</span>
           <input
             type="date"
             value={markDate}
             onChange={(e) => setMarkDate(e.target.value)}
-            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </label>
-        <label className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Department</span>
+        <label className="block text-xs">
+          <span className="text-gray-500 font-medium">Department</span>
           <select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
-            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -641,97 +760,293 @@ const MarkStaffAttendancePanel = forwardRef<
             ))}
           </select>
         </label>
+        <div className="block text-xs">
+          <span className="text-gray-500 font-medium">Attendance Mode</span>
+          <div className="mt-1 flex rounded-lg border border-gray-200 overflow-hidden bg-white">
+            <button
+              type="button"
+              onClick={() => setMarkMode('manual')}
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
+                markMode === 'manual'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <FiEdit3 size={13} />
+              Manual
+            </button>
+            <button
+              type="button"
+              onClick={() => setMarkMode('bulk')}
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium border-l border-gray-200 transition-colors ${
+                markMode === 'bulk'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <FiUpload size={13} />
+              Bulk
+            </button>
+          </div>
+        </div>
       </div>
 
-      <SubmitAttendanceActions
-        onSaveDraft={saveDraft}
-        onSubmit={submitBulk}
-        saving={saving}
-        canSubmit={canSubmit}
-        className="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3"
-      />
-
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="font-semibold text-gray-900">
-              {selectedDepartmentName || 'All departments'}
-            </span>
-            <span className="text-green-700">✓ {statusCounts.present}</span>
-            <span className="text-red-600">✗ {statusCounts.absent}</span>
-            <span className="text-amber-600">⏱ {statusCounts.late}</span>
-            <span className="text-orange-600">½ {statusCounts.halfDay}</span>
-            <span className="text-blue-600">📅 {statusCounts.onLeave}</span>
-            {statusCounts.unmarked > 0 && (
-              <span className="text-gray-500">? {statusCounts.unmarked} unmarked</span>
-            )}
-            <span className="text-gray-500">Total: {statusCounts.total}</span>
+        <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="text-sm text-gray-800">
+              You are marking attendance for{' '}
+              <span className="font-semibold text-gray-900">
+                {selectedDepartmentName || 'All departments'}
+              </span>
+              {' · '}
+              <span className="font-medium">
+                {statusCounts.total} staff member{statusCounts.total === 1 ? '' : 's'}
+              </span>
+              {' · '}
+              <span className="text-gray-600">
+                {new Date(markDate).toLocaleDateString('en-IN', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            </p>
+            <SubmitAttendanceActions
+              onSaveDraft={saveDraft}
+              onSubmit={submitBulk}
+              saving={saving}
+              canSubmit={canSubmit}
+              className="shrink-0"
+            />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={markAllPresent}
-              className="text-sm border border-primary-300 text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50"
-            >
-              Mark All Present
-            </button>
-            <button
-              type="button"
-              onClick={clearAll}
-              className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
-            >
-              Clear All
-            </button>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              {
+                label: 'Present',
+                count: statusCounts.present,
+                className: 'bg-green-100 text-green-800',
+              },
+              {
+                label: 'Absent',
+                count: statusCounts.absent,
+                className: 'bg-red-100 text-red-800',
+              },
+              {
+                label: 'Late',
+                count: statusCounts.late,
+                className: 'bg-amber-100 text-amber-800',
+              },
+              {
+                label: 'Half Day',
+                count: statusCounts.halfDay,
+                className: 'bg-orange-100 text-orange-800',
+              },
+              {
+                label: 'On Leave',
+                count: statusCounts.onLeave,
+                className: 'bg-blue-100 text-blue-800',
+              },
+            ].map((badge) => (
+              <span
+                key={badge.label}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+              >
+                {badge.label}
+                <span className="font-bold">{badge.count}</span>
+                <span className="opacity-70">({pct(badge.count, statusCounts.total)}%)</span>
+              </span>
+            ))}
+            {statusCounts.unmarked > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700">
+                Unmarked
+                <span className="font-bold">{statusCounts.unmarked}</span>
+              </span>
+            )}
           </div>
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      {markMode === 'bulk' && rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+          <span className="text-xs text-gray-600">Apply to selected (or all if none selected):</span>
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value as AttendanceStatus)}
+            className="border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"
+          >
+            {STATUS_CONFIG.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={applyBulkToSelected}
+            className="bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary-700"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <FiSearch
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+              size={14}
+            />
+            <input
+              type="text"
+              value={staffSearch}
+              onChange={(e) => setStaffSearch(e.target.value)}
+              placeholder="Search staff by name or employee ID..."
+              className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={markAllPresent}
+            className="text-xs font-medium border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-50"
+          >
+            Mark All Present
+          </button>
+          <button
+            type="button"
+            onClick={clearAll}
+            className="text-xs font-medium border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-50"
+          >
+            Clear All
+          </button>
+          <div className="relative" ref={moreActionsRef}>
+            <button
+              type="button"
+              onClick={() => setShowMoreActions((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-xs font-medium border border-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 bg-white"
+            >
+              More Actions
+              <FiChevronDown size={14} />
+            </button>
+            {showMoreActions && (
+              <div className="absolute right-0 top-full mt-1 z-20 min-w-[10rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllAbsent();
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Mark All Absent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllLate();
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Mark All Late
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllHalfDay();
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Mark All Half Day
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMarkMode('bulk');
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Switch to Bulk Mode
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {loadingList ? (
-          <div className="text-center py-16 text-gray-500 text-sm">Loading staff...</div>
+          <div className="text-center py-14 text-gray-500 text-sm">Loading staff...</div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-16 text-gray-500 text-sm">
+          <div className="text-center py-14 text-gray-500 text-sm">
             No active staff found{selectedDepartmentName ? ` in ${selectedDepartmentName}` : ''}.
+          </div>
+        ) : filteredRows.length === 0 ? (
+          <div className="text-center py-14 text-gray-500 text-sm">
+            No staff match your search.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+            <table className="w-full text-sm table-fixed">
+              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 w-10">
+                  <th className="px-3 py-2.5 w-10">
                     <input
                       type="checkbox"
-                      checked={rows.length > 0 && rows.every((r) => r.selected)}
-                      onChange={toggleAllSelected}
-                      aria-label="Select all"
+                      checked={
+                        filteredRows.length > 0 && filteredRows.every((r) => r.selected)
+                      }
+                      onChange={() => {
+                        const allSelected = filteredRows.every((r) => r.selected);
+                        const visibleIds = new Set(filteredRows.map((r) => r.id));
+                        setRows((prev) =>
+                          prev.map((r) =>
+                            visibleIds.has(r.id) ? { ...r, selected: !allSelected } : r,
+                          ),
+                        );
+                      }}
+                      aria-label="Select all visible"
+                      className="rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left font-medium">Employee</th>
-                  <th className="px-4 py-3 text-left font-medium w-32">Employee ID</th>
-                  <th className="px-4 py-3 text-left font-medium w-36">Department</th>
-                  <th className="px-4 py-3 text-left font-medium min-w-[360px]">Attendance Status</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Employee</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold w-28">Employee ID</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold w-32">Department</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold w-[24rem]">
+                    Attendance Status
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.map((row) => (
+              <tbody className="divide-y divide-gray-50">
+                {filteredRows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50/80">
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="checkbox"
                         checked={row.selected}
                         onChange={() => toggleRowSelected(row.id)}
                         aria-label={`Select ${staffName(row)}`}
+                        className="rounded border-gray-300"
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                    <td className="px-3 py-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <StaffAvatar staff={row} />
-                        <span className="font-medium text-gray-900">{staffName(row)}</span>
+                        <span className="font-medium text-gray-900 text-sm truncate">
+                          {staffName(row)}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{row.employee_id}</td>
-                    <td className="px-4 py-3 text-gray-600">{staffDepartment(row)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 text-gray-600 text-xs">{row.employee_id}</td>
+                    <td className="px-3 py-2.5 text-gray-600 text-xs truncate">
+                      {staffDepartment(row)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
                       <StatusButtons
                         value={row.status}
                         onChange={(status) => setRowStatus(row.id, status)}
@@ -746,21 +1061,17 @@ const MarkStaffAttendancePanel = forwardRef<
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2"
-        >
-          Cancel
-        </button>
-        <SubmitAttendanceActions
-          onSaveDraft={saveDraft}
-          onSubmit={submitBulk}
-          saving={saving}
-          canSubmit={canSubmit}
-        />
-      </div>
+      {onCancel && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 });

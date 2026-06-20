@@ -25,6 +25,7 @@ export const REGISTER_SCHOOL_MIGRATION_FILES = [
   'phase17_student_mother_fields.sql',
   'phase18_student_portal_password.sql',
   'phase19_portal_access.sql',
+  'phase20_school_visitors.sql',
 ] as const;
 
 function getDatabaseRootCandidates(): string[] {

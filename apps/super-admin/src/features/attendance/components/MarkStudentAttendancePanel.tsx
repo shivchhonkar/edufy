@@ -7,12 +7,16 @@ import React, {
   useMemo,
   useCallback,
   useImperativeHandle,
+  useRef,
 } from 'react';
 import {
   FiCalendar,
   FiCheck,
+  FiChevronDown,
   FiClock,
   FiEdit3,
+  FiMoreVertical,
+  FiSearch,
   FiSend,
   FiUpload,
   FiUser,
@@ -123,7 +127,7 @@ function StatusButtons({
   compact?: boolean;
 }) {
   return (
-    <div className={`flex flex-wrap gap-1.5 ${compact ? '' : 'justify-end'}`}>
+    <div className="flex flex-nowrap gap-1.5 justify-end">
       {STATUS_CONFIG.map((opt) => {
         const active = value === opt.value;
         return (
@@ -131,17 +135,22 @@ function StatusButtons({
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors ${
+            className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors whitespace-nowrap shrink-0 ${
               compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs'
             } ${active ? opt.activeClass : opt.idleClass}`}
           >
             {opt.icon}
-            {opt.label}
+            <span className="whitespace-nowrap">{opt.label}</span>
           </button>
         );
       })}
     </div>
   );
+}
+
+function pct(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
 }
 
 function SubmitAttendanceActions({
@@ -166,7 +175,7 @@ function SubmitAttendanceActions({
           type="button"
           onClick={onSaveDraft}
           disabled={!canSubmit}
-          className="border border-gray-300 text-primary-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+          className="border border-gray-200 text-primary-700 bg-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
         >
           Save Draft
         </button>
@@ -203,6 +212,10 @@ const MarkStudentAttendancePanel = forwardRef<
   const [loadingList, setLoadingList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<AttendanceStatus>('present');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [openActionRowId, setOpenActionRowId] = useState<number | null>(null);
+  const moreActionsRef = useRef<HTMLDivElement>(null);
 
   const [allStudents, setAllStudents] = useState<StudentOption[]>([]);
   const [individualStudentId, setIndividualStudentId] = useState('');
@@ -327,6 +340,30 @@ const MarkStudentAttendancePanel = forwardRef<
     return { present, absent, late, onLeave, total: rows.length };
   }, [rows]);
 
+  const filteredRows = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        studentFullName(r).toLowerCase().includes(q) ||
+        (r.roll_number || '').toLowerCase().includes(q) ||
+        r.admission_number.toLowerCase().includes(q),
+    );
+  }, [rows, studentSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreActionsRef.current && !moreActionsRef.current.contains(e.target as Node)) {
+        setShowMoreActions(false);
+      }
+      if (!(e.target as Element).closest('[data-row-actions]')) {
+        setOpenActionRowId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const selectedClassName = classes.find((c) => c.id.toString() === classId)?.name;
   const selectedSectionName = sections.find((s) => s.id.toString() === sectionId)?.name;
 
@@ -376,13 +413,16 @@ const MarkStudentAttendancePanel = forwardRef<
     );
   };
 
-  const toggleAllSelected = () => {
-    const allSelected = rows.length > 0 && rows.every((r) => r.selected);
-    setRows((prev) => prev.map((r) => ({ ...r, selected: !allSelected })));
-  };
-
   const markAllPresent = () => {
     setRows((prev) => prev.map((r) => ({ ...r, status: 'present' as AttendanceStatus })));
+  };
+
+  const markAllAbsent = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'absent' as AttendanceStatus })));
+  };
+
+  const markAllLate = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'late' as AttendanceStatus })));
   };
 
   const clearAll = () => {
@@ -639,26 +679,26 @@ const MarkStudentAttendancePanel = forwardRef<
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <label className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Date</span>
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+        <label className="block text-xs">
+          <span className="text-gray-500 font-medium">Date</span>
           <input
             type="date"
             value={markDate}
             onChange={(e) => setMarkDate(e.target.value)}
-            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </label>
-        <label className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Class</span>
+        <label className="block text-xs">
+          <span className="text-gray-500 font-medium">Class</span>
           <select
             value={classId}
             onChange={(e) => {
               setClassId(e.target.value);
               setSectionId('');
             }}
-            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
             <option value="">Select class</option>
             {classes.map((c) => (
@@ -668,13 +708,13 @@ const MarkStudentAttendancePanel = forwardRef<
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Section</span>
+        <label className="block text-xs">
+          <span className="text-gray-500 font-medium">Section</span>
           <select
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
             disabled={!classId}
-            className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-50"
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white disabled:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
             <option value="">All sections</option>
             {sections.map((s) => (
@@ -684,52 +724,94 @@ const MarkStudentAttendancePanel = forwardRef<
             ))}
           </select>
         </label>
-        <div className="block text-sm">
-          <span className="text-gray-600 text-xs font-medium">Attendance Mode</span>
-          <div className="mt-1 flex rounded-lg border border-gray-300 overflow-hidden">
+        <div className="block text-xs">
+          <span className="text-gray-500 font-medium">Attendance Mode</span>
+          <div className="mt-1 flex rounded-lg border border-gray-200 overflow-hidden bg-white">
             <button
               type="button"
               onClick={() => setMarkMode('manual')}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium ${
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
                 markMode === 'manual'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <FiEdit3 size={15} />
+              <FiEdit3 size={13} />
               Manual
             </button>
             <button
               type="button"
               onClick={() => setMarkMode('bulk')}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium border-l ${
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium border-l border-gray-200 transition-colors ${
                 markMode === 'bulk'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <FiUpload size={15} />
+              <FiUpload size={13} />
               Bulk
             </button>
           </div>
         </div>
       </div>
 
-      <SubmitAttendanceActions
-        onSaveDraft={saveDraft}
-        onSubmit={submitClassAttendance}
-        saving={saving}
-        canSubmit={canSubmit}
-        className="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3"
-      />
+      {classId && rows.length > 0 && (
+        <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="text-sm text-gray-800">
+              You are marking attendance for{' '}
+              <span className="font-semibold text-gray-900">
+                {selectedClassName}
+                {selectedSectionName ? ` — ${selectedSectionName}` : ''}
+              </span>
+              {' · '}
+              <span className="font-medium">{classCounts.total} students</span>
+              {' · '}
+              <span className="text-gray-600">
+                {new Date(markDate).toLocaleDateString('en-IN', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            </p>
+            <SubmitAttendanceActions
+              onSaveDraft={saveDraft}
+              onSubmit={submitClassAttendance}
+              saving={saving}
+              canSubmit={canSubmit}
+              className="shrink-0"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Present', count: classCounts.present, className: 'bg-green-100 text-green-800' },
+              { label: 'Absent', count: classCounts.absent, className: 'bg-red-100 text-red-800' },
+              { label: 'Late', count: classCounts.late, className: 'bg-amber-100 text-amber-800' },
+              { label: 'On Leave', count: classCounts.onLeave, className: 'bg-blue-100 text-blue-800' },
+            ].map((badge) => (
+              <span
+                key={badge.label}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+              >
+                {badge.label}
+                <span className="font-bold">{badge.count}</span>
+                <span className="opacity-70">({pct(badge.count, classCounts.total)}%)</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {markMode === 'bulk' && classId && rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 bg-slate-50 border rounded-lg px-4 py-3">
-          <span className="text-sm text-gray-600">Apply status to selected (or all if none selected):</span>
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+          <span className="text-xs text-gray-600">Apply to selected (or all if none selected):</span>
           <select
             value={bulkStatus}
             onChange={(e) => setBulkStatus(e.target.value as AttendanceStatus)}
-            className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"
           >
             {STATUS_CONFIG.map((s) => (
               <option key={s.value} value={s.value}>
@@ -740,7 +822,7 @@ const MarkStudentAttendancePanel = forwardRef<
           <button
             type="button"
             onClick={applyBulkToSelected}
-            className="bg-primary-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-primary-700"
+            className="bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary-700"
           >
             Apply
           </button>
@@ -748,90 +830,194 @@ const MarkStudentAttendancePanel = forwardRef<
       )}
 
       {classId && rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="font-semibold text-gray-900">
-              {selectedClassName}
-              {selectedSectionName ? ` - ${selectedSectionName}` : ''}
-            </span>
-            <span className="text-green-700">✓ {classCounts.present}</span>
-            <span className="text-red-600">✗ {classCounts.absent}</span>
-            <span className="text-amber-600">⏱ {classCounts.late}</span>
-            <span className="text-blue-600">📅 {classCounts.onLeave}</span>
-            <span className="text-gray-500">Total: {classCounts.total}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            <input
+              type="text"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Search student by name or roll no..."
+              className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
           </div>
-          <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={markAllPresent}
+            className="text-xs font-medium border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-50"
+          >
+            Mark All Present
+          </button>
+          <button
+            type="button"
+            onClick={clearAll}
+            className="text-xs font-medium border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-50"
+          >
+            Clear All
+          </button>
+          <div className="relative" ref={moreActionsRef}>
             <button
               type="button"
-              onClick={markAllPresent}
-              className="text-sm border border-primary-300 text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50"
+              onClick={() => setShowMoreActions((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-xs font-medium border border-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 bg-white"
             >
-              Mark All Present
+              More Actions
+              <FiChevronDown size={14} />
             </button>
-            <button
-              type="button"
-              onClick={clearAll}
-              className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
-            >
-              Clear All
-            </button>
+            {showMoreActions && (
+              <div className="absolute right-0 top-full mt-1 z-20 min-w-[10rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllAbsent();
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Mark All Absent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllLate();
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Mark All Late
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMarkMode('bulk');
+                    setShowMoreActions(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Switch to Bulk Mode
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {!classId ? (
-          <div className="text-center py-16 text-gray-500 text-sm">
+          <div className="text-center py-14 text-gray-500 text-sm">
             Select a class and section to load students.
           </div>
         ) : loadingList ? (
-          <div className="text-center py-16 text-gray-500 text-sm">Loading students...</div>
+          <div className="text-center py-14 text-gray-500 text-sm">Loading students...</div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-16 text-gray-500 text-sm">
+          <div className="text-center py-14 text-gray-500 text-sm">
             No active students in this class/section.
           </div>
+        ) : filteredRows.length === 0 ? (
+          <div className="text-center py-14 text-gray-500 text-sm">No students match your search.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+            <table className="w-full text-sm table-fixed">
+              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 w-10">
+                  <th className="px-3 py-2.5 w-10">
                     <input
                       type="checkbox"
-                      checked={rows.length > 0 && rows.every((r) => r.selected)}
-                      onChange={toggleAllSelected}
-                      aria-label="Select all"
+                      checked={
+                        filteredRows.length > 0 && filteredRows.every((r) => r.selected)
+                      }
+                      onChange={() => {
+                        const allSelected = filteredRows.every((r) => r.selected);
+                        const visibleIds = new Set(filteredRows.map((r) => r.id));
+                        setRows((prev) =>
+                          prev.map((r) =>
+                            visibleIds.has(r.id) ? { ...r, selected: !allSelected } : r,
+                          ),
+                        );
+                      }}
+                      aria-label="Select all visible"
+                      className="rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left font-medium w-40">Roll No.</th>
-                  <th className="px-4 py-3 text-left font-medium">Student Name</th>
-                  <th className="px-4 py-3 text-left font-medium min-w-[280px]">Attendance Status</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold w-16">Roll No.</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Student Name</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold w-[24rem]">
+                    Attendance Status
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.map((row, index) => (
+              <tbody className="divide-y divide-gray-50">
+                {filteredRows.map((row, index) => (
                   <tr key={row.id} className="hover:bg-gray-50/80">
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="checkbox"
                         checked={row.selected}
                         onChange={() => toggleRowSelected(row.id)}
                         aria-label={`Select ${studentFullName(row)}`}
+                        className="rounded border-gray-300"
                       />
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{row.roll_number || index + 1}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 py-2.5 text-gray-600 text-xs">
+                      {row.roll_number || index + 1}
+                    </td>
+                    <td className="px-3 py-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <StudentAvatar student={row} />
-                        <span className="font-medium text-gray-900">{studentFullName(row)}</span>
+                        <span className="font-medium text-gray-900 text-sm truncate">
+                          {studentFullName(row)}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <StatusButtons
-                        value={row.status}
-                        onChange={(status) => setRowStatus(row.id, status)}
-                        compact
-                      />
+                    <td className="px-3 py-2.5 relative" data-row-actions>
+                      <div className="flex items-center justify-end gap-1">
+                        <StatusButtons
+                          value={row.status}
+                          onChange={(status) => setRowStatus(row.id, status)}
+                          compact
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenActionRowId((prev) => (prev === row.id ? null : row.id))
+                          }
+                          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 shrink-0"
+                          aria-label="Row actions"
+                        >
+                          <FiMoreVertical size={16} />
+                        </button>
+                      </div>
+                      {openActionRowId === row.id && (
+                        <div className="absolute right-3 top-full z-20 mt-0.5 min-w-[9rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                          {STATUS_CONFIG.map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => {
+                                setRowStatus(row.id, opt.value);
+                                setOpenActionRowId(null);
+                              }}
+                              className="w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50"
+                            >
+                              Mark {opt.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, status: null } : r,
+                                ),
+                              );
+                              setOpenActionRowId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                          >
+                            Clear status
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -839,24 +1025,6 @@ const MarkStudentAttendancePanel = forwardRef<
             </table>
           </div>
         )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2"
-        >
-          Cancel
-        </button>
-        <div className="flex gap-2">
-          <SubmitAttendanceActions
-            onSaveDraft={saveDraft}
-            onSubmit={submitClassAttendance}
-            saving={saving}
-            canSubmit={canSubmit}
-          />
-        </div>
       </div>
     </div>
   );

@@ -32,6 +32,140 @@ export const PIPELINE_STATUSES: InquiryStatus[] = [
 
 export const TERMINAL_STATUSES: InquiryStatus[] = ['enrolled', 'lost', 'on_hold'];
 
+export const STATUS_COLUMN_META: Record<
+  InquiryStatus,
+  { subtitle: string; statHint: string; borderClass: string; iconBg: string; iconColor: string }
+> = {
+  new: {
+    subtitle: 'Not yet contacted',
+    statHint: 'Needs contact',
+    borderClass: 'border-t-blue-500',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+  },
+  contacted: {
+    subtitle: 'In progress',
+    statHint: 'In progress',
+    borderClass: 'border-t-violet-500',
+    iconBg: 'bg-violet-100',
+    iconColor: 'text-violet-600',
+  },
+  visit_scheduled: {
+    subtitle: 'Visit planned',
+    statHint: 'Visit planned',
+    borderClass: 'border-t-orange-500',
+    iconBg: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+  },
+  interested: {
+    subtitle: 'High potential',
+    statHint: 'High potential',
+    borderClass: 'border-t-amber-500',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+  },
+  registered: {
+    subtitle: 'Ready to enroll',
+    statHint: 'Ready to enroll',
+    borderClass: 'border-t-teal-500',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+  },
+  enrolled: {
+    subtitle: 'Successfully enrolled',
+    statHint: 'Enrolled',
+    borderClass: 'border-t-green-500',
+    iconBg: 'bg-green-100',
+    iconColor: 'text-green-600',
+  },
+  lost: {
+    subtitle: 'Did not enroll',
+    statHint: 'Lost leads',
+    borderClass: 'border-t-red-500',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-600',
+  },
+  on_hold: {
+    subtitle: 'Paused follow-up',
+    statHint: 'On hold',
+    borderClass: 'border-t-slate-400',
+    iconBg: 'bg-slate-100',
+    iconColor: 'text-slate-600',
+  },
+};
+
+export interface InquiryCardTag {
+  label: string;
+  className: string;
+}
+
+export function formatInquiryRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export function formatInquiryDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export function getInquiryCardTags(inquiry: {
+  status: InquiryStatus;
+  priority: string;
+  converted_student_id?: number | null;
+}): InquiryCardTag[] {
+  const tags: InquiryCardTag[] = [];
+
+  if (inquiry.priority === 'high' || inquiry.status === 'interested') {
+    tags.push({
+      label: inquiry.status === 'interested' ? 'High Potential' : 'High Priority',
+      className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+    });
+  }
+
+  if (inquiry.status === 'registered' && !inquiry.converted_student_id) {
+    tags.push({
+      label: 'Ready to Enroll',
+      className: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
+    });
+  }
+
+  if (inquiry.status === 'enrolled') {
+    tags.push({
+      label: 'Enrolled',
+      className: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+    });
+  }
+
+  if (inquiry.status === 'lost') {
+    tags.push({
+      label: 'Lost',
+      className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+    });
+  }
+
+  return tags;
+}
+
+export function formatInquiryNumber(inquiryNumber: string): string {
+  return inquiryNumber.startsWith('#') ? inquiryNumber : `#${inquiryNumber}`;
+}
+
 /** Card surface + border tint for inquiry tiles */
 export const STATUS_CARD_STYLES: Record<InquiryStatus, string> = {
   new: 'bg-blue-50 border-blue-200 hover:bg-blue-100/80',

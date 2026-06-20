@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { FiX } from 'react-icons/fi';
+import type { InquiryStatus } from '@/lib/admission-inquiry-api';
+import { STATUS_LABELS } from '@/features/admissions/utils/inquiry-labels';
 
 interface Class {
   id: number;
@@ -13,6 +15,7 @@ interface AddInquiryModalProps {
   onClose: () => void;
   onSuccess: () => void;
   classes: Class[];
+  defaultStatus?: InquiryStatus;
 }
 
 const emptyForm = {
@@ -40,6 +43,7 @@ export default function AddInquiryModal({
   onClose,
   onSuccess,
   classes,
+  defaultStatus = 'new',
 }: AddInquiryModalProps) {
   const sidebarCollapsed = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -76,6 +80,7 @@ export default function AddInquiryModal({
             ? parseInt(form.interested_class_id, 10)
             : null,
           gender: form.gender || null,
+          status: defaultStatus,
         }),
       });
       const data = await res.json();
@@ -106,7 +111,14 @@ export default function AddInquiryModal({
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shrink-0">
           <div>
             <h2 className="text-lg sm:text-xl text-gray-900">New Admission Inquiry</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Capture student and parent details for follow-up</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Capture student and parent details
+              {defaultStatus !== 'new' && (
+                <span className="ml-1 text-primary-600">
+                  · Starts in {STATUS_LABELS[defaultStatus]}
+                </span>
+              )}
+            </p>
           </div>
           <button
             type="button"

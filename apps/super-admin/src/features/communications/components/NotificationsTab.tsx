@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import {
   AUDIENCE_OPTIONS,
@@ -152,7 +152,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
     setError('');
   };
 
-  const handleSave = async () => {
+  const handleSave = async (publishAfterSave = false) => {
     if (!form.title.trim() || !form.message.trim()) {
       setError('Title and message are required');
       return;
@@ -172,6 +172,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
         scheduled_at: form.scheduled_at || null,
         expires_at: form.expires_at || null,
         send_sms: form.send_sms,
+        ...(!editing && publishAfterSave ? { publish: true } : {}),
       };
 
       const url = editing
@@ -183,13 +184,50 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) {
-        setShowForm(false);
-        setSuccess(editing ? 'Notification updated' : 'Notification created as draft');
-        fetchNotifications();
-      } else {
+      if (!data.success) {
         setError(data.error || 'Failed to save notification');
+        return;
       }
+
+      const notificationId = editing?.id ?? data.data?.id;
+      const alreadyPublished = !editing && publishAfterSave && data.data?.status === 'active';
+      if (alreadyPublished) {
+        let msg = 'Notification published — now visible on the parent portal';
+        if (form.send_sms && data.sms?.skipped) {
+          msg += '. SMS was not sent — configure OTP_API_KEY first.';
+        } else if (form.send_sms && data.sms?.sent) {
+          msg += `. SMS sent to ${data.sms.sent} recipient(s).`;
+        }
+        setSuccess(msg);
+      } else if (publishAfterSave && notificationId) {
+        const pubRes = await fetch(
+          `/api/communications/notifications/${notificationId}/publish`,
+          { method: 'POST' },
+        );
+        const pubData = await pubRes.json();
+        if (pubData.success) {
+          let msg = 'Notification published — now visible on the parent portal';
+          if (form.send_sms && pubData.sms?.skipped) {
+            msg += '. SMS was not sent — configure OTP_API_KEY first.';
+          } else if (form.send_sms && pubData.sms?.sent) {
+            msg += `. SMS sent to ${pubData.sms.sent} recipient(s).`;
+          }
+          setSuccess(msg);
+        } else {
+          setSuccess(
+            `Saved as draft but publish failed: ${pubData.error || 'Unknown error'}. Use the Publish button in the list.`,
+          );
+        }
+      } else {
+        setSuccess(
+          editing
+            ? 'Draft updated. Click Publish (send icon) to show on parent portal.'
+            : 'Saved as draft. Click Publish (send icon) to show on parent portal.',
+        );
+      }
+
+      setShowForm(false);
+      fetchNotifications();
     } catch {
       setError('Failed to save notification');
     } finally {
@@ -208,7 +246,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
       );
       const data = await res.json();
       if (data.success) {
-        let msg = data.message || 'Notification published';
+        let msg = 'Notification published — now visible on the parent portal';
         if (data.sms?.skipped && publishTarget.send_sms) {
           msg = 'Notification published. SMS was not sent — configure OTP_API_KEY first.';
         } else if (publishTarget.send_sms && data.sms?.sent) {
@@ -262,6 +300,20 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
   const needsClass =
     form.audience_type === 'class_parents' || form.audience_type === 'section_parents';
 
+  const sidebarCollapsed = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebarCollapsed') === 'true';
+    }
+    return false;
+  }, [showForm]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setError('');
+  };
+
+  const draftCount = notifications.filter((n) => n.status === 'draft').length;
+
   return (
     <div className="space-y-4">
       {error && (
@@ -272,6 +324,15 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
           {success}
+        </div>
+      )}
+
+      {draftCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-lg text-sm">
+          <strong>{draftCount} draft notification{draftCount > 1 ? 's' : ''}</strong> — not visible on
+          the parent portal yet. Click the <FiSend className="inline w-3.5 h-3.5" />{' '}
+          <strong>Publish</strong> button in the list, or use <strong>Save &amp; Publish</strong> when
+          creating.
         </div>
       )}
 
@@ -347,6 +408,9 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                     >
                       {n.status}
                     </span>
+                    {n.status === 'draft' && (
+                      <p className="text-xs text-amber-700 mt-1">Hidden from parent portal</p>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDateTime(n.published_at)}</td>
                   <td className="px-4 py-3">
@@ -373,7 +437,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                             type="button"
                             onClick={() => setPublishTarget(n)}
                             className="p-2 text-gray-500 hover:text-green-600"
-                            title="Publish"
+                            title="Publish to parent portal"
                           >
                             <FiSend size={16} />
                           </button>
@@ -407,41 +471,83 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <h2 className="font-semibold text-gray-900">
-                {editing ? 'Edit Notification' : 'New Notification'}
-              </h2>
-              <button type="button" onClick={() => setShowForm(false)} className="text-gray-500">
-                <FiX size={20} />
+        <div
+          className={`fixed top-0 bottom-0 right-0 bg-black/50 z-[60] transition-all duration-300 ${
+            sidebarCollapsed ? 'left-16' : 'left-56'
+          }`}
+          onClick={closeForm}
+          role="presentation"
+        >
+          <div
+            className="ml-auto h-full w-full bg-white shadow-2xl flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="notification-form-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+              <div>
+                <h2 id="notification-form-title" className="text-lg font-medium text-gray-900">
+                  {editing ? 'Edit Notification' : 'New Notification'}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {editing ? 'Update draft notification details' : 'Create a notification for parents'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
+              >
+                <FiX className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-3">
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 min-h-0">
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Notification title"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
                 <textarea
                   value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  rows={5}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  rows={6}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  placeholder="Write the notification message..."
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
                   <select
                     value={form.audience_type}
-                    onChange={(e) => setForm({ ...form, audience_type: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    onChange={(e) => {
+                      const audience_type = e.target.value;
+                      setForm({
+                        ...form,
+                        audience_type,
+                        ...(audience_type !== 'class_parents' && audience_type !== 'section_parents'
+                          ? { class_id: '', section_id: '' }
+                          : {}),
+                      });
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                   >
                     {AUDIENCE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -455,7 +561,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                   <select
                     value={form.priority}
                     onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                   >
                     {NOTIFICATION_PRIORITY_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -465,14 +571,15 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                   </select>
                 </div>
               </div>
+
               {needsClass && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
                     <select
                       value={form.class_id}
                       onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                       <option value="">Select class</option>
                       {classes.map((c) => (
@@ -484,14 +591,12 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                   </div>
                   {form.audience_type === 'section_parents' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Section
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
                       <select
                         value={form.section_id}
                         onChange={(e) => setForm({ ...form, section_id: e.target.value })}
                         disabled={!form.class_id}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white disabled:bg-gray-50"
                       >
                         <option value="">Select section</option>
                         {sections.map((s) => (
@@ -504,7 +609,8 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                   )}
                 </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Schedule for (optional)
@@ -513,7 +619,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                     type="datetime-local"
                     value={form.scheduled_at}
                     onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -522,36 +628,50 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
                     type="date"
                     value={form.expires_at}
                     onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.send_sms}
-                  onChange={(e) => setForm({ ...form, send_sms: e.target.checked })}
-                  className="rounded border-gray-300"
-                />
-                Also send SMS when published
-              </label>
             </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t bg-gray-50">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={handleSave}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : editing ? 'Update draft' : 'Save as draft'}
-              </button>
+
+            <div className="shrink-0 border-t border-gray-200 px-6 py-4 bg-gray-50/80">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={form.send_sms}
+                    onChange={(e) => setForm({ ...form, send_sms: e.target.checked })}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  Also send SMS when published
+                </label>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeForm}
+                    className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleSave(false)}
+                    className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save as draft'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleSave(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    <FiSend className="w-4 h-4" />
+                    {saving ? 'Publishing...' : 'Save & Publish'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -587,8 +707,8 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
 
       <ConfirmDialog
         isOpen={!!publishTarget}
-        title="Publish Notification"
-        message={`Activate "${publishTarget?.title}" for the selected audience?${publishTarget?.send_sms ? ' An SMS will also be sent.' : ''}`}
+        title="Publish to Parent Portal"
+        message={`Publish "${publishTarget?.title}"? Parents will see it on the dashboard and notifications page.${publishTarget?.send_sms ? ' An SMS will also be sent.' : ''}`}
         confirmText="Publish"
         cancelText="Cancel"
         type="warning"

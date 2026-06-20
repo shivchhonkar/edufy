@@ -81,6 +81,14 @@ export type DashboardStats = {
     room?: string | null
   }>
   unreadNotices: number
+  notifications: Array<{
+    id: number
+    title: string
+    message: string
+    priority: string
+    published_at?: string | null
+    created_at: string
+  }>
 }
 
 function getGreeting() {
@@ -225,6 +233,7 @@ export default function ParentDashboardView({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
+                onClick={() => router.push('/notifications')}
                 className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg portal-header-control shadow-sm transition-colors"
                 aria-label="Notifications"
               >
@@ -366,7 +375,7 @@ export default function ParentDashboardView({
                 icon={FiMessageSquare}
                 chip="danger"
                 actionLabel="View Messages"
-                onClick={() => {}}
+                onClick={() => router.push('/notifications')}
               />
             </section>
 
@@ -518,8 +527,33 @@ export default function ParentDashboardView({
                 ) : null}
               </InfoCard>
 
-              <InfoCard title="Latest Notice" actionLabel="View All" icon={FiBell} emptyMessage="No notices published yet.">
-                {stats.notice ? (
+              <InfoCard
+                title="School Notifications"
+                actionLabel="View All"
+                icon={FiBell}
+                onAction={() => router.push('/notifications')}
+                emptyMessage="No notifications published yet."
+              >
+                {stats.notifications?.length ? (
+                  <ul className="divide-y portal-divider">
+                    {stats.notifications.map((item) => (
+                      <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
+                        <p className="font-semibold portal-text leading-snug">{item.title}</p>
+                        <p className="text-sm portal-text-muted leading-relaxed line-clamp-2 mt-1">
+                          {item.message}
+                        </p>
+                        {(item.published_at || item.created_at) && (
+                          <p className="text-xs portal-text-muted mt-1 opacity-80">
+                            {new Date(item.published_at || item.created_at).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : stats.notice ? (
                   <div className="space-y-3">
                     <p className="font-semibold portal-text leading-snug">{stats.notice.title}</p>
                     <p className="text-sm portal-text-muted leading-relaxed line-clamp-4">{stats.notice.content}</p>

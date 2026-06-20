@@ -270,44 +270,46 @@ export default function StudentAttendancePage() {
   // FiCheckCircle used above - need import
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="max-w-7xl mx-auto space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Student Attendance</h1>
-            <p className="text-gray-600 mt-1 text-sm">
+            <h1 className="text-lg font-semibold text-gray-900">Student Attendance</h1>
+            <p className="text-gray-500 mt-0.5 text-xs">
               Mark attendance by class or individually, then review today&apos;s records and history.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1.5 border border-gray-200 bg-white px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
-            <FiClock size={16} />
+            <FiClock size={14} />
             View Attendance History
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {statCards.map((card) => {
             const Icon = card.icon;
             return (
               <div
                 key={card.label}
-                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+                className="shrink-0 min-w-[9.5rem] flex-1 bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                    <p className={`text-xl mt-0.5 ${card.valueClass}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide truncate">
+                      {card.label}
+                    </p>
+                    <p className={`text-xl font-bold leading-tight mt-0.5 ${card.valueClass}`}>
                       {card.value}
                       {card.sub && (
-                        <span className="text-sm font-normal text-gray-400 ml-1">{card.sub}</span>
+                        <span className="text-xs font-normal text-gray-400 ml-1">{card.sub}</span>
                       )}
                     </p>
                   </div>
-                  <div className={`p-2.5 rounded-full ${card.iconBg}`}>
-                    <Icon className={`w-5 h-5 ${card.iconColor}`} />
+                  <div className={`p-2 rounded-full shrink-0 ${card.iconBg}`}>
+                    <Icon className={`w-4 h-4 ${card.iconColor}`} />
                   </div>
                 </div>
               </div>
@@ -316,18 +318,18 @@ export default function StudentAttendancePage() {
         </div>
 
         {migrationRequired && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs">
             Student attendance table is not set up for this school yet.
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="border-b border-gray-200 px-5 flex flex-wrap items-center justify-between gap-3">
-            <nav className="-mb-px flex gap-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="border-b border-gray-100 px-4 flex flex-wrap items-center justify-between gap-2">
+            <nav className="-mb-px flex gap-5">
               <button
                 type="button"
                 onClick={() => setActiveTab('mark')}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-3 text-xs font-semibold border-b-2 transition-colors ${
                   activeTab === 'mark'
                     ? 'border-primary-600 text-primary-700'
                     : 'border-transparent text-gray-500 hover:text-gray-800'
@@ -338,7 +340,7 @@ export default function StudentAttendancePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('individual')}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-3 text-xs font-semibold border-b-2 transition-colors ${
                   activeTab === 'individual'
                     ? 'border-primary-600 text-primary-700'
                     : 'border-transparent text-gray-500 hover:text-gray-800'
@@ -349,7 +351,7 @@ export default function StudentAttendancePage() {
               {activeTab === 'history' && (
                 <button
                   type="button"
-                  className="py-4 text-sm font-medium border-b-2 border-primary-600 text-primary-700"
+                  className="py-3 text-xs font-semibold border-b-2 border-primary-600 text-primary-700"
                 >
                   Attendance History
                 </button>
@@ -360,15 +362,15 @@ export default function StudentAttendancePage() {
                 type="button"
                 onClick={() => attendancePanelRef.current?.submit()}
                 disabled={!submitState.canSubmit || submitState.saving}
-                className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 shrink-0 mb-2 sm:mb-3"
+                className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-primary-700 disabled:opacity-50 shrink-0 my-2"
               >
-                <FiSend size={16} />
+                <FiSend size={14} />
                 {submitState.saving ? 'Submitting...' : 'Submit Attendance'}
               </button>
             )}
           </div>
 
-          <div className="p-5">
+          <div className="p-4">
             {activeTab === 'mark' && (
               <MarkStudentAttendancePanel
                 ref={attendancePanelRef}
@@ -393,33 +395,33 @@ export default function StudentAttendancePage() {
 
             {activeTab === 'history' && (
               <>
-                <div className="mb-5 grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={filters.start_date}
                       onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">End Date</label>
                     <input
                       type="date"
                       value={filters.end_date}
                       onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Class</label>
                     <select
                       value={filters.class_id}
                       onChange={(e) =>
                         setFilters({ ...filters, class_id: e.target.value, section_id: '' })
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs bg-white"
                     >
                       <option value="">All Classes</option>
                       {classes.map((c) => (
@@ -430,12 +432,12 @@ export default function StudentAttendancePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Section</label>
                     <select
                       value={filters.section_id}
                       onChange={(e) => setFilters({ ...filters, section_id: e.target.value })}
                       disabled={!filters.class_id}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:bg-gray-100"
+                      className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs disabled:bg-gray-50 bg-white"
                     >
                       <option value="">All Sections</option>
                       {sections.map((s) => (
@@ -446,11 +448,11 @@ export default function StudentAttendancePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
                     <select
                       value={filters.status}
                       onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs bg-white"
                     >
                       <option value="">All Status</option>
                       <option value="present">Present</option>
@@ -462,62 +464,62 @@ export default function StudentAttendancePage() {
                 </div>
 
                 {loading ? (
-                  <div className="flex justify-center py-16">
-                    <div className="animate-spin h-8 w-8 border-b-2 border-primary-600 rounded-full" />
+                  <div className="flex justify-center py-14">
+                    <div className="animate-spin h-7 w-7 border-b-2 border-primary-600 rounded-full" />
                   </div>
                 ) : attendanceRecords.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500 text-sm">
+                  <div className="text-center py-14 text-gray-500 text-sm">
                     No attendance records found.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto -mx-5">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-4 border-t border-gray-100">
+                    <table className="w-full text-xs min-w-[720px]">
                       <thead className="bg-gray-50 text-gray-600">
                         <tr>
-                          <th className="px-5 py-3 text-left">Student</th>
-                          <th className="px-5 py-3 text-left">Admission No.</th>
-                          <th className="px-5 py-3 text-left">Class</th>
-                          <th className="px-5 py-3 text-left">Date</th>
-                          <th className="px-5 py-3 text-left">Status</th>
-                          <th className="px-5 py-3 text-left">Remarks</th>
-                          <th className="px-5 py-3 text-left w-12">Actions</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Student</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Admission No.</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Class</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Date</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Status</th>
+                          <th className="px-4 py-2.5 text-left font-semibold">Remarks</th>
+                          <th className="px-4 py-2.5 text-left w-12">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-gray-50">
                         {attendanceRecords.map((record) => (
-                          <tr key={record.id} className="hover:bg-gray-50">
-                            <td className="px-5 py-3 font-medium text-gray-900">
+                          <tr key={record.id} className="hover:bg-gray-50/80">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">
                               {record.first_name} {record.last_name}
                             </td>
-                            <td className="px-5 py-3 text-gray-600">{record.admission_number}</td>
-                            <td className="px-5 py-3 text-gray-600">
+                            <td className="px-4 py-2.5 text-gray-600">{record.admission_number}</td>
+                            <td className="px-4 py-2.5 text-gray-600">
                               {record.class_name || '—'}
                               {record.section_name ? ` · ${record.section_name}` : ''}
                             </td>
-                            <td className="px-5 py-3 text-gray-600">
+                            <td className="px-4 py-2.5 text-gray-600">
                               {new Date(record.date).toLocaleDateString('en-IN')}
                             </td>
-                            <td className="px-5 py-3">
+                            <td className="px-4 py-2.5">
                               <span
-                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}
+                                className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${getStatusColor(record.status)}`}
                               >
                                 {record.status.replace('_', ' ').toUpperCase()}
                               </span>
                             </td>
-                            <td className="px-5 py-3 text-gray-500 max-w-xs truncate">
+                            <td className="px-4 py-2.5 text-gray-500 max-w-xs truncate">
                               {record.remarks || '—'}
                             </td>
-                            <td className="px-5 py-3">
+                            <td className="px-4 py-2.5">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setSelectedRecord(record);
                                   setShowRecordModal(true);
                                 }}
-                                className="text-primary-600 hover:text-primary-800 p-1"
+                                className="text-primary-600 hover:text-primary-800 p-1 rounded hover:bg-primary-50"
                                 title="Edit"
                               >
-                                <FiEdit className="w-4 h-4" />
+                                <FiEdit className="w-3.5 h-3.5" />
                               </button>
                             </td>
                           </tr>
@@ -527,11 +529,11 @@ export default function StudentAttendancePage() {
                   </div>
                 )}
 
-                <div className="mt-4">
+                <div className="mt-3 pt-3 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setActiveTab('mark')}
-                    className="text-sm text-primary-600 hover:underline"
+                    className="text-xs text-primary-600 hover:text-primary-800 font-medium"
                   >
                     ← Back to Mark Attendance
                   </button>

@@ -2,9 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
+import { useDialog } from '@/shared/context/DialogContext';
 import { studentFullName } from '@/features/students/utils/student-profile';
-import { FiArrowRight, FiCheckSquare, FiRefreshCw, FiSquare, FiUsers } from 'react-icons/fi';
+import {
+  FiArrowRight,
+  FiCheckSquare,
+  FiRefreshCw,
+  FiSearch,
+  FiSquare,
+  FiUsers,
+} from 'react-icons/fi';
 
 interface Class {
   id: number;
@@ -37,25 +44,27 @@ interface EligibleStudent {
 
 type PromotionAction = 'promoted' | 'repeated' | 'transferred';
 
-const PROMOTION_OPTIONS: { value: PromotionAction; label: string; description: string }[] = [
-  {
-    value: 'promoted',
-    label: 'Promote',
-    description: 'Move students to the next class for a new session',
-  },
-  {
-    value: 'repeated',
-    label: 'Repeat',
-    description: 'Keep students in the same class for the new session',
-  },
-  {
-    value: 'transferred',
-    label: 'Transfer',
-    description: 'Move students to a different class (lateral transfer)',
-  },
+const PROMOTION_OPTIONS: { value: PromotionAction; label: string }[] = [
+  { value: 'promoted', label: 'Promote' },
+  { value: 'repeated', label: 'Repeat' },
+  { value: 'transferred', label: 'Transfer' },
 ];
 
+const selectClass =
+  'w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500';
+
+function suggestNextClassId(classes: Class[], sourceClassId: string): string {
+  const source = classes.find((c) => c.id.toString() === sourceClassId);
+  if (!source) return '';
+  const match = source.name.match(/(\d+)/);
+  if (!match) return '';
+  const nextNum = parseInt(match[1], 10) + 1;
+  const next = classes.find((c) => /\d+/.test(c.name) && c.name.match(/(\d+)/)?.[1] === String(nextNum));
+  return next ? String(next.id) : '';
+}
+
 export default function PromotionsPage() {
+  const { confirm } = useDialog();
   const [classes, setClasses] = useState<Class[]>([]);
   const [sourceSections, setSourceSections] = useState<Section[]>([]);
   const [targetSections, setTargetSections] = useState<Section[]>([]);
@@ -68,6 +77,7 @@ export default function PromotionsPage() {
   const [academicYearId, setAcademicYearId] = useState('');
   const [promotionAction, setPromotionAction] = useState<PromotionAction>('promoted');
   const [preserveRollNumbers, setPreserveRollNumbers] = useState(true);
+  const [studentSearch, setStudentSearch] = useState('');
 
   const [students, setStudents] = useState<EligibleStudent[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -75,18 +85,33 @@ export default function PromotionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [showConfirm, setShowConfirm] = useState(false);
-
   const activeAcademicYear = useMemo(
     () => academicYears.find((y) => y.is_active),
-    [academicYears]
+    [academicYears],
   );
 
-  const sourceClassName = classes.find((c) => c.id.toString() === sourceClassId)?.name;
-  const targetClassName = classes.find((c) => c.id.toString() === targetClassId)?.name;
+  const sourceClass = classes.find((c) => c.id.toString() === sourceClassId);
+  const targetClass = classes.find((c) => c.id.toString() === targetClassId);
+  const sourceClassName = sourceClass?.name;
+  const targetClassName = targetClass?.name;
+  const sourceSectionName = sourceSections.find((s) => s.id.toString() === sourceSectionId)?.name;
+  const targetSectionName = targetSections.find((s) => s.id.toString() === targetSectionId)?.name;
   const targetYearName =
     academicYears.find((y) => y.id.toString() === academicYearId)?.name ||
     activeAcademicYear?.name;
+
+  const filteredStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter((s) => {
+      const name = studentFullName(s).toLowerCase();
+      return (
+        name.includes(q) ||
+        s.admission_number.toLowerCase().includes(q) ||
+        (s.roll_number || '').toLowerCase().includes(q)
+      );
+    });
+  }, [students, studentSearch]);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -189,6 +214,12 @@ export default function PromotionsPage() {
     }
   }, [promotionAction, sourceClassId, sourceSectionId]);
 
+  useEffect(() => {
+    if (promotionAction !== 'promoted' || !sourceClassId) return;
+    const suggested = suggestNextClassId(classes, sourceClassId);
+    if (suggested) setTargetClassId(suggested);
+  }, [sourceClassId, classes, promotionAction]);
+
   const toggleStudent = (id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -198,23 +229,68 @@ export default function PromotionsPage() {
     });
   };
 
-  const toggleAll = () => {
-    if (selectedIds.size === students.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(students.map((s) => s.id)));
-    }
+  const toggleAllVisible = () => {
+    const visibleIds = filteredStudents.map((s) => s.id);
+    const allVisibleSelected = visibleIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleIds.forEach((id) => next.delete(id));
+      } else {
+        visibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
   };
 
   const canSubmit =
-    sourceClassId &&
-    targetClassId &&
-    academicYearId &&
-    selectedIds.size > 0 &&
-    !submitting;
+    sourceClassId && targetClassId && academicYearId && selectedIds.size > 0 && !submitting;
+
+  const actionLabel =
+    promotionAction === 'promoted'
+      ? 'Promote'
+      : promotionAction === 'repeated'
+        ? 'Repeat'
+        : 'Transfer';
+
+  const buildConfirmMessage = () =>
+    `${actionLabel} ${selectedIds.size} student(s) from ${sourceClassName || 'source class'}${sourceSectionName ? `-${sourceSectionName}` : ''} to ${targetClassName || 'target class'}${targetSectionName ? `-${targetSectionName}` : ''} for ${targetYearName || 'selected year'}?\n\nThis updates enrollment history and current class assignments. This action cannot be undone easily.`;
+
+  const requestActionChange = async (next: PromotionAction) => {
+    if (next === promotionAction) return;
+
+    if (next === 'promoted' || next === 'transferred') {
+      const label = next === 'promoted' ? 'Promote' : 'Transfer';
+      const ok = await confirm(
+        `Switch to "${label}" action? The target class will be updated based on this choice.`,
+        {
+          title: `Switch to ${label}?`,
+          type: 'warning',
+          confirmText: `Yes, use ${label}`,
+          cancelText: 'Cancel',
+        },
+      );
+      if (!ok) return;
+    }
+
+    setPromotionAction(next);
+  };
+
+  const requestSubmit = async () => {
+    if (!canSubmit) return;
+
+    const ok = await confirm(buildConfirmMessage(), {
+      title: `Confirm ${actionLabel}`,
+      type: promotionAction === 'transferred' ? 'danger' : 'warning',
+      confirmText: `Yes, ${actionLabel}`,
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+
+    await handlePromote();
+  };
 
   const handlePromote = async () => {
-    setShowConfirm(false);
     setSubmitting(true);
     setError('');
     setSuccessMessage('');
@@ -237,7 +313,7 @@ export default function PromotionsPage() {
 
       const data = await res.json();
       if (data.success || data.data?.promoted > 0) {
-        setSuccessMessage(data.message || `Promoted ${data.data.promoted} student(s)`);
+        setSuccessMessage(data.message || `${actionLabel}d ${data.data.promoted} student(s)`);
         await fetchEligibleStudents();
       } else {
         setError(data.error || 'Promotion failed');
@@ -249,107 +325,119 @@ export default function PromotionsPage() {
     }
   };
 
+  const allVisibleSelected =
+    filteredStudents.length > 0 && filteredStudents.every((s) => selectedIds.has(s.id));
+
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-xl text-gray-900">Promotion Management</h1>
-          <p className="text-gray-600 mt-1">
-            Bulk promote, repeat, or transfer students and update academic enrollment history.
-          </p>
+      <div className="max-w-7xl mx-auto space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">Promotion Management</h1>
+            <p className="text-xs text-gray-500">
+              Bulk promote, repeat, or transfer students and update enrollment history.
+            </p>
+          </div>
+          {sourceClassId && students.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">
+                {students.length} students
+              </span>
+              <span className="rounded-full bg-primary-50 px-2 py-0.5 text-primary-700 font-medium">
+                {selectedIds.size} selected
+              </span>
+            </div>
+          )}
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-xs">
             {error}
           </div>
         )}
         {successMessage && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md text-xs">
             {successMessage}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Source */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Source
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <select
-                  value={sourceClassId}
-                  onChange={(e) => setSourceClassId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Select class</option>
-                  {classes.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </option>
-                  ))}
-                </select>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,220px)_1fr] divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+            <div className="p-3 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                Source
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-0.5">Class</label>
+                  <select
+                    value={sourceClassId}
+                    onChange={(e) => setSourceClassId(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">Select class</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-0.5">Section</label>
+                  <select
+                    value={sourceSectionId}
+                    onChange={(e) => setSourceSectionId(e.target.value)}
+                    disabled={!sourceClassId}
+                    className={selectClass}
+                  >
+                    <option value="">All sections</option>
+                    {sourceSections.map((sec) => (
+                      <option key={sec.id} value={sec.id}>
+                        {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Section (optional)
-                </label>
-                <select
-                  value={sourceSectionId}
-                  onChange={(e) => setSourceSectionId(e.target.value)}
-                  disabled={!sourceClassId}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
-                >
-                  <option value="">All sections</option>
-                  {sourceSections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {sourceClass && (
+                <p className="text-[11px] text-gray-500">
+                  Session: {sourceClass.academic_year || '—'}
+                  {students.length > 0 && (
+                    <span className="ml-2 text-green-700 font-medium">
+                      · {students.length} found
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
-          </div>
 
-          {/* Action */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Action
-            </h2>
-            <div className="space-y-3">
-              {PROMOTION_OPTIONS.map((opt) => (
-                <label
-                  key={opt.value}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    promotionAction === opt.value
-                      ? 'border-primary-400 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="promotion_action"
-                    value={opt.value}
-                    checked={promotionAction === opt.value}
-                    onChange={() => setPromotionAction(opt.value)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{opt.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{opt.description}</p>
-                  </div>
-                </label>
-              ))}
+            <div className="p-3 space-y-2 bg-gray-50/60">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                Action
+              </p>
+              <div className="flex rounded-md border border-gray-200 bg-white p-0.5">
+                {PROMOTION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => requestActionChange(opt.value)}
+                    className={`flex-1 rounded px-1 py-1 text-[11px] font-medium transition-colors ${
+                      promotionAction === opt.value
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Target academic year
-                </label>
+                <label className="block text-[11px] text-gray-500 mb-0.5">Target year</label>
                 <select
                   value={academicYearId}
                   onChange={(e) => setAcademicYearId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className={selectClass}
                 >
                   <option value="">Select year</option>
                   {academicYears.map((year) => (
@@ -360,64 +448,68 @@ export default function PromotionsPage() {
                   ))}
                 </select>
               </div>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-1.5 text-[11px] text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={preserveRollNumbers}
                   onChange={(e) => setPreserveRollNumbers(e.target.checked)}
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 Preserve roll numbers
               </label>
             </div>
-          </div>
 
-          {/* Target */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Target
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <select
-                  value={targetClassId}
-                  onChange={(e) => setTargetClassId(e.target.value)}
-                  disabled={promotionAction === 'repeated'}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
-                >
-                  <option value="">Select class</option>
-                  {classes.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Section (optional)
-                </label>
-                <select
-                  value={targetSectionId}
-                  onChange={(e) => setTargetSectionId(e.target.value)}
-                  disabled={!targetClassId || promotionAction === 'repeated'}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
-                >
-                  <option value="">No section</option>
-                  {targetSections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.name}
-                    </option>
-                  ))}
-                </select>
+            <div className="p-3 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                Target
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-0.5">Class</label>
+                  <select
+                    value={targetClassId}
+                    onChange={(e) => setTargetClassId(e.target.value)}
+                    disabled={promotionAction === 'repeated'}
+                    className={selectClass}
+                  >
+                    <option value="">Select class</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-0.5">Section</label>
+                  <select
+                    value={targetSectionId}
+                    onChange={(e) => setTargetSectionId(e.target.value)}
+                    disabled={!targetClassId || promotionAction === 'repeated'}
+                    className={selectClass}
+                  >
+                    <option value="">No section</option>
+                    {targetSections.map((sec) => (
+                      <option key={sec.id} value={sec.id}>
+                        {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               {sourceClassName && targetClassName && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                  <span className="font-medium">{sourceClassName}</span>
-                  <FiArrowRight className="text-primary-600" />
-                  <span className="font-medium">{targetClassName}</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-gray-600 bg-primary-50/50 rounded px-2 py-1">
+                  <span className="font-medium truncate">
+                    {sourceClassName}
+                    {sourceSectionName ? `-${sourceSectionName}` : ''}
+                  </span>
+                  <FiArrowRight className="shrink-0 text-primary-600" size={12} />
+                  <span className="font-medium truncate">
+                    {targetClassName}
+                    {targetSectionName ? `-${targetSectionName}` : ''}
+                  </span>
                   {targetYearName && (
-                    <span className="text-xs text-gray-500 ml-auto">{targetYearName}</span>
+                    <span className="ml-auto shrink-0 text-gray-400">{targetYearName}</span>
                   )}
                 </div>
               )}
@@ -425,91 +517,113 @@ export default function PromotionsPage() {
           </div>
         </div>
 
-        {/* Student list */}
-        <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <FiUsers className="text-primary-600" />
-              <h2 className="font-semibold text-gray-900">
-                Eligible Students
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({selectedIds.size} of {students.length} selected)
-                </span>
-              </h2>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-3 py-2 border-b border-gray-100 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <FiUsers className="text-primary-600 shrink-0" size={14} />
+              <span className="text-sm font-semibold text-gray-900">Students</span>
+              <span className="text-xs text-gray-500">
+                ({selectedIds.size}/{students.length})
+              </span>
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="relative flex-1 min-w-[140px] max-w-xs">
+              <FiSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+              <input
+                type="text"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Search name, admission, roll..."
+                className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-auto">
               <button
                 type="button"
                 onClick={fetchEligibleStudents}
                 disabled={!sourceClassId || loadingStudents}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
-                <FiRefreshCw className={loadingStudents ? 'animate-spin' : ''} />
+                <FiRefreshCw size={12} className={loadingStudents ? 'animate-spin' : ''} />
                 Refresh
               </button>
               <button
                 type="button"
-                onClick={() => setShowConfirm(true)}
+                onClick={requestSubmit}
                 disabled={!canSubmit}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Processing...' : `Promote ${selectedIds.size} Student(s)`}
+                {submitting
+                  ? 'Processing...'
+                  : `${actionLabel} ${selectedIds.size} student${selectedIds.size === 1 ? '' : 's'}`}
               </button>
             </div>
           </div>
 
           {!sourceClassId ? (
-            <div className="text-center py-16 text-gray-500 text-sm">
+            <div className="text-center py-10 text-gray-500 text-xs">
               Select a source class to load students.
             </div>
           ) : loadingStudents ? (
-            <div className="text-center py-16 text-gray-500 text-sm">Loading students...</div>
+            <div className="text-center py-10 text-gray-500 text-xs">Loading students...</div>
           ) : students.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 text-sm">
+            <div className="text-center py-10 text-gray-500 text-xs">
               No active students found in the selected class/section.
             </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-10 text-gray-500 text-xs">
+              No students match your search.
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
+            <div className="overflow-x-auto max-h-[min(520px,60vh)] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
                   <tr>
-                    <th className="px-5 py-3 text-left w-10">
-                      <button type="button" onClick={toggleAll} className="text-gray-600">
-                        {selectedIds.size === students.length ? (
-                          <FiCheckSquare size={18} />
+                    <th className="px-3 py-2 text-left w-8">
+                      <button type="button" onClick={toggleAllVisible} className="text-gray-600">
+                        {allVisibleSelected ? (
+                          <FiCheckSquare size={15} className="text-primary-600" />
                         ) : (
-                          <FiSquare size={18} />
+                          <FiSquare size={15} />
                         )}
                       </button>
                     </th>
-                    <th className="px-5 py-3 text-left">Student</th>
-                    <th className="px-5 py-3 text-left">Admission No.</th>
-                    <th className="px-5 py-3 text-left">Roll No.</th>
-                    <th className="px-5 py-3 text-left">Current Class</th>
+                    <th className="px-3 py-2 text-left font-medium">Student</th>
+                    <th className="px-3 py-2 text-left font-medium hidden sm:table-cell">
+                      Admission No.
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium w-16">Roll</th>
+                    <th className="px-3 py-2 text-left font-medium hidden md:table-cell">Class</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-5 py-3">
+                <tbody className="divide-y divide-gray-50">
+                  {filteredStudents.map((student) => (
+                    <tr key={student.id} className="hover:bg-gray-50/80">
+                      <td className="px-3 py-1.5">
                         <button
                           type="button"
                           onClick={() => toggleStudent(student.id)}
                           className="text-gray-600"
                         >
                           {selectedIds.has(student.id) ? (
-                            <FiCheckSquare size={18} className="text-primary-600" />
+                            <FiCheckSquare size={15} className="text-primary-600" />
                           ) : (
-                            <FiSquare size={18} />
+                            <FiSquare size={15} />
                           )}
                         </button>
                       </td>
-                      <td className="px-5 py-3 font-medium text-gray-900">
+                      <td className="px-3 py-1.5 font-medium text-gray-900">
                         {studentFullName(student)}
+                        <span className="sm:hidden block text-[10px] font-normal text-gray-500">
+                          {student.admission_number}
+                        </span>
                       </td>
-                      <td className="px-5 py-3 text-gray-600">{student.admission_number}</td>
-                      <td className="px-5 py-3 text-gray-600">{student.roll_number || '—'}</td>
-                      <td className="px-5 py-3 text-gray-600">
+                      <td className="px-3 py-1.5 text-gray-600 hidden sm:table-cell">
+                        {student.admission_number}
+                      </td>
+                      <td className="px-3 py-1.5 text-gray-600">{student.roll_number || '—'}</td>
+                      <td className="px-3 py-1.5 text-gray-600 hidden md:table-cell">
                         {student.class_name || '—'}
                         {student.section_name ? ` · ${student.section_name}` : ''}
                       </td>
@@ -521,16 +635,6 @@ export default function PromotionsPage() {
           )}
         </div>
 
-        <ConfirmDialog
-          isOpen={showConfirm}
-          title="Confirm Bulk Promotion"
-          message={`Promote ${selectedIds.size} student(s) from ${sourceClassName || 'source class'} to ${targetClassName || 'target class'} for ${targetYearName || 'selected year'}? This updates enrollment history and current class assignments.`}
-          confirmText="Yes, Promote"
-          cancelText="Cancel"
-          type="warning"
-          onConfirm={handlePromote}
-          onCancel={() => setShowConfirm(false)}
-        />
       </div>
     </DashboardLayout>
   );

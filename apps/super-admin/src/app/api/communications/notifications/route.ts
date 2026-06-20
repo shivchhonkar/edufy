@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       scheduled_at,
       expires_at,
       send_sms,
+      publish,
     } = body;
 
     if (!title?.trim() || !message?.trim()) {
@@ -79,11 +80,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const shouldPublish = Boolean(publish);
     const result = await db.query(
       `INSERT INTO school_notifications (
         title, message, audience_type, class_id, section_id,
-        priority, category, scheduled_at, expires_at, send_sms, status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'draft')
+        priority, category, scheduled_at, expires_at, send_sms, status, published_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       RETURNING *`,
       [
         title.trim(),
@@ -96,10 +98,35 @@ export async function POST(request: NextRequest) {
         scheduled_at || null,
         expires_at || null,
         Boolean(send_sms),
+        shouldPublish ? 'active' : 'draft',
+        shouldPublish ? new Date() : null,
       ]
     );
 
-    return NextResponse.json({ success: true, data: result.rows[0] }, { status: 201 });
+    let smsResult = { sent: 0, failed: 0, skipped: true };
+    const notification = result.rows[0];
+    if (shouldPublish && notification.send_sms) {
+      const { sendAudienceSms } = await import('@/lib/audience-sms');
+      const smsMessage = `${notification.title}: ${notification.message}`.slice(0, 480);
+      smsResult = await sendAudienceSms(db, {
+        title: `Notification: ${notification.title}`,
+        message: smsMessage,
+        audience_type: notification.audience_type,
+        class_id: notification.class_id,
+        section_id: notification.section_id,
+      });
+      if (!smsResult.skipped && smsResult.sent > 0) {
+        await db.query(
+          `UPDATE school_notifications SET sms_sent_at = CURRENT_TIMESTAMP WHERE id = $1`,
+          [notification.id],
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { success: true, data: notification, sms: shouldPublish ? smsResult : undefined },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Notifications POST:', error);
     return NextResponse.json(
