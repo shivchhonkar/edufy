@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
 import { FiX, FiTruck, FiCalendar, FiAlertCircle } from 'react-icons/fi';
 import { Vehicle } from '@/shared/types';
 
@@ -11,12 +11,6 @@ interface ViewVehicleModalProps {
 }
 
 export default function ViewVehicleModal({ isOpen, onClose, vehicle }: ViewVehicleModalProps) {
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
 
   const formatDate = (date: Date | string | null | undefined): string => {
     if (!date) return 'Not set';
@@ -48,10 +42,8 @@ export default function ViewVehicleModal({ isOpen, onClose, vehicle }: ViewVehic
   if (!isOpen || !vehicle) return null;
 
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">Vehicle Details</h2>
           <button
@@ -268,7 +260,7 @@ export default function ViewVehicleModal({ isOpen, onClose, vehicle }: ViewVehic
           )}
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

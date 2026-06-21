@@ -51,7 +51,7 @@ const PROMOTION_OPTIONS: { value: PromotionAction; label: string }[] = [
 ];
 
 const selectClass =
-  'w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500';
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500';
 
 function suggestNextClassId(classes: Class[], sourceClassId: string): string {
   const source = classes.find((c) => c.id.toString() === sourceClassId);
@@ -61,6 +61,19 @@ function suggestNextClassId(classes: Class[], sourceClassId: string): string {
   const nextNum = parseInt(match[1], 10) + 1;
   const next = classes.find((c) => /\d+/.test(c.name) && c.name.match(/(\d+)/)?.[1] === String(nextNum));
   return next ? String(next.id) : '';
+}
+
+function resolveSectionIdForClass(
+  sectionId: string,
+  classId: string,
+  sections: Section[],
+): string {
+  if (!sectionId || !classId) return '';
+  return sections.some(
+    (s) => s.id.toString() === sectionId && s.class_id.toString() === classId,
+  )
+    ? sectionId
+    : '';
 }
 
 export default function PromotionsPage() {
@@ -162,12 +175,18 @@ export default function PromotionsPage() {
       return;
     }
 
+    const sectionIdForQuery = resolveSectionIdForClass(
+      sourceSectionId,
+      sourceClassId,
+      sourceSections,
+    );
+
     setLoadingStudents(true);
     setError('');
     setSuccessMessage('');
     try {
       let url = `/api/promotions/eligible?class_id=${sourceClassId}`;
-      if (sourceSectionId) url += `&section_id=${sourceSectionId}`;
+      if (sectionIdForQuery) url += `&section_id=${sectionIdForQuery}`;
 
       const res = await fetch(url);
       const data = await res.json();
@@ -186,7 +205,7 @@ export default function PromotionsPage() {
     } finally {
       setLoadingStudents(false);
     }
-  }, [sourceClassId, sourceSectionId]);
+  }, [sourceClassId, sourceSectionId, sourceSections]);
 
   useEffect(() => {
     fetchClasses();
@@ -194,13 +213,15 @@ export default function PromotionsPage() {
   }, [fetchClasses, fetchAcademicYears]);
 
   useEffect(() => {
-    fetchSections(sourceClassId, 'source');
     setSourceSectionId('');
+    setSourceSections([]);
+    fetchSections(sourceClassId, 'source');
   }, [sourceClassId, fetchSections]);
 
   useEffect(() => {
-    fetchSections(targetClassId, 'target');
     setTargetSectionId('');
+    setTargetSections([]);
+    fetchSections(targetClassId, 'target');
   }, [targetClassId, fetchSections]);
 
   useEffect(() => {
@@ -296,15 +317,30 @@ export default function PromotionsPage() {
     setSuccessMessage('');
 
     try {
+      const sourceSectionForSubmit = resolveSectionIdForClass(
+        sourceSectionId,
+        sourceClassId,
+        sourceSections,
+      );
+      const targetSectionForSubmit = resolveSectionIdForClass(
+        targetSectionId,
+        targetClassId,
+        targetSections,
+      );
+
       const res = await fetch('/api/promotions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           student_ids: Array.from(selectedIds),
           source_class_id: parseInt(sourceClassId, 10),
-          source_section_id: sourceSectionId ? parseInt(sourceSectionId, 10) : null,
+          source_section_id: sourceSectionForSubmit
+            ? parseInt(sourceSectionForSubmit, 10)
+            : null,
           target_class_id: parseInt(targetClassId, 10),
-          target_section_id: targetSectionId ? parseInt(targetSectionId, 10) : null,
+          target_section_id: targetSectionForSubmit
+            ? parseInt(targetSectionForSubmit, 10)
+            : null,
           academic_year_id: parseInt(academicYearId, 10),
           promotion_action: promotionAction,
           preserve_roll_numbers: preserveRollNumbers,
@@ -330,20 +366,20 @@ export default function PromotionsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="max-w-7xl mx-auto space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Promotion Management</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-xl text-gray-900">Promotion Management</h1>
+            <p className="text-sm text-gray-600 mt-1">
               Bulk promote, repeat, or transfer students and update enrollment history.
             </p>
           </div>
           {sourceClassId && students.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-700">
                 {students.length} students
               </span>
-              <span className="rounded-full bg-primary-50 px-2 py-0.5 text-primary-700 font-medium">
+              <span className="rounded-full bg-primary-50 px-2.5 py-0.5 text-primary-700 font-medium">
                 {selectedIds.size} selected
               </span>
             </div>
@@ -351,28 +387,31 @@ export default function PromotionsPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-xs">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
             {error}
           </div>
         )}
         {successMessage && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md text-xs">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm">
             {successMessage}
           </div>
         )}
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,220px)_1fr] divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
-            <div className="p-3 space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,240px)_1fr] divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+            <div className="p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                 Source
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-0.5">Class</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
                   <select
                     value={sourceClassId}
-                    onChange={(e) => setSourceClassId(e.target.value)}
+                    onChange={(e) => {
+                      setSourceClassId(e.target.value);
+                      setSourceSectionId('');
+                    }}
                     className={selectClass}
                   >
                     <option value="">Select class</option>
@@ -384,7 +423,7 @@ export default function PromotionsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-0.5">Section</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Section</label>
                   <select
                     value={sourceSectionId}
                     onChange={(e) => setSourceSectionId(e.target.value)}
@@ -401,7 +440,7 @@ export default function PromotionsPage() {
                 </div>
               </div>
               {sourceClass && (
-                <p className="text-[11px] text-gray-500">
+                <p className="text-sm text-gray-500">
                   Session: {sourceClass.academic_year || '—'}
                   {students.length > 0 && (
                     <span className="ml-2 text-green-700 font-medium">
@@ -412,17 +451,17 @@ export default function PromotionsPage() {
               )}
             </div>
 
-            <div className="p-3 space-y-2 bg-gray-50/60">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="p-4 space-y-3 bg-gray-50/60">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                 Action
               </p>
-              <div className="flex rounded-md border border-gray-200 bg-white p-0.5">
+              <div className="flex rounded-lg border border-gray-200 bg-white p-0.5">
                 {PROMOTION_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => requestActionChange(opt.value)}
-                    className={`flex-1 rounded px-1 py-1 text-[11px] font-medium transition-colors ${
+                    className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
                       promotionAction === opt.value
                         ? 'bg-primary-600 text-white shadow-sm'
                         : 'text-gray-600 hover:bg-gray-50'
@@ -433,7 +472,7 @@ export default function PromotionsPage() {
                 ))}
               </div>
               <div>
-                <label className="block text-[11px] text-gray-500 mb-0.5">Target year</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Target year</label>
                 <select
                   value={academicYearId}
                   onChange={(e) => setAcademicYearId(e.target.value)}
@@ -448,7 +487,7 @@ export default function PromotionsPage() {
                   ))}
                 </select>
               </div>
-              <label className="flex items-center gap-1.5 text-[11px] text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={preserveRollNumbers}
@@ -459,16 +498,19 @@ export default function PromotionsPage() {
               </label>
             </div>
 
-            <div className="p-3 space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                 Target
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-0.5">Class</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
                   <select
                     value={targetClassId}
-                    onChange={(e) => setTargetClassId(e.target.value)}
+                    onChange={(e) => {
+                      setTargetClassId(e.target.value);
+                      setTargetSectionId('');
+                    }}
                     disabled={promotionAction === 'repeated'}
                     className={selectClass}
                   >
@@ -481,7 +523,7 @@ export default function PromotionsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-0.5">Section</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Section</label>
                   <select
                     value={targetSectionId}
                     onChange={(e) => setTargetSectionId(e.target.value)}
@@ -498,18 +540,18 @@ export default function PromotionsPage() {
                 </div>
               </div>
               {sourceClassName && targetClassName && (
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-600 bg-primary-50/50 rounded px-2 py-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-primary-50/50 rounded-lg px-3 py-2">
                   <span className="font-medium truncate">
                     {sourceClassName}
                     {sourceSectionName ? `-${sourceSectionName}` : ''}
                   </span>
-                  <FiArrowRight className="shrink-0 text-primary-600" size={12} />
+                  <FiArrowRight className="shrink-0 text-primary-600" size={14} />
                   <span className="font-medium truncate">
                     {targetClassName}
                     {targetSectionName ? `-${targetSectionName}` : ''}
                   </span>
                   {targetYearName && (
-                    <span className="ml-auto shrink-0 text-gray-400">{targetYearName}</span>
+                    <span className="ml-auto shrink-0 text-gray-500">{targetYearName}</span>
                   )}
                 </div>
               )}
@@ -518,41 +560,41 @@ export default function PromotionsPage() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-3 py-2 border-b border-gray-100 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <FiUsers className="text-primary-600 shrink-0" size={14} />
+          <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <FiUsers className="text-primary-600 shrink-0" size={16} />
               <span className="text-sm font-semibold text-gray-900">Students</span>
-              <span className="text-xs text-gray-500">
+              <span className="text-sm text-gray-500">
                 ({selectedIds.size}/{students.length})
               </span>
             </div>
 
-            <div className="relative flex-1 min-w-[140px] max-w-xs">
-              <FiSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+            <div className="relative flex-1 min-w-[160px] max-w-xs">
+              <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
               <input
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 placeholder="Search name, admission, roll..."
-                className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 ml-auto">
+            <div className="flex items-center gap-2 ml-auto">
               <button
                 type="button"
                 onClick={fetchEligibleStudents}
                 disabled={!sourceClassId || loadingStudents}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
               >
-                <FiRefreshCw size={12} className={loadingStudents ? 'animate-spin' : ''} />
+                <FiRefreshCw size={14} className={loadingStudents ? 'animate-spin' : ''} />
                 Refresh
               </button>
               <button
                 type="button"
                 onClick={requestSubmit}
                 disabled={!canSubmit}
-                className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting
                   ? 'Processing...'
@@ -562,68 +604,68 @@ export default function PromotionsPage() {
           </div>
 
           {!sourceClassId ? (
-            <div className="text-center py-10 text-gray-500 text-xs">
+            <div className="text-center py-12 text-gray-500 text-sm">
               Select a source class to load students.
             </div>
           ) : loadingStudents ? (
-            <div className="text-center py-10 text-gray-500 text-xs">Loading students...</div>
+            <div className="text-center py-12 text-gray-500 text-sm">Loading students...</div>
           ) : students.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 text-xs">
+            <div className="text-center py-12 text-gray-500 text-sm">
               No active students found in the selected class/section.
             </div>
           ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 text-xs">
+            <div className="text-center py-12 text-gray-500 text-sm">
               No students match your search.
             </div>
           ) : (
             <div className="overflow-x-auto max-h-[min(520px,60vh)] overflow-y-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
                   <tr>
-                    <th className="px-3 py-2 text-left w-8">
+                    <th className="px-4 py-2.5 text-left w-10">
                       <button type="button" onClick={toggleAllVisible} className="text-gray-600">
                         {allVisibleSelected ? (
-                          <FiCheckSquare size={15} className="text-primary-600" />
+                          <FiCheckSquare size={16} className="text-primary-600" />
                         ) : (
-                          <FiSquare size={15} />
+                          <FiSquare size={16} />
                         )}
                       </button>
                     </th>
-                    <th className="px-3 py-2 text-left font-medium">Student</th>
-                    <th className="px-3 py-2 text-left font-medium hidden sm:table-cell">
+                    <th className="px-4 py-2.5 text-left text-sm font-medium">Student</th>
+                    <th className="px-4 py-2.5 text-left text-sm font-medium hidden sm:table-cell">
                       Admission No.
                     </th>
-                    <th className="px-3 py-2 text-left font-medium w-16">Roll</th>
-                    <th className="px-3 py-2 text-left font-medium hidden md:table-cell">Class</th>
+                    <th className="px-4 py-2.5 text-left text-sm font-medium w-20">Roll</th>
+                    <th className="px-4 py-2.5 text-left text-sm font-medium hidden md:table-cell">Class</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {filteredStudents.map((student) => (
                     <tr key={student.id} className="hover:bg-gray-50/80">
-                      <td className="px-3 py-1.5">
+                      <td className="px-4 py-2">
                         <button
                           type="button"
                           onClick={() => toggleStudent(student.id)}
                           className="text-gray-600"
                         >
                           {selectedIds.has(student.id) ? (
-                            <FiCheckSquare size={15} className="text-primary-600" />
+                            <FiCheckSquare size={16} className="text-primary-600" />
                           ) : (
-                            <FiSquare size={15} />
+                            <FiSquare size={16} />
                           )}
                         </button>
                       </td>
-                      <td className="px-3 py-1.5 font-medium text-gray-900">
+                      <td className="px-4 py-2 font-medium text-gray-900">
                         {studentFullName(student)}
-                        <span className="sm:hidden block text-[10px] font-normal text-gray-500">
+                        <span className="sm:hidden block text-xs font-normal text-gray-500">
                           {student.admission_number}
                         </span>
                       </td>
-                      <td className="px-3 py-1.5 text-gray-600 hidden sm:table-cell">
+                      <td className="px-4 py-2 text-gray-600 hidden sm:table-cell">
                         {student.admission_number}
                       </td>
-                      <td className="px-3 py-1.5 text-gray-600">{student.roll_number || '—'}</td>
-                      <td className="px-3 py-1.5 text-gray-600 hidden md:table-cell">
+                      <td className="px-4 py-2 text-gray-600">{student.roll_number || '—'}</td>
+                      <td className="px-4 py-2 text-gray-600 hidden md:table-cell">
                         {student.class_name || '—'}
                         {student.section_name ? ` · ${student.section_name}` : ''}
                       </td>

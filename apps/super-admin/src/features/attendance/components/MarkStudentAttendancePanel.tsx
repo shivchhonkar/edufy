@@ -9,19 +9,20 @@ import React, {
   useImperativeHandle,
   useRef,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FiCalendar,
   FiCheck,
   FiChevronDown,
   FiClock,
-  FiEdit3,
-  FiMoreVertical,
   FiSearch,
-  FiSend,
-  FiUpload,
   FiUser,
   FiX,
 } from 'react-icons/fi';
+import VirtualizedTable, {
+  type VirtualizedTableColumn,
+} from '@/shared/components/common/VirtualizedTable';
+import { getClientUserRole } from '@/lib/client-auth';
 import { useDialog } from '@/shared/context/DialogContext';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
 import { sortClassesByName } from '@/lib/class-sort';
@@ -64,6 +65,7 @@ interface MarkStudentAttendancePanelProps {
   onSaved: () => void;
   onCancel?: () => void;
   onSubmitStateChange?: (state: { canSubmit: boolean; saving: boolean }) => void;
+  filterSlotEl?: HTMLDivElement | null;
 }
 
 export type MarkStudentAttendancePanelHandle = {
@@ -111,10 +113,30 @@ function draftKey(date: string, classId: string, sectionId: string) {
   return `attendance-draft:${date}:${classId}:${sectionId}`;
 }
 
+const ATT_LABEL = 'block text-xs font-medium text-gray-600';
+const ATT_INPUT =
+  'mt-1 w-full px-2.5 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary-500';
+const ATT_INPUT_HEADER =
+  'mt-1 w-full min-w-[8.5rem] px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary-500';
+const ATT_BTN =
+  'inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg whitespace-nowrap';
+const ATT_TABLE_HEAD = 'px-3 py-2 text-xs font-medium text-gray-500';
+const ATT_TABLE_CELL = 'px-3 py-2 text-sm';
+const MORE_ACTIONS_MENU_ID = 'student-attendance-more-actions-menu';
+
 function resolveDefaultClassId(classes: ClassOption[]): string {
   const classOne = classes.find((c) => c.name.trim().toLowerCase() === 'class 1');
   const defaultClass = classOne ?? sortClassesByName(classes)[0];
   return defaultClass ? defaultClass.id.toString() : '';
+}
+
+function isSuperAdminRole(role: string | null): boolean {
+  return String(role || '').toLowerCase().replace(/\s+/g, '_') === 'super_admin';
+}
+
+function classScopeKey(classId: string, isSuperAdmin: boolean): string {
+  if (classId) return classId;
+  return isSuperAdmin ? 'all' : '';
 }
 
 function StatusButtons({
@@ -136,7 +158,7 @@ function StatusButtons({
             type="button"
             onClick={() => onChange(opt.value)}
             className={`inline-flex items-center gap-1 border rounded-md font-medium transition-colors whitespace-nowrap shrink-0 ${
-              compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs'
+              compact ? 'px-2.5 py-1 text-sm' : 'px-3 py-1.5 text-sm'
             } ${active ? opt.activeClass : opt.idleClass}`}
           >
             {opt.icon}
@@ -148,60 +170,16 @@ function StatusButtons({
   );
 }
 
-function pct(value: number, total: number) {
-  if (!total) return 0;
-  return Math.round((value / total) * 100);
-}
-
-function SubmitAttendanceActions({
-  onSaveDraft,
-  onSubmit,
-  saving,
-  canSubmit,
-  showSaveDraft = true,
-  className = '',
-}: {
-  onSaveDraft?: () => void;
-  onSubmit: () => void;
-  saving: boolean;
-  canSubmit: boolean;
-  showSaveDraft?: boolean;
-  className?: string;
-}) {
-  return (
-    <div className={`flex flex-wrap items-center justify-end gap-2 ${className}`}>
-      {showSaveDraft && onSaveDraft && (
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          disabled={!canSubmit}
-          className="border border-gray-200 text-primary-700 bg-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
-        >
-          Save Draft
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={!canSubmit || saving}
-        className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
-      >
-        <FiSend size={16} />
-        {saving ? 'Submitting...' : 'Submit Attendance'}
-      </button>
-    </div>
-  );
-}
-
 const MarkStudentAttendancePanel = forwardRef<
   MarkStudentAttendancePanelHandle,
   MarkStudentAttendancePanelProps
 >(function MarkStudentAttendancePanel(
-  { classes, variant, onSaved, onCancel, onSubmitStateChange },
+  { classes, variant, onSaved, onCancel, onSubmitStateChange, filterSlotEl },
   ref
 ) {
   const { alert, confirm } = useDialog();
   const today = getCalendarDateString();
+  const isSuperAdmin = useMemo(() => isSuperAdminRole(getClientUserRole()), []);
 
   const [markDate, setMarkDate] = useState(today);
   const [classId, setClassId] = useState('');
@@ -214,8 +192,8 @@ const MarkStudentAttendancePanel = forwardRef<
   const [bulkStatus, setBulkStatus] = useState<AttendanceStatus>('present');
   const [studentSearch, setStudentSearch] = useState('');
   const [showMoreActions, setShowMoreActions] = useState(false);
-  const [openActionRowId, setOpenActionRowId] = useState<number | null>(null);
-  const moreActionsRef = useRef<HTMLDivElement>(null);
+  const [moreMenuCoords, setMoreMenuCoords] = useState({ top: 0, left: 0 });
+  const moreActionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const [allStudents, setAllStudents] = useState<StudentOption[]>([]);
   const [individualStudentId, setIndividualStudentId] = useState('');
@@ -223,6 +201,9 @@ const MarkStudentAttendancePanel = forwardRef<
   const [individualStatus, setIndividualStatus] = useState<AttendanceStatus>('present');
   const [individualRemarks, setIndividualRemarks] = useState('');
   const [showIndividualDropdown, setShowIndividualDropdown] = useState(false);
+
+  const isAllClassesView = isSuperAdmin && !classId;
+  const canLoadStudents = !!classId || isSuperAdmin;
 
   useEffect(() => {
     fetch('/api/students?limit=500&status=active')
@@ -235,14 +216,24 @@ const MarkStudentAttendancePanel = forwardRef<
 
   useEffect(() => {
     if (variant !== 'class' || classId || classes.length === 0) return;
+    if (isSuperAdmin) return;
     const defaultId = resolveDefaultClassId(classes);
     if (defaultId) setClassId(defaultId);
-  }, [classes, variant, classId]);
+  }, [classes, variant, classId, isSuperAdmin]);
 
   useEffect(() => {
     if (!classId) {
-      setSections([]);
-      setSectionId('');
+      if (!isSuperAdmin) {
+        setSections([]);
+        setSectionId('');
+        return;
+      }
+      fetch('/api/sections')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) setSections(data.data);
+        })
+        .catch(console.error);
       return;
     }
     fetch(`/api/sections?class_id=${classId}`)
@@ -251,13 +242,14 @@ const MarkStudentAttendancePanel = forwardRef<
         if (data.success) setSections(data.data);
       })
       .catch(console.error);
-  }, [classId]);
+  }, [classId, isSuperAdmin]);
 
   const applyDraft = useCallback(
     (nextRows: StudentMarkRow[]) => {
-      if (!classId || typeof window === 'undefined') return nextRows;
+      const scopeKey = classScopeKey(classId, isSuperAdmin);
+      if (!scopeKey || typeof window === 'undefined') return nextRows;
       try {
-        const raw = localStorage.getItem(draftKey(markDate, classId, sectionId));
+        const raw = localStorage.getItem(draftKey(markDate, scopeKey, sectionId));
         if (!raw) return nextRows;
         const draft = JSON.parse(raw) as Record<string, AttendanceStatus>;
         return nextRows.map((r) =>
@@ -267,11 +259,11 @@ const MarkStudentAttendancePanel = forwardRef<
         return nextRows;
       }
     },
-    [classId, sectionId, markDate]
+    [classId, sectionId, markDate, isSuperAdmin]
   );
 
   const loadClassStudents = useCallback(async () => {
-    if (!classId) {
+    if (!canLoadStudents) {
       setRows([]);
       return;
     }
@@ -279,17 +271,17 @@ const MarkStudentAttendancePanel = forwardRef<
     setLoadingList(true);
     try {
       const studentParams = new URLSearchParams({
-        limit: '500',
+        limit: '50000',
         status: 'active',
-        class_id: classId,
       });
+      if (classId) studentParams.set('class_id', classId);
       if (sectionId) studentParams.append('section_id', sectionId);
 
       const attendanceParams = new URLSearchParams({
         start_date: markDate,
         end_date: markDate,
-        class_id: classId,
       });
+      if (classId) attendanceParams.set('class_id', classId);
       if (sectionId) attendanceParams.append('section_id', sectionId);
 
       const [studentsRes, attendanceRes] = await Promise.all([
@@ -326,7 +318,7 @@ const MarkStudentAttendancePanel = forwardRef<
     } finally {
       setLoadingList(false);
     }
-  }, [classId, sectionId, markDate, applyDraft]);
+  }, [classId, sectionId, markDate, applyDraft, canLoadStudents]);
 
   useEffect(() => {
     if (variant === 'class') loadClassStudents();
@@ -352,20 +344,48 @@ const MarkStudentAttendancePanel = forwardRef<
   }, [rows, studentSearch]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (moreActionsRef.current && !moreActionsRef.current.contains(e.target as Node)) {
-        setShowMoreActions(false);
-      }
-      if (!(e.target as Element).closest('[data-row-actions]')) {
-        setOpenActionRowId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (!showMoreActions) return;
 
-  const selectedClassName = classes.find((c) => c.id.toString() === classId)?.name;
-  const selectedSectionName = sections.find((s) => s.id.toString() === sectionId)?.name;
+    const updatePosition = () => {
+      const rect = moreActionsButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMoreMenuCoords({
+        top: rect.bottom + 4,
+        left: rect.right,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showMoreActions]);
+
+  useEffect(() => {
+    if (!showMoreActions) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (moreActionsButtonRef.current?.contains(target)) return;
+      const menu = document.getElementById(MORE_ACTIONS_MENU_ID);
+      if (menu?.contains(target)) return;
+      setShowMoreActions(false);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowMoreActions(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMoreActions]);
 
   const filteredIndividualStudents = allStudents.filter((s) => {
     const q = individualSearch.toLowerCase();
@@ -425,6 +445,10 @@ const MarkStudentAttendancePanel = forwardRef<
     setRows((prev) => prev.map((r) => ({ ...r, status: 'late' as AttendanceStatus })));
   };
 
+  const markAllOnLeave = () => {
+    setRows((prev) => prev.map((r) => ({ ...r, status: 'on_leave' as AttendanceStatus })));
+  };
+
   const clearAll = () => {
     setRows((prev) => prev.map((r) => ({ ...r, status: null, selected: false })));
   };
@@ -440,12 +464,13 @@ const MarkStudentAttendancePanel = forwardRef<
   };
 
   const saveDraft = () => {
-    if (!classId || rows.length === 0) return;
+    const scopeKey = classScopeKey(classId, isSuperAdmin);
+    if (!scopeKey || rows.length === 0) return;
     const draft: Record<string, AttendanceStatus> = {};
     for (const r of rows) {
       if (r.status) draft[r.id] = r.status;
     }
-    localStorage.setItem(draftKey(markDate, classId, sectionId), JSON.stringify(draft));
+    localStorage.setItem(draftKey(markDate, scopeKey, sectionId), JSON.stringify(draft));
     alert('Draft saved on this device. Submit when ready to record attendance.', {
       title: 'Draft saved',
       type: 'success',
@@ -453,7 +478,7 @@ const MarkStudentAttendancePanel = forwardRef<
   };
 
   const submitClassAttendance = async () => {
-    if (!classId || rows.length === 0) {
+    if (!canLoadStudents || rows.length === 0) {
       await alert('Select a class with students before submitting.', {
         title: 'Nothing to submit',
         type: 'warning',
@@ -486,7 +511,9 @@ const MarkStudentAttendancePanel = forwardRef<
 
       const data = await response.json();
       if (data.success) {
-        localStorage.removeItem(draftKey(markDate, classId, sectionId));
+        localStorage.removeItem(
+          draftKey(markDate, classScopeKey(classId, isSuperAdmin), sectionId),
+        );
         await alert(`Attendance submitted for ${data.data.length} students.`, {
           title: 'Submitted',
           type: 'success',
@@ -540,7 +567,7 @@ const MarkStudentAttendancePanel = forwardRef<
   };
 
   const canSubmit =
-    variant === 'individual' ? !!individualStudentId : !!classId && rows.length > 0;
+    variant === 'individual' ? !!individualStudentId : canLoadStudents && rows.length > 0;
 
   useEffect(() => {
     onSubmitStateChange?.({ canSubmit, saving });
@@ -557,33 +584,166 @@ const MarkStudentAttendancePanel = forwardRef<
     [variant, individualStudentId, classId, rows, markDate, individualStatus, individualRemarks]
   );
 
+  const toggleAllVisible = useCallback(() => {
+    const allSelected = filteredRows.every((r) => r.selected);
+    const visibleIds = new Set(filteredRows.map((r) => r.id));
+    setRows((prev) =>
+      prev.map((r) => (visibleIds.has(r.id) ? { ...r, selected: !allSelected } : r)),
+    );
+  }, [filteredRows]);
+
+  const studentListColumns = useMemo<VirtualizedTableColumn<StudentMarkRow>[]>(() => {
+    const columns: VirtualizedTableColumn<StudentMarkRow>[] = [
+      {
+        key: 'select',
+        width: '32px',
+        header: (
+          <input
+            type="checkbox"
+            checked={filteredRows.length > 0 && filteredRows.every((r) => r.selected)}
+            onChange={toggleAllVisible}
+            aria-label="Select all visible"
+            className="rounded border-gray-300"
+          />
+        ),
+        headerClassName: `${ATT_TABLE_HEAD} flex items-center`,
+        cellClassName: `${ATT_TABLE_CELL} flex items-center`,
+        render: (row) => (
+          <input
+            type="checkbox"
+            checked={row.selected}
+            onChange={() => toggleRowSelected(row.id)}
+            aria-label={`Select ${studentFullName(row)}`}
+            className="rounded border-gray-300"
+          />
+        ),
+      },
+      {
+        key: 'roll',
+        width: '4.75rem',
+        header: 'Roll No.',
+        headerClassName: `${ATT_TABLE_HEAD} text-left whitespace-nowrap`,
+        cellClassName: `${ATT_TABLE_CELL} text-gray-600 tabular-nums whitespace-nowrap`,
+        render: (row) =>
+          row.roll_number ||
+          String(filteredRows.findIndex((r) => r.id === row.id) + 1),
+      },
+    ];
+
+    if (isAllClassesView) {
+      columns.push({
+        key: 'class',
+        width: '6rem',
+        header: 'Class',
+        headerClassName: `${ATT_TABLE_HEAD} text-left whitespace-nowrap`,
+        cellClassName: `${ATT_TABLE_CELL} text-gray-600 whitespace-nowrap`,
+        render: (row) => row.class_name || '—',
+      });
+    }
+
+    columns.push(
+      {
+        key: 'name',
+        width: '1fr',
+        header: 'Student Name',
+        headerClassName: `${ATT_TABLE_HEAD} text-left min-w-0`,
+        cellClassName: `${ATT_TABLE_CELL} min-w-0`,
+        render: (row) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <StudentAvatar student={row} size="sm" />
+            <span className="text-gray-900 truncate">
+              {studentFullName(row)}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'status',
+        width: 'minmax(240px, auto)',
+        header: 'Attendance Status',
+        headerClassName: `${ATT_TABLE_HEAD} text-right`,
+        cellClassName: `${ATT_TABLE_CELL} flex items-center justify-end`,
+        render: (row) => (
+          <StatusButtons
+            value={row.status}
+            onChange={(status) => setRowStatus(row.id, status)}
+            compact
+          />
+        ),
+      },
+    );
+
+    return columns;
+  }, [filteredRows, toggleAllVisible, isAllClassesView]);
+
+  const classFilterControls = (
+    <div className="flex flex-wrap items-end gap-3 flex-1 min-w-0 w-full">
+      <label className={`${ATT_LABEL} min-w-[8.5rem]`}>
+        Date
+        <input
+          type="date"
+          value={markDate}
+          onChange={(e) => setMarkDate(e.target.value)}
+          className={ATT_INPUT_HEADER}
+        />
+      </label>
+      <label className={`${ATT_LABEL} min-w-[9rem]`}>
+        Class
+        <select
+          value={classId}
+          onChange={(e) => {
+            setClassId(e.target.value);
+            setSectionId('');
+          }}
+          className={ATT_INPUT_HEADER}
+        >
+          {isSuperAdmin ? (
+            <option value="">All Classes</option>
+          ) : (
+            <option value="">Select class</option>
+          )}
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={`${ATT_LABEL} min-w-[9rem]`}>
+        Section
+        <select
+          value={sectionId}
+          onChange={(e) => setSectionId(e.target.value)}
+          disabled={!canLoadStudents}
+          className={`${ATT_INPUT_HEADER} disabled:bg-gray-50`}
+        >
+          <option value="">All sections</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+
   if (variant === 'individual') {
     return (
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 min-w-[200px]">
-            <label className="block text-sm">
-              <span className="text-gray-600 text-xs font-medium">Date</span>
-              <input
-                type="date"
-                value={markDate}
-                onChange={(e) => setMarkDate(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-          <SubmitAttendanceActions
-            onSubmit={submitIndividual}
-            saving={saving}
-            canSubmit={canSubmit}
-            showSaveDraft={false}
-            className="shrink-0"
+      <div className="space-y-4">
+        <label className={`${ATT_LABEL} max-w-xs`}>
+          Date
+          <input
+            type="date"
+            value={markDate}
+            onChange={(e) => setMarkDate(e.target.value)}
+            className={ATT_INPUT}
           />
-        </div>
+        </label>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-2xl">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4 max-w-2xl">
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+            <label className={`${ATT_LABEL} mb-1`}>Student</label>
             <input
               type="text"
               value={individualSearch}
@@ -594,7 +754,7 @@ const MarkStudentAttendancePanel = forwardRef<
               }}
               onFocus={() => setShowIndividualDropdown(true)}
               placeholder="Search by name or admission number..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             {showIndividualDropdown &&
               filteredIndividualStudents.length > 0 &&
@@ -647,19 +807,19 @@ const MarkStudentAttendancePanel = forwardRef<
             <StatusButtons value={individualStatus} onChange={setIndividualStatus} />
           </div>
 
-          <label className="block text-sm">
-            <span className="text-gray-700">Remarks (optional)</span>
+          <label className={`${ATT_LABEL}`}>
+            Remarks (optional)
             <textarea
               value={individualRemarks}
               onChange={(e) => setIndividualRemarks(e.target.value)}
               rows={2}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={ATT_INPUT}
               placeholder="Optional notes..."
             />
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
+        <div className="flex flex-wrap items-center gap-2 pt-1 max-w-2xl">
           <button
             type="button"
             onClick={onCancel}
@@ -667,12 +827,6 @@ const MarkStudentAttendancePanel = forwardRef<
           >
             Cancel
           </button>
-          <SubmitAttendanceActions
-            onSubmit={submitIndividual}
-            saving={saving}
-            canSubmit={canSubmit}
-            showSaveDraft={false}
-          />
         </div>
       </div>
     );
@@ -680,138 +834,15 @@ const MarkStudentAttendancePanel = forwardRef<
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-        <label className="block text-xs">
-          <span className="text-gray-500 font-medium">Date</span>
-          <input
-            type="date"
-            value={markDate}
-            onChange={(e) => setMarkDate(e.target.value)}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-          />
-        </label>
-        <label className="block text-xs">
-          <span className="text-gray-500 font-medium">Class</span>
-          <select
-            value={classId}
-            onChange={(e) => {
-              setClassId(e.target.value);
-              setSectionId('');
-            }}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="">Select class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs">
-          <span className="text-gray-500 font-medium">Section</span>
-          <select
-            value={sectionId}
-            onChange={(e) => setSectionId(e.target.value)}
-            disabled={!classId}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white disabled:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="">All sections</option>
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="block text-xs">
-          <span className="text-gray-500 font-medium">Attendance Mode</span>
-          <div className="mt-1 flex rounded-lg border border-gray-200 overflow-hidden bg-white">
-            <button
-              type="button"
-              onClick={() => setMarkMode('manual')}
-              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
-                markMode === 'manual'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <FiEdit3 size={13} />
-              Manual
-            </button>
-            <button
-              type="button"
-              onClick={() => setMarkMode('bulk')}
-              className={`flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium border-l border-gray-200 transition-colors ${
-                markMode === 'bulk'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <FiUpload size={13} />
-              Bulk
-            </button>
-          </div>
-        </div>
-      </div>
+      {filterSlotEl && createPortal(classFilterControls, filterSlotEl)}
 
-      {classId && rows.length > 0 && (
-        <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="text-sm text-gray-800">
-              You are marking attendance for{' '}
-              <span className="font-semibold text-gray-900">
-                {selectedClassName}
-                {selectedSectionName ? ` — ${selectedSectionName}` : ''}
-              </span>
-              {' · '}
-              <span className="font-medium">{classCounts.total} students</span>
-              {' · '}
-              <span className="text-gray-600">
-                {new Date(markDate).toLocaleDateString('en-IN', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            </p>
-            <SubmitAttendanceActions
-              onSaveDraft={saveDraft}
-              onSubmit={submitClassAttendance}
-              saving={saving}
-              canSubmit={canSubmit}
-              className="shrink-0"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: 'Present', count: classCounts.present, className: 'bg-green-100 text-green-800' },
-              { label: 'Absent', count: classCounts.absent, className: 'bg-red-100 text-red-800' },
-              { label: 'Late', count: classCounts.late, className: 'bg-amber-100 text-amber-800' },
-              { label: 'On Leave', count: classCounts.onLeave, className: 'bg-blue-100 text-blue-800' },
-            ].map((badge) => (
-              <span
-                key={badge.label}
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
-              >
-                {badge.label}
-                <span className="font-bold">{badge.count}</span>
-                <span className="opacity-70">({pct(badge.count, classCounts.total)}%)</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {markMode === 'bulk' && classId && rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-          <span className="text-xs text-gray-600">Apply to selected (or all if none selected):</span>
+      {markMode === 'bulk' && canLoadStudents && rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <span className="text-sm text-gray-600">Apply to selected (or all if none selected):</span>
           <select
             value={bulkStatus}
             onChange={(e) => setBulkStatus(e.target.value as AttendanceStatus)}
-            className="border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"
+            className="border border-gray-200 rounded-md px-2.5 py-1.5 text-sm bg-white"
           >
             {STATUS_CONFIG.map((s) => (
               <option key={s.value} value={s.value}>
@@ -822,208 +853,171 @@ const MarkStudentAttendancePanel = forwardRef<
           <button
             type="button"
             onClick={applyBulkToSelected}
-            className="bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary-700"
+            className="bg-primary-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-primary-700"
           >
             Apply
           </button>
         </div>
       )}
 
-      {classId && rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-            <input
-              type="text"
-              value={studentSearch}
-              onChange={(e) => setStudentSearch(e.target.value)}
-              placeholder="Search student by name or roll no..."
-              className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={markAllPresent}
-            className="text-xs font-medium border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-50"
-          >
-            Mark All Present
-          </button>
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs font-medium border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-50"
-          >
-            Clear All
-          </button>
-          <div className="relative" ref={moreActionsRef}>
-            <button
-              type="button"
-              onClick={() => setShowMoreActions((prev) => !prev)}
-              className="inline-flex items-center gap-1 text-xs font-medium border border-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 bg-white"
-            >
-              More Actions
-              <FiChevronDown size={14} />
-            </button>
-            {showMoreActions && (
-              <div className="absolute right-0 top-full mt-1 z-20 min-w-[10rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => {
-                    markAllAbsent();
-                    setShowMoreActions(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+      {canLoadStudents && rows.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2">
+          <div className="flex items-center gap-2 min-w-0 overflow-x-auto">
+            <div className="flex items-center gap-1.5 shrink-0 text-sm">
+              <span className="font-medium text-gray-700 whitespace-nowrap">
+                {classCounts.total} students
+              </span>
+              {[
+                { label: 'P', count: classCounts.present, className: 'bg-green-100 text-green-800' },
+                { label: 'A', count: classCounts.absent, className: 'bg-red-100 text-red-800' },
+                { label: 'L', count: classCounts.late, className: 'bg-amber-100 text-amber-800' },
+                { label: 'OL', count: classCounts.onLeave, className: 'bg-blue-100 text-blue-800' },
+              ].map((badge) => (
+                <span
+                  key={badge.label}
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${badge.className}`}
                 >
-                  Mark All Absent
-                </button>
+                  {badge.label}
+                  <span className="font-bold">{badge.count}</span>
+                </span>
+              ))}
+            </div>
+
+            <div className="relative flex-1 min-w-[160px] max-w-sm">
+              <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <input
+                type="text"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Search by name or roll no..."
+                className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={markAllPresent}
+                className={`${ATT_BTN} border border-green-200 text-green-700 hover:bg-green-50 bg-white`}
+              >
+                Mark All Present
+              </button>
+              <button
+                type="button"
+                onClick={clearAll}
+                className={`${ATT_BTN} border border-red-200 text-red-600 hover:bg-red-50 bg-white`}
+              >
+                Clear All
+              </button>
+              <div className="relative shrink-0">
                 <button
+                  ref={moreActionsButtonRef}
                   type="button"
-                  onClick={() => {
-                    markAllLate();
-                    setShowMoreActions(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowMoreActions((prev) => !prev)}
+                  className={`${ATT_BTN} border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white`}
+                  aria-haspopup="menu"
+                  aria-expanded={showMoreActions}
                 >
-                  Mark All Late
+                  More
+                  <FiChevronDown size={14} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMarkMode('bulk');
-                    setShowMoreActions(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-                >
-                  Switch to Bulk Mode
-                </button>
+                {showMoreActions &&
+                  typeof document !== 'undefined' &&
+                  createPortal(
+                    <div
+                      id={MORE_ACTIONS_MENU_ID}
+                      role="menu"
+                      className="fixed z-[100] w-max max-w-[14rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                      style={{
+                        top: moreMenuCoords.top,
+                        left: moreMenuCoords.left,
+                        transform: 'translateX(-100%)',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          markAllAbsent();
+                          setShowMoreActions(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        Mark All Absent
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          markAllLate();
+                          setShowMoreActions(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        Mark All Late
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          markAllOnLeave();
+                          setShowMoreActions(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        Mark All On Leave
+                      </button>
+                      {/* <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMarkMode('bulk');
+                          setShowMoreActions(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        Switch to Bulk Mode
+                      </button> */}
+                    </div>,
+                    document.body,
+                  )}
               </div>
-            )}
+              <button
+                type="button"
+                onClick={saveDraft}
+                disabled={!canSubmit}
+                className={`${ATT_BTN} border border-gray-200 text-primary-700 bg-white hover:bg-gray-50 disabled:opacity-40`}
+              >
+                Save Draft
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {!classId ? (
-          <div className="text-center py-14 text-gray-500 text-sm">
+        {!canLoadStudents ? (
+          <div className="text-center py-10 text-gray-500 text-sm">
             Select a class and section to load students.
           </div>
         ) : loadingList ? (
-          <div className="text-center py-14 text-gray-500 text-sm">Loading students...</div>
+          <div className="text-center py-10 text-gray-500 text-sm">Loading students...</div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-14 text-gray-500 text-sm">
+          <div className="text-center py-10 text-gray-500 text-sm">
             No active students in this class/section.
           </div>
         ) : filteredRows.length === 0 ? (
-          <div className="text-center py-14 text-gray-500 text-sm">No students match your search.</div>
+          <div className="text-center py-10 text-gray-500 text-sm">No students match your search.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed">
-              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
-                <tr>
-                  <th className="px-3 py-2.5 w-10">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredRows.length > 0 && filteredRows.every((r) => r.selected)
-                      }
-                      onChange={() => {
-                        const allSelected = filteredRows.every((r) => r.selected);
-                        const visibleIds = new Set(filteredRows.map((r) => r.id));
-                        setRows((prev) =>
-                          prev.map((r) =>
-                            visibleIds.has(r.id) ? { ...r, selected: !allSelected } : r,
-                          ),
-                        );
-                      }}
-                      aria-label="Select all visible"
-                      className="rounded border-gray-300"
-                    />
-                  </th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold w-16">Roll No.</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Student Name</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold w-[24rem]">
-                    Attendance Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredRows.map((row, index) => (
-                  <tr key={row.id} className="hover:bg-gray-50/80">
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        checked={row.selected}
-                        onChange={() => toggleRowSelected(row.id)}
-                        aria-label={`Select ${studentFullName(row)}`}
-                        className="rounded border-gray-300"
-                      />
-                    </td>
-                    <td className="px-3 py-2.5 text-gray-600 text-xs">
-                      {row.roll_number || index + 1}
-                    </td>
-                    <td className="px-3 py-2.5 min-w-0">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <StudentAvatar student={row} />
-                        <span className="font-medium text-gray-900 text-sm truncate">
-                          {studentFullName(row)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 relative" data-row-actions>
-                      <div className="flex items-center justify-end gap-1">
-                        <StatusButtons
-                          value={row.status}
-                          onChange={(status) => setRowStatus(row.id, status)}
-                          compact
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenActionRowId((prev) => (prev === row.id ? null : row.id))
-                          }
-                          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 shrink-0"
-                          aria-label="Row actions"
-                        >
-                          <FiMoreVertical size={16} />
-                        </button>
-                      </div>
-                      {openActionRowId === row.id && (
-                        <div className="absolute right-3 top-full z-20 mt-0.5 min-w-[9rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                          {STATUS_CONFIG.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => {
-                                setRowStatus(row.id, opt.value);
-                                setOpenActionRowId(null);
-                              }}
-                              className="w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50"
-                            >
-                              Mark {opt.label}
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRows((prev) =>
-                                prev.map((r) =>
-                                  r.id === row.id ? { ...r, status: null } : r,
-                                ),
-                              );
-                              setOpenActionRowId(null);
-                            }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100"
-                          >
-                            Clear status
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <VirtualizedTable
+            rows={filteredRows}
+            columns={studentListColumns}
+            getRowKey={(row) => row.id}
+            rowHeight={52}
+            maxHeight="min(65vh, 680px)"
+            minWidth={isAllClassesView ? 760 : 680}
+            rowClassName="hover:bg-gray-50/80"
+          />
         )}
       </div>
     </div>
@@ -1037,9 +1031,10 @@ function StudentAvatar({
   size = 'md',
 }: {
   student: StudentOption;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 }) {
-  const dim = size === 'lg' ? 'h-12 w-12 text-sm' : 'h-9 w-9 text-xs';
+  const dim =
+    size === 'lg' ? 'h-12 w-12 text-sm' : size === 'sm' ? 'h-8 w-8 text-xs' : 'h-9 w-9 text-xs';
   if (student.photo_url?.trim()) {
     return (
       <img

@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
+import { useCallback, useEffect, useState } from 'react';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import {
   AUDIENCE_OPTIONS,
@@ -300,13 +301,6 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
   const needsClass =
     form.audience_type === 'class_parents' || form.audience_type === 'section_parents';
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [showForm]);
-
   const closeForm = () => {
     setShowForm(false);
     setError('');
@@ -471,19 +465,12 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
       </div>
 
       {showForm && (
-        <div
-          className={`fixed top-0 bottom-0 right-0 bg-black/50 z-[60] transition-all duration-300 ${
-            sidebarCollapsed ? 'left-16' : 'left-56'
-          }`}
-          onClick={closeForm}
-          role="presentation"
-        >
+        <AppModal open={showForm} onClose={closeForm}>
           <div
-            className="ml-auto h-full w-full bg-white shadow-2xl flex flex-col"
+            className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="notification-form-title"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
               <div>
@@ -674,19 +661,19 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
               </div>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {showView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+        <AppModal open={!!showView} onClose={() => setShowView(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="font-semibold text-gray-900">{showView.title}</h2>
               <button type="button" onClick={() => setShowView(null)} className="text-gray-500">
                 <FiX size={20} />
               </button>
             </div>
-            <div className="p-5 space-y-3 text-sm">
+            <div className="p-5 space-y-3 text-sm flex-1 overflow-y-auto">
               <div className="flex flex-wrap gap-2">
                 <span
                   className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${STATUS_STYLES[showView.status]}`}
@@ -702,7 +689,7 @@ export default function NotificationsTab({ classes }: NotificationsTabProps) {
               <p className="text-gray-800">{showView.message}</p>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       <ConfirmDialog

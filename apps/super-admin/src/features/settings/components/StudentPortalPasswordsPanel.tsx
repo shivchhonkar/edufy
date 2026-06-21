@@ -1,5 +1,6 @@
 'use client'
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import { FiEye, FiEyeOff, FiKey, FiLock, FiRefreshCw, FiSearch } from 'react-icons/fi'
 import { useDialog } from '@/shared/context/DialogContext'
@@ -305,8 +306,14 @@ export default function StudentPortalPasswordsPanel() {
       </div>
 
       {showPasswordModal && passwordTarget && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+        <AppModal
+          open={showPasswordModal}
+          onClose={() => {
+            setShowPasswordModal(false)
+            setPasswordTarget(null)
+          }}
+        >
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4">
             <h4 className="text-lg font-semibold text-gray-900">Set Portal Password</h4>
             <p className="text-sm text-gray-600">
               {studentName(passwordTarget)} · {passwordTarget.admission_number}
@@ -348,12 +355,12 @@ export default function StudentPortalPasswordsPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {showBulkModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+        <AppModal open={showBulkModal} onClose={() => setShowBulkModal(false)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4">
             <h4 className="text-lg font-semibold text-gray-900">Bulk Set Portal Passwords</h4>
             <p className="text-sm text-gray-600">
               {classId
@@ -395,7 +402,7 @@ export default function StudentPortalPasswordsPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
     </div>
   )

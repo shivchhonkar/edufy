@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
+import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import type { InquiryStatus } from '@/lib/admission-inquiry-api';
 import { STATUS_LABELS } from '@/features/admissions/utils/inquiry-labels';
@@ -45,13 +46,6 @@ export default function AddInquiryModal({
   classes,
   defaultStatus = 'new',
 }: AddInquiryModalProps) {
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -63,9 +57,7 @@ export default function AddInquiryModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
@@ -101,13 +93,8 @@ export default function AddInquiryModal({
     'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-primary-500';
 
   return (
-    <div
-      className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`}
-      style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}
-    >
-      <div className="bg-white shadow-2xl w-full h-full flex flex-col overflow-hidden">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl w-full h-full flex flex-col overflow-hidden">
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shrink-0">
           <div>
             <h2 className="text-lg sm:text-xl text-gray-900">New Admission Inquiry</h2>
@@ -313,6 +300,6 @@ export default function AddInquiryModal({
           </button>
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }

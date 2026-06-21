@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect } from 'react';
 import { FiX, FiCheckCircle, FiCalendar, FiUser } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 
@@ -180,20 +181,9 @@ export default function SimpleRecordPaymentModal({
 
   const selectedStudentData = students.find(s => s.id.toString() === formData.student_id) || selectedStudent;
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-3 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 20px)' }}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col rounded-tl-xl" style={{ height: 'calc(100vh - 20px)' }}>
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl  text-gray-900">Record Payment</h2>
@@ -392,7 +382,7 @@ export default function SimpleRecordPaymentModal({
           </button>
         </div>
       </div>
-    </div>
+      </AppModal>
   );
 }
 

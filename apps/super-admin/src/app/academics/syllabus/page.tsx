@@ -1,10 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import AppModal, {
+  APP_MODAL_BODY,
+  APP_MODAL_FOOTER,
+  APP_MODAL_HEADER,
+  APP_MODAL_PANEL,
+} from '@/shared/components/common/AppModal';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import TeacherNav from '@/features/teachers/components/TeacherNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+
+const selectClass =
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500';
+
+const inputClass =
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 interface Chapter {
   id: number;
@@ -26,7 +38,10 @@ export default function SyllabusProgressPage() {
   const { alert, confirm } = useDialog();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
-  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
+  const [subjects, setSubjects] = useState<{ id: number; name: string; code?: string }[]>([]);
+  const [classSubjects, setClassSubjects] = useState<
+    { class_id: number; subject_id: number; subject_name: string; subject_code?: string }[]
+  >([]);
   const [staff, setStaff] = useState<{ id: number; first_name: string; last_name: string }[]>([]);
   const [filterClass, setFilterClass] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -37,20 +52,64 @@ export default function SyllabusProgressPage() {
   const fetchData = useCallback(async () => {
     let url = '/api/syllabus';
     if (filterClass) url += `?class_id=${filterClass}`;
-    const [cRes, clsRes, subRes, stRes] = await Promise.all([
+    const [cRes, clsRes, csRes, subRes, stRes] = await Promise.all([
       fetch(url),
       fetch('/api/classes?active_only=true'),
+      fetch('/api/class-subjects'),
       fetch('/api/subjects'),
       fetch('/api/staff?limit=200&status=active'),
     ]);
-    const [cData, clsData, subData, stData] = await Promise.all([cRes.json(), clsRes.json(), subRes.json(), stRes.json()]);
+    const [cData, clsData, csData, subData, stData] = await Promise.all([
+      cRes.json(),
+      clsRes.json(),
+      csRes.json(),
+      subRes.json(),
+      stRes.json(),
+    ]);
     if (cData.success) setChapters(cData.data);
     if (clsData.success) setClasses(clsData.data);
+    if (csData.success) setClassSubjects(csData.data);
     if (subData.success) setSubjects(subData.data);
     if (stData.success) setStaff(stData.data);
   }, [filterClass]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const filteredAddSubjects = useMemo(() => {
+    if (!addForm.class_id) return [];
+
+    const seen = new Set<number>();
+    const forClass = classSubjects
+      .filter((cs) => String(cs.class_id) === addForm.class_id)
+      .filter((cs) => {
+        const id = Number(cs.subject_id);
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      })
+      .map((cs) => ({
+        id: cs.subject_id,
+        name: cs.subject_name,
+        code: cs.subject_code,
+      }));
+
+    if (forClass.length > 0) return forClass;
+
+    return subjects.map((s) => ({
+      id: s.id,
+      name: s.name,
+      code: s.code,
+    }));
+  }, [addForm.class_id, classSubjects, subjects]);
+
+  const canAddChapter = Boolean(addForm.class_id && addForm.subject_id && addForm.title.trim());
+
+  const openAddModal = () => {
+    setAddForm({ class_id: '', subject_id: '', title: '', total_periods: '5', sort_order: '0' });
+    setShowAdd(true);
+  };
+
+  const closeAddModal = () => setShowAdd(false);
 
   const addChapter = async () => {
     if (!addForm.class_id || !addForm.subject_id || !addForm.title.trim()) {
@@ -69,8 +128,11 @@ export default function SyllabusProgressPage() {
       }),
     });
     const data = await res.json();
-    if (data.success) { setShowAdd(false); setAddForm({ class_id: '', subject_id: '', title: '', total_periods: '5', sort_order: '0' }); fetchData(); }
-    else await alert(data.error, { title: 'Error', type: 'error' });
+    if (data.success) {
+      closeAddModal();
+      setAddForm({ class_id: '', subject_id: '', title: '', total_periods: '5', sort_order: '0' });
+      fetchData();
+    } else await alert(data.error, { title: 'Error', type: 'error' });
   };
 
   const openProgress = (ch: Chapter) => {
@@ -126,7 +188,11 @@ export default function SyllabusProgressPage() {
               <option value="">All classes</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <button type="button" onClick={() => setShowAdd(true)} className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
+            >
               <FiPlus /> Add Chapter
             </button>
           </div>
@@ -175,49 +241,239 @@ export default function SyllabusProgressPage() {
           </table>
         </div>
 
-        {showAdd && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-3">
-              <h2 className="font-bold">Add Syllabus Chapter</h2>
-              <select value={addForm.class_id} onChange={(e) => setAddForm({ ...addForm, class_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                <option value="">Class *</option>
-                {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <select value={addForm.subject_id} onChange={(e) => setAddForm({ ...addForm, subject_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                <option value="">Subject *</option>
-                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <input placeholder="Chapter title *" value={addForm.title} onChange={(e) => setAddForm({ ...addForm, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <input type="number" placeholder="Total periods" value={addForm.total_periods} onChange={(e) => setAddForm({ ...addForm, total_periods: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-                <button type="button" onClick={addChapter} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Add</button>
+        <AppModal open={showAdd} onClose={closeAddModal}>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div
+              className={`${APP_MODAL_PANEL} relative z-10 w-full rounded-xl`}
+              style={{ maxWidth: '32rem', height: 'auto', maxHeight: '90vh' }}
+            >
+              <div className={APP_MODAL_HEADER}>
+                <h2 className="text-base font-semibold text-gray-900">Add Syllabus Chapter</h2>
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              <div className={`${APP_MODAL_BODY} px-4 sm:px-6 py-4 space-y-4`}>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Class <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={addForm.class_id}
+                    onChange={(e) =>
+                      setAddForm({ ...addForm, class_id: e.target.value, subject_id: '' })
+                    }
+                    className={selectClass}
+                  >
+                    <option value="">Select class</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Subject <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={addForm.subject_id}
+                    onChange={(e) => setAddForm({ ...addForm, subject_id: e.target.value })}
+                    className={selectClass}
+                    disabled={!addForm.class_id}
+                  >
+                    <option value="">
+                      {!addForm.class_id
+                        ? 'Select class first'
+                        : filteredAddSubjects.length === 0
+                          ? 'No subjects for this class'
+                          : 'Select subject'}
+                    </option>
+                    {filteredAddSubjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.code ? ` (${s.code})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {addForm.class_id && filteredAddSubjects.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      Assign subjects to this class under Academics → Subjects first.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Chapter title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addForm.title}
+                    onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
+                    className={inputClass}
+                    placeholder="e.g. Introduction to Algebra"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Total periods
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={addForm.total_periods}
+                      onChange={(e) => setAddForm({ ...addForm, total_periods: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Sort order
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={addForm.sort_order}
+                      onChange={(e) => setAddForm({ ...addForm, sort_order: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={APP_MODAL_FOOTER}>
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={addChapter}
+                  disabled={!canAddChapter}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add
+                </button>
               </div>
             </div>
           </div>
-        )}
+        </AppModal>
 
         {showProgress && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-3">
-              <h2 className="font-bold">Update Progress — {showProgress.title}</h2>
-              <select value={progressForm.staff_id} onChange={(e) => setProgressForm({ ...progressForm, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                <option value="">Teacher</option>
-                {staff.map((s) => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
-              </select>
-              <input type="number" min={0} max={showProgress.total_periods} placeholder="Periods completed" value={progressForm.periods_completed} onChange={(e) => setProgressForm({ ...progressForm, periods_completed: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <select value={progressForm.status} onChange={(e) => setProgressForm({ ...progressForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                <option value="not_started">Not started</option>
-                <option value="in_progress">In progress</option>
-                <option value="completed">Completed</option>
-              </select>
-              <textarea placeholder="Notes" value={progressForm.notes} onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
-              <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowProgress(null)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-                <button type="button" onClick={saveProgress} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save</button>
+          <AppModal open={Boolean(showProgress)} onClose={() => setShowProgress(null)}>
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div
+                className={`${APP_MODAL_PANEL} relative z-10 w-full rounded-xl`}
+                style={{ maxWidth: '32rem', height: 'auto', maxHeight: '90vh' }}
+              >
+                <div className={APP_MODAL_HEADER}>
+                  <h2 className="text-base font-semibold text-gray-900 truncate pr-2">
+                    Update Progress — {showProgress.title}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowProgress(null)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 shrink-0"
+                    aria-label="Close"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+
+                <div className={`${APP_MODAL_BODY} px-4 sm:px-6 py-4 space-y-4`}>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Teacher</label>
+                    <select
+                      value={progressForm.staff_id}
+                      onChange={(e) => setProgressForm({ ...progressForm, staff_id: e.target.value })}
+                      className={selectClass}
+                    >
+                      <option value="">Select teacher</option>
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.first_name} {s.last_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Periods completed
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={showProgress.total_periods}
+                      value={progressForm.periods_completed}
+                      onChange={(e) =>
+                        setProgressForm({ ...progressForm, periods_completed: e.target.value })
+                      }
+                      className={inputClass}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Out of {showProgress.total_periods} total periods
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                    <select
+                      value={progressForm.status}
+                      onChange={(e) => setProgressForm({ ...progressForm, status: e.target.value })}
+                      className={selectClass}
+                    >
+                      <option value="not_started">Not started</option>
+                      <option value="in_progress">In progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                    <textarea
+                      value={progressForm.notes}
+                      onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })}
+                      className={`${inputClass} resize-none`}
+                      rows={3}
+                      placeholder="Optional notes"
+                    />
+                  </div>
+                </div>
+
+                <div className={APP_MODAL_FOOTER}>
+                  <button
+                    type="button"
+                    onClick={() => setShowProgress(null)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveProgress}
+                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

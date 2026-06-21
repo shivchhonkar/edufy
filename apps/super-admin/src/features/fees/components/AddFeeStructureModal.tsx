@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { useSettings } from '@/shared/SettingsContext';
@@ -17,12 +18,6 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
   const { settings } = useSettings();
   
   // Get sidebar collapsed state from localStorage
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, []);
 
   // Refs for form fields
   const modalContentRef = useRef<HTMLDivElement>(null);
@@ -316,14 +311,10 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <>
-      <div className={`fixed top-3 bottom-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 10px)' }}>
-        <div ref={modalContentRef} className="bg-white shadow-2xl rounded-tl-xl w-full flex flex-col" style={{ height: 'calc(100vh - 10px)' }}>
+      <AppModal open={isOpen} onClose={onClose}>
+      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
           <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">
             <h2 className="text-xl text-gray-900">
               {editingFeeStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
@@ -649,7 +640,7 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
             </div>
           </div>
         </div>
-      </div>
+        </AppModal>
 
       <ConfirmDialog
         isOpen={showConfirmDialog}

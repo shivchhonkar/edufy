@@ -59,7 +59,7 @@ export default function VirtualizedTable<T>({
           {columns.map((column) => (
             <div
               key={column.key}
-              className={`px-5 py-3 font-medium ${column.headerClassName ?? 'text-left'}`}
+              className={`px-3 py-2 text-xs font-medium whitespace-nowrap ${column.headerClassName ?? 'text-left'}`}
             >
               {column.header}
             </div>

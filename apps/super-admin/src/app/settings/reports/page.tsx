@@ -131,7 +131,7 @@ export default function ReportSettingsPage() {
     return (
       <DashboardLayout>
         <div className="print:hidden">
-          <SettingsNav />
+          {/* <SettingsNav /> */}
           <p className="text-sm text-gray-500">Loading report settings...</p>
         </div>
       </DashboardLayout>
@@ -158,15 +158,15 @@ export default function ReportSettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 min-w-0 max-w-full print:space-y-0">
+      <div className="space-y-0 min-w-0 max-w-full print:space-y-0">
         <div className="print:hidden">
-          <SettingsNav />
+          {/* <SettingsNav /> */}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-xl text-gray-900">Report Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1 mb-2">
               Configure report card template, header design, and counsellor signature
             </p>
           </div>

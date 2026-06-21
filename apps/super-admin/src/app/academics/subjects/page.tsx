@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import QuickAddSubjectsPanel from '@/features/subjects/components/QuickAddSubjectsPanel';
@@ -621,8 +622,8 @@ export default function SubjectsPage() {
       </div>
 
       {showSubjectModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <AppModal open={showSubjectModal} onClose={() => { setShowSubjectModal(false); setEditingSubject(null); }}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="text-lg font-semibold">
                 {editingSubject ? 'Edit Subject' : 'Add Subject'}
@@ -691,7 +692,7 @@ export default function SubjectsPage() {
               </button>
             </div>
           </div>
-        </div>
+          </AppModal>
       )}
     </DashboardLayout>
   );

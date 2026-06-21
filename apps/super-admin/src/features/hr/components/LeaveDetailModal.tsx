@@ -1,5 +1,6 @@
 'use client'
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react'
 import type { LeaveRecord } from '@/features/hr/types/leave'
 import { FiCheck, FiX } from 'react-icons/fi'
@@ -52,8 +53,8 @@ export default function LeaveDetailModal({
     mode === 'approve' ? 'Approve Leave' : mode === 'reject' ? 'Reject Leave' : 'Leave Details'
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-bold text-gray-900">{title}</h2>
           <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
@@ -192,7 +193,7 @@ export default function LeaveDetailModal({
           )}
         </div>
       </div>
-    </div>
+    </AppModal>
   )
 }
 

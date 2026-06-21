@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 
 interface AddHolidayModalProps {
@@ -67,19 +68,8 @@ export default function AddHolidayModal({ isOpen, onClose, onSuccess }: AddHolid
     }
   };
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
+    <AppModal open={isOpen} onClose={onClose}>
       <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="text-xl text-gray-900">Add New Holiday</h2>
@@ -173,7 +163,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSuccess }: AddHolid
           </div>
         </form>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

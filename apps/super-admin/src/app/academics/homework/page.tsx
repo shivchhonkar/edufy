@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -493,8 +494,8 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <h2 className="text-xl text-gray-900">
@@ -707,7 +708,7 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
           </div>
         </form>
       </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -768,8 +769,8 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+    <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex justify-between items-start">
             <div>
@@ -943,6 +944,6 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
           </div>
         )}
       </div>
-    </div>
+    </AppModal>
   );
 }

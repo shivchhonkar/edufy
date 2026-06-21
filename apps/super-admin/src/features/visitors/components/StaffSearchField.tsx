@@ -119,7 +119,7 @@ export default function StaffSearchField({
                   <FiUser className="w-4 h-4 text-primary-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium text-gray-900 truncate">{staff.name}</div>
+                  <div className="text-gray-900 truncate">{staff.name}</div>
                   <div className="text-xs text-gray-500 truncate">
                     {[staff.designation_name, staff.department_name, staff.employee_id]
                       .filter(Boolean)

@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
@@ -138,8 +139,8 @@ export default function ShiftsPage() {
           </table>
         </div>
         {showShiftModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-3">
+          <AppModal open={showShiftModal} onClose={() => { setShowShiftModal(false); setEditingShift(null); }}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="font-bold">{editingShift ? 'Edit Shift' : 'Add Shift'}</h2>
               <input placeholder="Name" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               <div className="grid grid-cols-2 gap-2">
@@ -152,11 +153,11 @@ export default function ShiftsPage() {
                 <button type="button" onClick={saveShift} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{editingShift ? 'Update' : 'Save'}</button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
         {showAssignModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-3">
+          <AppModal open={showAssignModal} onClose={() => setShowAssignModal(false)}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="font-bold">Assign Shift</h2>
               <select value={assignForm.staff_id} onChange={(e) => setAssignForm({ ...assignForm, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Select staff</option>
@@ -172,7 +173,7 @@ export default function ShiftsPage() {
                 <button type="button" onClick={assignShift} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Assign</button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

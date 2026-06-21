@@ -18,6 +18,7 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiFilter,
+  FiTrash2,
 } from 'react-icons/fi';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import VirtualizedStudentsTable from '@/features/students/components/VirtualizedStudentsTable';
@@ -38,7 +39,7 @@ interface Section {
 }
 
 function StudentsPageContent() {
-  const { alert } = useDialog();
+  const { alert, confirm } = useDialog();
   const searchParams = useSearchParams();
   const pageHint = searchParams.get('hint');
   const [students, setStudents] = useState<Student[]>([]);
@@ -55,6 +56,7 @@ function StudentsPageContent() {
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [deletingUnassigned, setDeletingUnassigned] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -169,6 +171,77 @@ function StudentsPageContent() {
     setShowModal(false);
     setEditingStudent(null);
   };
+
+  const handleDeleteUnassigned = async () => {
+    if (classFilter !== UNASSIGNED_CLASS_FILTER) return;
+
+    if (totalStudents === 0) {
+      await alert('No unassigned students to delete.', { title: 'Nothing to delete', type: 'info' });
+      return;
+    }
+
+    const searchNote = search.trim()
+      ? ' matching the current search'
+      : '';
+    const confirmed = await confirm(
+      `Delete all ${totalStudents} unassigned student record${totalStudents === 1 ? '' : 's'}${searchNote}? This action cannot be undone.`,
+      {
+        title: 'Delete Unassigned Students',
+        type: 'danger',
+        confirmText: 'Delete All',
+        cancelText: 'Cancel',
+      },
+    );
+    if (!confirmed) return;
+
+    setDeletingUnassigned(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+
+      const response = await fetch(
+        `/api/students/unassigned${params.toString() ? `?${params.toString()}` : ''}`,
+        { method: 'DELETE' },
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        await alert(`Deleted ${data.data.deleted} unassigned student(s).`, {
+          title: 'Deleted',
+          type: 'success',
+        });
+        fetchStudents();
+      } else {
+        await alert(data.error || 'Failed to delete unassigned students', {
+          title: 'Error',
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting unassigned students:', error);
+      await alert('An error occurred while deleting unassigned students', {
+        title: 'Error',
+        type: 'error',
+      });
+    } finally {
+      setDeletingUnassigned(false);
+    }
+  };
+
+  const showDeleteUnassigned =
+    classFilter === UNASSIGNED_CLASS_FILTER && !loading && totalStudents > 0;
+
+  const deleteUnassignedButton = showDeleteUnassigned ? (
+    <button
+      type="button"
+      onClick={handleDeleteUnassigned}
+      disabled={deletingUnassigned}
+      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 border border-red-200 rounded hover:bg-red-50 hover:text-red-900 disabled:opacity-50"
+    >
+      <FiTrash2 size={13} />
+      {deletingUnassigned ? 'Deleting...' : 'Delete unassigned'}
+    </button>
+  ) : null;
 
   const hasActiveFilters = Boolean(search || classFilter || sectionFilter);
   const activeFilterCount = [search, classFilter, sectionFilter].filter(Boolean).length;
@@ -299,17 +372,20 @@ function StudentsPageContent() {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => {
-                      setSearch('');
-                      setClassFilter('');
-                      setSectionFilter('');
-                    }}
-                    className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
-                  >
-                    <FiX size={14} />
-                    Clear all
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {deleteUnassignedButton}
+                    <button
+                      onClick={() => {
+                        setSearch('');
+                        setClassFilter('');
+                        setSectionFilter('');
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                    >
+                      <FiX size={14} />
+                      Clear all
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -335,6 +411,7 @@ function StudentsPageContent() {
                   {sections.find((s) => s.id.toString() === sectionFilter)?.name}
                 </span>
               )}
+              {deleteUnassignedButton}
               <button
                 onClick={() => {
                   setSearch('');

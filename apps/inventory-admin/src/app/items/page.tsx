@@ -86,7 +86,7 @@ export default function ItemsPage() {
           <div className="flex items-center min-w-0">
             <FiPackage className="text-gray-400 mr-3 shrink-0" />
             <div className="min-w-0">
-              <div className="font-medium text-gray-900 truncate">{item.item_name}</div>
+              <div className="text-gray-900 truncate">{item.item_name}</div>
               <div className="text-sm text-gray-500 truncate">{item.item_code}</div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
@@ -182,8 +183,8 @@ export default function EssPage() {
         )}
 
         {showLeaveForm && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-3">
+          <AppModal open={showLeaveForm} onClose={() => setShowLeaveForm(false)}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="font-bold">Apply for Leave</h2>
               <select value={leaveForm.leave_type_id} onChange={(e) => setLeaveForm({ ...leaveForm, leave_type_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Leave type</option>
@@ -199,7 +200,7 @@ export default function EssPage() {
                 <button type="button" onClick={submitLeave} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Submit</button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

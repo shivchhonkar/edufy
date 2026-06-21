@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect, useRef } from 'react';
 import { FiX, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { Route } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -22,12 +23,6 @@ interface Stop {
 
 export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute }: AddRouteModalProps) {
   // Get sidebar collapsed state from localStorage
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
 
   const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -179,13 +174,10 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
-      <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full overflow-y-auto">
+    <>
+    <AppModal open={isOpen} onClose={onClose}>
+      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">
             {editingRoute ? 'Edit Route' : 'Add New Route'}
@@ -444,6 +436,7 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
           </div>
         </form>
       </div>
+    </AppModal>
 
       {/* Confirmation Dialog for Unsaved Changes */}
       <ConfirmDialog
@@ -456,7 +449,7 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
         onCancel={() => setShowCancelConfirm(false)}
         type="warning"
       />
-    </div>
+    </>
   );
 }
 

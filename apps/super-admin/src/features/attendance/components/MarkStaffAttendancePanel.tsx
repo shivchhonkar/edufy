@@ -852,17 +852,17 @@ const MarkStaffAttendancePanel = forwardRef<
             ].map((badge) => (
               <span
                 key={badge.label}
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${badge.className}`}
               >
                 {badge.label}
-                <span className="font-bold">{badge.count}</span>
+                <span className="font-normal">{badge.count}</span>
                 <span className="opacity-70">({pct(badge.count, statusCounts.total)}%)</span>
               </span>
             ))}
             {statusCounts.unmarked > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700">
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-gray-100 text-gray-700">
                 Unmarked
-                <span className="font-bold">{statusCounts.unmarked}</span>
+                <span className="font-normal">{statusCounts.unmarked}</span>
               </span>
             )}
           </div>
@@ -963,7 +963,7 @@ const MarkStaffAttendancePanel = forwardRef<
                 >
                   Mark All Half Day
                 </button>
-                <button
+                {/* <button
                   type="button"
                   onClick={() => {
                     setMarkMode('bulk');
@@ -972,7 +972,7 @@ const MarkStaffAttendancePanel = forwardRef<
                   className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
                 >
                   Switch to Bulk Mode
-                </button>
+                </button> */}
               </div>
             )}
           </div>

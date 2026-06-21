@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react';
 import { FiPrinter, FiX } from 'react-icons/fi';
 import type { Student } from '@/shared/types';
@@ -93,18 +94,12 @@ export default function TransferCertificateModal({
     }));
   };
 
-  if (!isOpen || students.length === 0) return null;
+  if (students.length === 0) return null;
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden"
-        onClick={onClose}
-      >
-        <div
-          className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <AppModal open={isOpen} onClose={onClose}>
+        <div className="flex max-h-full h-full w-full flex-col overflow-hidden bg-white shadow-xl min-h-0">
           <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Transfer Certificate</h2>
@@ -210,7 +205,7 @@ export default function TransferCertificateModal({
             })}
           </div>
         </div>
-      </div>
+      </AppModal>
 
     </>
   );

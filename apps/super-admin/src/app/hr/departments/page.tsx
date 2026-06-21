@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
@@ -123,8 +124,8 @@ export default function DepartmentsPage() {
           </table>
         </div>
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+          <AppModal open={showModal} onClose={() => setShowModal(false)}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} Department</h2>
               <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -143,7 +144,7 @@ export default function DepartmentsPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

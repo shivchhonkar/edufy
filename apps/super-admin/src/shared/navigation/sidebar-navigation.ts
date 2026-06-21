@@ -80,11 +80,21 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: 'student-management',
-    title: 'Student Management',
-    icon: FiUsers,
+    id: 'admissions',
+    title: 'Admissions',
+    icon: FiUserPlus,
     items: [
       { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
+      // { name: 'Students', path: '/students', icon: FiUsers },
+      // { name: 'Promotions', path: '/promotions', icon: FiArrowUpCircle },
+    ],
+  },
+  {
+    id: 'student-management',
+    title: 'Students',
+    icon: FiUsers,
+    items: [
+      // { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
       { name: 'Students', path: '/students', icon: FiUsers },
       { name: 'Promotions', path: '/promotions', icon: FiArrowUpCircle },
       {
@@ -115,8 +125,8 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
       { name: 'Subjects', path: '/academics/subjects', icon: FiBookOpen },
       { name: 'Timetable', path: '/academics/timetable', icon: FiCalendar },
-      { name: 'Homework', path: '/academics/homework', icon: FiClipboard },
-      { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+      // { name: 'Homework', path: '/academics/homework', icon: FiClipboard },
+      // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
       { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
     ],
@@ -138,6 +148,16 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'homework',
+    title: 'Homework & Lesson Plans',
+    icon: FiBookOpen,
+    items: [
+      { name: 'Homework', path: '/homework', icon: FiBookOpen },
+      { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+    ],
+  },
+  
+  {
     id: 'examination-results',
     title: 'Examination & Results',
     icon: FiAward,
@@ -158,7 +178,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'fees-finance',
-    title: 'Fees & Finance',
+    title: 'Fees & Accounts',
     icon: RupeeIcon,
     items: [
       { name: 'Dashboard', path: '/fees/dashboard', icon: FiGrid },
@@ -173,8 +193,16 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'transport',
+    title: 'Transport',
+    icon: FiTruck,
+    items: [
+      { name: 'Transport', path: '/transport', icon: FiTruck },
+    ],
+  },
+  {
     id: 'staff-hr',
-    title: 'Staff & HR',
+    title: 'HR & Payroll',
     icon: FiBriefcase,
     items: [
       { name: 'Dashboard', path: '/teachers', icon: FiGrid },
@@ -186,19 +214,6 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Performance Tracking', path: '/teachers/performance', icon: FiTarget },
       { name: 'Teacher Ranking', path: '/teachers/ranking', icon: FiAward },
       { name: 'Daily Activities', path: '/teachers/daily-activities', icon: FiClock },
-    ],
-  },
-  {
-    id: 'operations',
-    title: 'Operations',
-    icon: FiTruck,
-    items: [
-      { name: 'Transport', path: '/transport', icon: FiTruck },
-      { name: 'Inventory', path: '/inventory', icon: FiPackage },
-      { name: 'Library', path: '/inventory', icon: FiBook },
-      { name: 'Hostel', path: '/coming-soon?feature=hostel', icon: FiHome, comingSoon: true },
-      { name: 'Assets', path: '/inventory', icon: FiBox },
-      { name: 'Maintenance', path: '/settings?tab=maintenance', icon: FiTool },
     ],
   },
   {
@@ -216,37 +231,93 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: 'administration',
-    title: 'Administration',
-    icon: FiSettings,
+    id: 'inventory',
+    title: 'Inventory',
+    icon: FiPackage,
     items: [
-      { name: 'School Setup', path: '/setup', icon: FiTool },
-      { name: 'Academic Year', path: '/settings?tab=academic', icon: FiCalendar },
-      { name: 'User Access', path: '/settings/user-access', icon: FiUsers },
-      { name: 'Staff Access', path: '/settings/staff-access', icon: FiUserCheck },
-      { name: 'Settings', path: '/settings', icon: FiSettings },
-      { name: 'User Roles', path: '/settings?tab=users', icon: FiShield },
-      {
-        name: 'Permissions',
-        path: '/coming-soon?feature=permissions',
-        icon: FiLock,
-        comingSoon: true,
-      },
-      {
-        name: 'Audit Logs',
-        path: '/coming-soon?feature=audit-logs',
-        icon: FiFileText,
-        comingSoon: true,
-      },
-      {
-        name: 'Integrations',
-        path: '/coming-soon?feature=integrations',
-        icon: FiLink,
-        comingSoon: true,
-      },
+      { name: 'Inventory', path: '/inventory', icon: FiPackage },
+      // { name: 'Library', path: '/inventory', icon: FiBook },
+      // { name: 'Hostel', path: '/coming-soon?feature=hostel', icon: FiHome, comingSoon: true },
+      // { name: 'Assets', path: '/inventory', icon: FiBox },
     ],
   },
+  {
+    id: 'library',
+    title: 'Library',
+    icon: FiBook,
+    items: [
+      { name: 'Library', path: '/library', icon: FiBook },
+    ],
+  },
+  // {
+  //   id: 'operations',
+  //   title: 'Operations',
+  //   icon: FiTruck,
+  //   items: [
+  //     // { name: 'Transport', path: '/transport', icon: FiTruck },
+  //     { name: 'Inventory', path: '/inventory', icon: FiPackage },
+  //     { name: 'Library', path: '/inventory', icon: FiBook },
+  //     { name: 'Hostel', path: '/coming-soon?feature=hostel', icon: FiHome, comingSoon: true },
+  //     { name: 'Assets', path: '/inventory', icon: FiBox },
+  //     { name: 'Maintenance', path: '/settings?tab=maintenance', icon: FiTool },
+  //   ],
+  // },
+
+  {
+    id: 'settings',
+    title: 'Settings',
+    icon: FiSettings,
+    items: [
+      { name: 'School Setup', path: '/settings/setup', icon: FiTool },
+      { name: 'System Settings', path: '/settings', icon: FiSettings },
+      { name: 'User Access', path: '/settings/user-access', icon: FiUsers },
+      { name: 'Staff Access', path: '/settings/staff-access', icon: FiUserCheck },
+      { name: 'Report Settings', path: '/settings/reports', icon: FiFileText },
+      { name: 'Theme', path: '/settings/theme', icon: FiMonitor },
+    ],
+  },
+  
+  // {
+  //   id: 'administration',
+  //   title: 'Administration',
+  //   icon: FiSettings,
+  //   items: [
+  //     { name: 'School Setup', path: '/setup', icon: FiTool },
+  //     { name: 'Academic Year', path: '/settings?tab=academic', icon: FiCalendar },
+  //     { name: 'User Access', path: '/settings/user-access', icon: FiUsers },
+  //     { name: 'Staff Access', path: '/settings/staff-access', icon: FiUserCheck },
+  //     { name: 'Settings', path: '/settings', icon: FiSettings },
+  //     { name: 'User Roles', path: '/settings?tab=users', icon: FiShield },
+  //     {
+  //       name: 'Permissions',
+  //       path: '/coming-soon?feature=permissions',
+  //       icon: FiLock,
+  //       comingSoon: true,
+  //     },
+  //     {
+  //       name: 'Audit Logs',
+  //       path: '/coming-soon?feature=audit-logs',
+  //       icon: FiFileText,
+  //       comingSoon: true,
+  //     },
+  //     {
+  //       name: 'Integrations',
+  //       path: '/coming-soon?feature=integrations',
+  //       icon: FiLink,
+  //       comingSoon: true,
+  //     },
+  //   ],
+  // },
 ];
+
+export function isSingleItemNavGroup(group: NavGroup): boolean {
+  return group.items.length === 1;
+}
+
+/** When a group has exactly one item, use it as a direct sidebar link (no expand/collapse). */
+export function getNavGroupDirectLink(group: NavGroup): NavLink | null {
+  return group.items.length === 1 ? group.items[0] : null;
+}
 
 /** Paths where only an exact match counts (not child routes). */
 const EXACT_MATCH_PATHS = new Set([

@@ -266,7 +266,7 @@ export default function StaffAttendancePage() {
         width: 'minmax(180px, 2fr)',
         render: (record) => (
           <div className="min-w-0">
-            <div className="font-medium text-gray-900 truncate">
+            <div className="text-gray-900 truncate">
               {record.first_name} {record.last_name}
             </div>
             <div className="text-xs text-gray-500 truncate">

@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import { FiX, FiUserPlus, FiTrash2 } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -107,7 +108,7 @@ export default function InquiryDetailModal({
     }
   }, [isOpen, inquiryId, fetchDetail]);
 
-  if (!isOpen || !inquiryId) return null;
+  if (!inquiryId) return null;
 
   const updateField = async (field: string, value: unknown) => {
     if (!inquiry) return;
@@ -221,12 +222,8 @@ export default function InquiryDetailModal({
 
   return (
     <>
-      <div
-        className={`fixed inset-0 flex justify-end bg-black/40 ${
-          showConvert || showDelete ? 'z-40' : 'z-50'
-        }`}
-      >
-        <div className="bg-white w-full max-w-lg h-full shadow-xl flex flex-col overflow-hidden">
+      <AppModal open={isOpen} onClose={onClose}>
+        <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -445,7 +442,7 @@ export default function InquiryDetailModal({
             </div>
           )}
         </div>
-      </div>
+      </AppModal>
 
       <ConfirmDialog
         isOpen={showConvert}

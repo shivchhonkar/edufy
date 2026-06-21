@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiDownload, FiCalendar, FiUsers, FiClock, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
 interface Staff {
@@ -212,19 +213,8 @@ export default function AttendanceReportsModal({ isOpen, onClose, staff }: Atten
 
   const overallStats = getOverallStats();
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
+    <AppModal open={isOpen} onClose={onClose}>
       <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl  text-gray-900">Attendance Reports</h2>
@@ -489,7 +479,7 @@ export default function AttendanceReportsModal({ isOpen, onClose, staff }: Atten
           )}
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

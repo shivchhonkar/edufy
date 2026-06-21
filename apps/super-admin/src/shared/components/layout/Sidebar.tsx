@@ -9,6 +9,7 @@ import { useSettings } from '@/shared/SettingsContext';
 import {
   SIDEBAR_NAV_GROUPS,
   getInitialExpandedGroups,
+  getNavGroupDirectLink,
   isNavLinkActive,
 } from '@/shared/navigation/sidebar-navigation';
 import {
@@ -138,10 +139,29 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
       <nav className="mt-1 pb-6">
         {SIDEBAR_NAV_GROUPS.map((group) => {
           const Icon = group.icon;
+          const directLink = getNavGroupDirectLink(group);
           const expanded = expandedGroups[group.id];
           const active = isGroupActive(group.id);
 
           if (displayCollapsed) {
+            if (directLink) {
+              return (
+                <Link
+                  key={group.id}
+                  href={directLink.path}
+                  onClick={() => onMobileClose?.()}
+                  className={`sidebar-nav-link flex items-center justify-center w-full px-3 py-2.5 transition-colors ${
+                    active
+                      ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  title={group.title}
+                >
+                  <Icon className="sidebar-nav-icon w-5 h-5 flex-shrink-0" />
+                </Link>
+              );
+            }
+
             return (
               <div key={group.id} className="relative group">
                 <button
@@ -184,6 +204,35 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                   })}
                 </div>
               </div>
+            );
+          }
+
+          if (directLink) {
+            return (
+              <Link
+                key={group.id}
+                href={directLink.path}
+                onClick={() => onMobileClose?.()}
+                className={`sidebar-nav-link flex items-center w-full px-4 py-2 transition-colors mb-0.5 ${
+                  active
+                    ? 'text-primary-700 bg-primary-50 border-r-2 border-primary-600 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <Icon
+                  className={`sidebar-nav-icon w-4 h-4 flex-shrink-0 ${
+                    active ? 'text-primary-600' : 'text-gray-400'
+                  }`}
+                />
+                <span className="whitespace-nowrap flex-1 text-left text-[13px] uppercase tracking-wide leading-snug ml-2">
+                  {group.title}
+                </span>
+                {directLink.comingSoon && (
+                  <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
+                    Soon
+                  </span>
+                )}
+              </Link>
             );
           }
 

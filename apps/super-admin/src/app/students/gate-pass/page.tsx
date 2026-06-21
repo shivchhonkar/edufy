@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -1296,14 +1297,8 @@ function GatePassPageContent() {
       </div>
 
       {selectedRecord && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setSelectedRecord(null)}
-        >
-          <div
-            className="bg-slate-100 rounded-xl shadow-xl w-[min(98vw,210mm)] max-h-[92vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AppModal open={!!selectedRecord} onClose={() => setSelectedRecord(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-slate-100 shadow-xl overflow-y-auto">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-slate-100/95 backdrop-blur border-b border-slate-200 px-4 py-3">
               <p className="text-sm font-medium text-slate-700">
                 Gate Pass
@@ -1342,22 +1337,16 @@ function GatePassPageContent() {
                 </button>
               </div>
             </div>
-            <div className="p-3">
+            <div className="flex-1 overflow-y-auto p-3">
               <GatePassDocument record={selectedRecord} school={schoolInfo} />
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {editingRecord && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={closeEditRecord}
-        >
-          <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AppModal open={!!editingRecord} onClose={closeEditRecord}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-y-auto">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-4 py-3 bg-white">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Edit Gate Pass</p>
@@ -1505,7 +1494,7 @@ function GatePassPageContent() {
               </div>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       <CollectorCameraModal

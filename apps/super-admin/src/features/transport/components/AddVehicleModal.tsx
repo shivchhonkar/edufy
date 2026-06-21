@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 import { Vehicle } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -20,12 +21,6 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 
 export default function AddVehicleModal({ isOpen, onClose, onSuccess, editingVehicle }: AddVehicleModalProps) {
   // Get sidebar collapsed state from localStorage
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
 
   const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -194,13 +189,10 @@ export default function AddVehicleModal({ isOpen, onClose, onSuccess, editingVeh
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-3 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 224px)', height: 'calc(100vh - 30px)' }}>
-      <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full overflow-y-auto" style={{ height: 'calc(100vh - 30px)' }}>
+    <>
+    <AppModal open={isOpen} onClose={onClose}>
+      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">
             {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
@@ -466,6 +458,7 @@ export default function AddVehicleModal({ isOpen, onClose, onSuccess, editingVeh
           </div>
         </form>
       </div>
+    </AppModal>
 
       {/* Confirmation Dialog for Unsaved Changes */}
       <ConfirmDialog
@@ -478,7 +471,7 @@ export default function AddVehicleModal({ isOpen, onClose, onSuccess, editingVeh
         onCancel={() => setShowCancelConfirm(false)}
         type="warning"
       />
-    </div>
+    </>
   );
 }
 

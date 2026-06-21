@@ -379,7 +379,7 @@ export default function DashboardPage() {
                     className="flex items-center justify-between gap-3 p-2.5 border border-gray-100 rounded-lg hover:bg-gray-50"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{slot.subject_name}</p>
+                      <p className="text-sm text-gray-900 truncate">{slot.subject_name}</p>
                       <p className="text-xs text-gray-500 truncate">
                         {slot.class_name}
                         {slot.section_name ? ` · ${slot.section_name}` : ''} · {slot.teacher_name}
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                       }`}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 truncate">{activity.title}</p>
+                      <p className="text-gray-900 truncate">{activity.title}</p>
                       <p className="text-gray-500">{activity.subtitle}</p>
                     </div>
                     <span className="text-gray-400 shrink-0">{activity.time}</span>

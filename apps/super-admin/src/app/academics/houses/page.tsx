@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -626,14 +627,8 @@ export default function HousesPage() {
       </div>
 
       {showHouseModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setShowHouseModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AppModal open={showHouseModal} onClose={() => setShowHouseModal(false)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-y-auto">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <h2 className="text-sm font-semibold text-gray-900">
                 {editingHouse ? 'Edit House' : 'Add House'}
@@ -723,7 +718,7 @@ export default function HousesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
     </DashboardLayout>
   );

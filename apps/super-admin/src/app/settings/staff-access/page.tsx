@@ -1,5 +1,6 @@
 'use client'
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
@@ -200,14 +201,14 @@ export default function StaffAccessPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <SettingsNav />
+        {/* <SettingsNav /> */}
         <div>
           <h1 className="text-xl text-gray-900 flex items-center gap-2">
             <FiUserCheck className="text-primary-600" />
-            Staff Access
+            Staff Portal
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage portal access, set login passwords, and control Transport, Fees, and Inventory portals.
+            Staff login, ESS modules, and external portal access (Transport, Fees, Inventory).
           </p>
         </div>
 
@@ -447,8 +448,8 @@ export default function StaffAccessPage() {
         </div>
 
         {editStaff && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <AppModal open={!!editStaff} onClose={() => setEditStaff(null)}>
+            <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4 overflow-y-auto">
               <h3 className="text-lg font-semibold">Manage access — {staffName(editStaff)}</h3>
 
               <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
@@ -571,7 +572,7 @@ export default function StaffAccessPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

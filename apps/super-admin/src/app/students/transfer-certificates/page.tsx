@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -345,14 +346,8 @@ export default function TransferCertificatesHistoryPage() {
       </div>
 
       {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setSelected(null)}
-        >
-          <div
-            className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AppModal open={!!selected} onClose={() => setSelected(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
             <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">Transfer Certificate Record</h2>
@@ -409,7 +404,7 @@ export default function TransferCertificatesHistoryPage() {
               </div>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
     </DashboardLayout>
   );

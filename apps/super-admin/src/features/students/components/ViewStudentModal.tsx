@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { Student } from '@/shared/types';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
@@ -41,23 +42,11 @@ export default function ViewStudentModal({
     }
   }, [isOpen, student?.id]);
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen || !student) return null;
+  if (!student) return null;
 
   return (
-    <div
-      className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`}
-      style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}
-    >
-      <div className="bg-gray-50 shadow-2xl w-full h-full flex flex-col overflow-hidden">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="bg-gray-50 shadow-2xl w-full h-full flex flex-col overflow-hidden min-h-0 min-w-0">
         {/* Header */}
         <div className="px-4 py-3 sm:px-6 bg-white border-b flex justify-between items-center flex-shrink-0">
           <div>
@@ -158,6 +147,6 @@ export default function ViewStudentModal({
           </button>
         </div>
       </div>
-    </div>
+      </AppModal>
   );
 }

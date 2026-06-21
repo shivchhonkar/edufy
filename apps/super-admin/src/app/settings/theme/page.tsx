@@ -254,7 +254,7 @@ export default function ThemeSettingsPage() {
           </p>
         </div>
 
-        <SettingsNav />
+        {/* <SettingsNav /> */}
 
         {message && (
           <div

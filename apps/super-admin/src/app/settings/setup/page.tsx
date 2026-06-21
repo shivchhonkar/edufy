@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -2058,8 +2059,8 @@ export default function SetupWizardPage() {
       </div>
 
       {editingClass && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 w-full max-w-sm shadow-lg">
+        <AppModal open={!!editingClass} onClose={() => setEditingClass(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit class</h3>
             <input
               value={editClassName}
@@ -2076,12 +2077,12 @@ export default function SetupWizardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {editingSection && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 w-full max-w-sm shadow-lg">
+        <AppModal open={!!editingSection} onClose={() => setEditingSection(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit section</h3>
             <input
               value={editSectionName}
@@ -2098,12 +2099,12 @@ export default function SetupWizardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {editingYear && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 w-full max-w-md shadow-lg">
+        <AppModal open={!!editingYear} onClose={() => setEditingYear(null)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit academic year</h3>
             <div className="space-y-3">
               <div>
@@ -2144,7 +2145,7 @@ export default function SetupWizardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
     </DashboardLayout>
   );

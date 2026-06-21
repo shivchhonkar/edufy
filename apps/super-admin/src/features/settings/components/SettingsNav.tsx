@@ -4,14 +4,15 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-const links = [
-  { href: '/settings', label: 'General Settings' },
-  { href: '/settings?tab=academic', label: 'Academic Year' },
-  { href: '/settings/user-access', label: 'User Access' },
-  { href: '/settings/staff-access', label: 'Staff Access' },
+/** Horizontal nav shared across all settings pages — kept in sync with Settings sidebar group. */
+export const SETTINGS_NAV_LINKS = [
+  { href: '/settings/setup', label: 'School Setup' },
+  { href: '/settings', label: 'System Settings' },
+  { href: '/settings/user-access', label: 'Parent Portal' },
+  { href: '/settings/staff-access', label: 'Staff Portal' },
   { href: '/settings/reports', label: 'Report Settings' },
-  { href: '/settings/theme', label: 'Theme Settings' },
-];
+  { href: '/settings/theme', label: 'Theme' },
+] as const;
 
 function navLinkClass(active: boolean) {
   return `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -19,16 +20,21 @@ function navLinkClass(active: boolean) {
   }`;
 }
 
+function isSettingsNavActive(pathname: string, searchParams: URLSearchParams | null, href: string) {
+  if (href === '/settings') {
+    return pathname === '/settings' && !searchParams?.get('tab');
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function SettingsNavFallback() {
   const pathname = usePathname();
 
   return (
     <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 mb-6">
-      {links.map((link) => {
+      {SETTINGS_NAV_LINKS.map((link) => {
         const basePath = link.href.split('?')[0];
-        const active =
-          !link.href.includes('?tab=') &&
-          (pathname === link.href || (pathname.startsWith(`${basePath}/`) && basePath !== '/settings'));
+        const active = pathname === link.href || pathname.startsWith(`${basePath}/`);
         return (
           <Link key={link.href} href={link.href} className={navLinkClass(active)}>
             {link.label}
@@ -43,19 +49,14 @@ function SettingsNavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const isActive = (href: string) => {
-    if (href.includes('?tab=')) {
-      const tab = href.split('tab=')[1];
-      return pathname === '/settings' && searchParams.get('tab') === tab;
-    }
-    if (href === '/settings') return pathname === '/settings' && !searchParams.get('tab');
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
   return (
     <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 mb-6">
-      {links.map((link) => (
-        <Link key={link.href} href={link.href} className={navLinkClass(isActive(link.href))}>
+      {SETTINGS_NAV_LINKS.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={navLinkClass(isSettingsNavActive(pathname, searchParams, link.href))}
+        >
           {link.label}
         </Link>
       ))}

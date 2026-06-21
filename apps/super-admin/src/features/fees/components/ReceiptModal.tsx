@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useRef } from 'react';
 import { FiX, FiPrinter, FiDownload } from 'react-icons/fi';
 import PrintableReceipt from '@/features/fees/components/PrintableReceipt';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -20,13 +21,6 @@ export default function ReceiptModal({ isOpen, onClose, payment, student }: Rece
   const { settings } = useSettings();
   const [downloading, setDownloading] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
-
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
 
   const handlePrint = () => {
     printFeeReceiptViaIframe(payment, student, {
@@ -65,16 +59,9 @@ export default function ReceiptModal({ isOpen, onClose, payment, student }: Rece
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`}
-      style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}
-    >
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl w-full h-full overflow-y-auto">
         <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center sticky top-0 bg-white z-10">
           <h2 className="text-xl text-gray-900">Payment Receipt</h2>
           <div className="flex items-center gap-3">
@@ -125,6 +112,6 @@ export default function ReceiptModal({ isOpen, onClose, payment, student }: Rece
           </button>
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }

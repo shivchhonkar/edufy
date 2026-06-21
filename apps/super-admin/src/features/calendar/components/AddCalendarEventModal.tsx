@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { getCalendarDateString } from '@edulakhya/utils';
 import type { CalendarEvent } from '@/lib/school-calendar';
@@ -108,13 +109,6 @@ export default function AddCalendarEventModal({
     setError('');
   }, [isOpen, editEvent, initialDate]);
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -176,16 +170,9 @@ export default function AddCalendarEventModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`}
-      style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}
-    >
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="text-xl text-gray-900">
             {isEditing ? 'Edit Calendar Entry' : 'Add Calendar Entry'}
@@ -199,7 +186,7 @@ export default function AddCalendarEventModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-w-2xl">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -437,6 +424,6 @@ export default function AddCalendarEventModal({
           </div>
         </form>
       </div>
-    </div>
+    </AppModal>
   );
 }

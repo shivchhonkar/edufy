@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiClock, FiUser, FiCalendar, FiMapPin } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
 
@@ -206,19 +207,8 @@ export default function RecordAttendanceModal({
     }
   };
 
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
+    <AppModal open={isOpen} onClose={onClose}>
       <div
         ref={modalContentRef}
         className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col"
@@ -505,7 +495,7 @@ export default function RecordAttendanceModal({
           </div>
         </form>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

@@ -180,7 +180,7 @@ function SelectRow({
           <FiSquare className="text-gray-400" size={18} />
         )}
       </div>
-      <div className="px-4 text-sm font-medium text-gray-900 truncate">
+      <div className="px-4 text-sm text-gray-900 truncate">
         {student.admission_number}
       </div>
       <div className="px-4 flex items-center gap-2 min-w-0">

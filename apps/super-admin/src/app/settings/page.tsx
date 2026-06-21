@@ -1,7 +1,9 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import type { IconType } from 'react-icons';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SettingsNav from '@/features/settings/components/SettingsNav';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -42,6 +44,72 @@ import {
   FiSearch,
   FiX
 } from 'react-icons/fi';
+
+const SETTINGS_TABS = [
+  { id: 'overview', label: 'Overview', icon: FiSettings },
+  { id: 'academic', label: 'Academic', icon: FiCalendar },
+  { id: 'users', label: 'Users', icon: FiUsers },
+  { id: 'system', label: 'School', icon: FiCog },
+  { id: 'backup', label: 'Backup', icon: FiDownload },
+  { id: 'performance', label: 'Performance', icon: FiMonitor },
+  { id: 'maintenance', label: 'Maintenance', icon: FiActivity },
+  { id: 'fees', label: 'Fees', icon: RupeeIcon },
+] as const;
+
+const SET_TAB = 'space-y-4 text-sm text-gray-900';
+const SET_H2 = 'text-sm font-semibold text-gray-900';
+const SET_H3 = 'text-sm font-semibold text-gray-900 mb-2';
+const SET_LABEL = 'block text-xs font-medium text-gray-600 mb-1';
+const SET_DESC = 'text-xs text-gray-500 mb-3';
+const SET_INPUT =
+  'w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+const SET_CARD = 'bg-white border border-gray-200 rounded-lg p-4';
+const SET_BTN =
+  'inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed';
+const SET_BTN_PRIMARY = `${SET_BTN} bg-blue-600 text-white hover:bg-blue-700`;
+const SET_BTN_SECONDARY = `${SET_BTN} border border-gray-300 text-gray-700 bg-white hover:bg-gray-50`;
+const SET_BTN_SUCCESS = `${SET_BTN} bg-green-600 text-white hover:bg-green-700`;
+const SET_BTN_DANGER = `${SET_BTN} bg-red-600 text-white hover:bg-red-700`;
+const SET_FILTER_BTN = 'px-2.5 py-1 text-sm rounded-md font-medium';
+const SET_TABLE_HEAD = 'px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide';
+const SET_TABLE_CELL = 'px-3 py-2 whitespace-nowrap text-sm';
+
+type SettingsStatTone = 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'yellow';
+
+const SETTINGS_STAT_TONE: Record<
+  SettingsStatTone,
+  { box: string; label: string; value: string; icon: string }
+> = {
+  blue: { box: 'bg-blue-50', label: 'text-blue-600', value: 'text-blue-800', icon: 'text-blue-500' },
+  green: { box: 'bg-green-50', label: 'text-green-600', value: 'text-green-800', icon: 'text-green-500' },
+  amber: { box: 'bg-amber-50', label: 'text-amber-600', value: 'text-amber-800', icon: 'text-amber-500' },
+  purple: { box: 'bg-purple-50', label: 'text-purple-600', value: 'text-purple-800', icon: 'text-purple-500' },
+  teal: { box: 'bg-teal-50', label: 'text-teal-600', value: 'text-teal-800', icon: 'text-teal-500' },
+  yellow: { box: 'bg-yellow-50', label: 'text-yellow-600', value: 'text-yellow-800', icon: 'text-yellow-500' },
+};
+
+function SettingsStatTile({
+  label,
+  value,
+  icon: Icon,
+  tone = 'blue',
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon: IconType;
+  tone?: SettingsStatTone;
+}) {
+  const colors = SETTINGS_STAT_TONE[tone];
+  return (
+    <div className={`${colors.box} rounded-md p-2.5 flex items-center justify-between gap-2`}>
+      <div className="min-w-0">
+        <p className={`text-[11px] font-medium uppercase tracking-wide ${colors.label}`}>{label}</p>
+        <p className={`text-base font-semibold tabular-nums ${colors.value}`}>{value}</p>
+      </div>
+      <Icon className={`w-4 h-4 shrink-0 opacity-80 ${colors.icon}`} />
+    </div>
+  );
+}
 
 function SettingsPageContent() {
   const { confirm } = useDialog();
@@ -769,220 +837,179 @@ function SettingsPageContent() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <SettingsNav />
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h1 className="text-xl text-gray-900">System Administration</h1>
-            <p className="text-gray-600 mt-1">Manage and configure your educational system</p>
+            <h1 className={SET_H3}>System Settings</h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              School profile, academic years, users, backups, and maintenance
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <FiShield className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">Admin Access</span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+            <FiShield className="w-3.5 h-3.5" />
+            Admin
+          </span>
         </div>
 
-        {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg flex items-center gap-2 ${
-            message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-            message.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-            'bg-blue-50 text-blue-800 border border-blue-200'
-          }`}>
-            {message.type === 'success' ? <FiCheckCircle className="w-5 h-5" /> : 
-             message.type === 'error' ? <FiAlertCircle className="w-5 h-5" /> : <FiInfo className="w-5 h-5" />}
+          <div
+            className={`py-2 px-3 rounded-md flex items-center gap-2 text-sm ${
+              message.type === 'success'
+                ? 'bg-green-50 text-green-800 border border-green-200'
+                : message.type === 'error'
+                  ? 'bg-red-50 text-red-800 border border-red-200'
+                  : 'bg-blue-50 text-blue-800 border border-blue-200'
+            }`}
+          >
+            {message.type === 'success' ? (
+              <FiCheckCircle className="w-4 h-4 shrink-0" />
+            ) : message.type === 'error' ? (
+              <FiAlertCircle className="w-4 h-4 shrink-0" />
+            ) : (
+              <FiInfo className="w-4 h-4 shrink-0" />
+            )}
             {message.text}
           </div>
         )}
 
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 overflow-x-auto">
-            {[
-              { id: 'overview', name: 'Overview', icon: FiSettings },
-              { id: 'academic', name: 'Academic Years', icon: FiCalendar },
-              { id: 'users', name: 'User Management', icon: FiUsers },
-              { id: 'system', name: 'System Settings', icon: FiCog },
-              { id: 'backup', name: 'Backup & Export', icon: FiDownload },
-              { id: 'performance', name: 'Performance', icon: FiMonitor },
-              { id: 'maintenance', name: 'Maintenance', icon: FiActivity },
-              { id: 'fees', name: 'Fee Management', icon: RupeeIcon }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-0">
+          <aside className="lg:w-40 xl:w-44 shrink-0">
+            <nav
+              className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 lg:sticky lg:top-2"
+              aria-label="Settings sections"
+            >
+              {SETTINGS_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`shrink-0 lg:w-full text-left px-2.5 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                      isActive
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100 lg:bg-transparent'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
 
-        {/* Tab Content */}
-        <div className="mt-6">
+          <div className="flex-1 min-w-0">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <h2 className="text-xl  text-gray-900">System Overview</h2>
-
-        {/* System Statistics */}
-        {systemStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">Total Students</p>
-                  <p className="text-xl text-blue-700 mt-1">
-                    {systemStats.totalStudents}
-                  </p>
-                </div>
-                <FiUsers className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-            
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">Students with Fees</p>
-                  <p className="text-xl text-green-700 mt-1">
-                    {systemStats.studentsWithFees}
-                  </p>
-                </div>
-                <RupeeIcon className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-
-                  <div className="bg-yellow-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                        <p className="text-sm font-medium text-yellow-600">Fee Structures</p>
-                        <p className="text-xl text-yellow-700 mt-1">
-                    {systemStats.totalFeeStructures}
-                  </p>
-                </div>
-                      <FiSettings className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                        <p className="text-sm font-medium text-purple-600">System Health</p>
-                  <p className="text-xl text-purple-700 mt-1">
-                          {systemStats.totalStudents > 0 && systemStats.studentsWithFees > 0 ? 'Good' : 'Setup'}
-                  </p>
-                </div>
-                      <FiShield className="w-8 h-8 text-purple-600" />
-              </div>
-            </div>
+            <div className={SET_TAB}>
+              {systemStats && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  <SettingsStatTile label="Students" value={systemStats.totalStudents} icon={FiUsers} tone="blue" />
+                  <SettingsStatTile label="With fees" value={systemStats.studentsWithFees} icon={RupeeIcon} tone="green" />
+                  <SettingsStatTile label="Fee plans" value={systemStats.totalFeeStructures} icon={FiSettings} tone="amber" />
+                  <SettingsStatTile
+                    label="Health"
+                    value={systemStats.totalStudents > 0 && systemStats.studentsWithFees > 0 ? 'Good' : 'Setup'}
+                    icon={FiShield}
+                    tone="purple"
+                  />
                 </div>
               )}
 
-              {/* Current Academic Year */}
               {currentAcademicYear && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Academic Year</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Academic Year</p>
-                      <p className="text-lg font-semibold text-gray-900">{currentAcademicYear.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Start Date</p>
-                      <p className="text-lg font-semibold text-gray-900">{formatDate(currentAcademicYear.start_date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">End Date</p>
-                      <p className="text-lg font-semibold text-gray-900">{formatDate(currentAcademicYear.end_date)}</p>
-                    </div>
-                  </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                  <span className="font-medium text-gray-900">{currentAcademicYear.name}</span>
+                  <span className="text-gray-500 text-xs">
+                    {formatDate(currentAcademicYear.start_date)} – {formatDate(currentAcademicYear.end_date)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('academic')}
+                    className="text-primary-600 text-xs font-medium hover:underline lg:ml-auto"
+                  >
+                    Manage years
+                  </button>
                 </div>
               )}
 
-              {/* Quick Actions */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => setActiveTab('academic')}
-                    className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                  >
-                    <FiCalendar className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium text-blue-900">Manage Academic Years</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('backup')}
-                    className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                  >
-                    <FiDownload className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-green-900">Backup & Export</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('performance')}
-                    className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-                  >
-                    <FiMonitor className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium text-purple-900">System Performance</span>
-                  </button>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('academic')}
+                  className={`${SET_BTN} bg-blue-50 text-blue-800 hover:bg-blue-100`}
+                >
+                  <FiCalendar className="w-3.5 h-3.5" />
+                  Academic years
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('backup')}
+                  className={`${SET_BTN} bg-green-50 text-green-800 hover:bg-green-100`}
+                >
+                  <FiDownload className="w-3.5 h-3.5" />
+                  Backup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('performance')}
+                  className={`${SET_BTN} bg-purple-50 text-purple-800 hover:bg-purple-100`}
+                >
+                  <FiMonitor className="w-3.5 h-3.5" />
+                  Performance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('users')}
+                  className={`${SET_BTN} bg-gray-100 text-gray-800 hover:bg-gray-200`}
+                >
+                  <FiUsers className="w-3.5 h-3.5" />
+                  Users
+                </button>
               </div>
             </div>
           )}
 
           {/* Academic Years Tab */}
           {activeTab === 'academic' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl  text-gray-900">Academic Year Management</h2>
-              </div>
-
-              {/* Create New Academic Year */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Academic Year</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={SET_TAB}>
+              <div className={`${SET_CARD}`}>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Create academic year</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year Name</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year Name</label>
                     <input
                       type="text"
                       value={newAcademicYear.name}
                       onChange={(e) => setNewAcademicYear({...newAcademicYear, name: e.target.value})}
                       placeholder="e.g., 2024-25"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={newAcademicYear.start_date}
                       onChange={(e) => setNewAcademicYear({...newAcademicYear, start_date: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
                     <input
                       type="date"
                       value={newAcademicYear.end_date}
                       onChange={(e) => setNewAcademicYear({...newAcademicYear, end_date: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                   <div className="flex items-end">
                     <button
                       onClick={handleCreateAcademicYear}
                       disabled={loading || !newAcademicYear.name || !newAcademicYear.start_date || !newAcademicYear.end_date}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className={`${SET_BTN_PRIMARY} w-full`}
                     >
                       <FiPlus className="w-4 h-4" />
                       Create Year
@@ -991,12 +1018,11 @@ function SettingsPageContent() {
                 </div>
               </div>
 
-              {/* Academic Years List */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Years</h3>
-                <div className="space-y-3">
+              <div className={SET_CARD}>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Academic years</h3>
+                <div className="space-y-2">
                   {academicYears.map((year) => (
-                    <div key={year.id} className={`p-4 border rounded-lg ${
+                    <div key={year.id} className={`p-3 border rounded-md ${
                       year.is_active ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'
                     }`}>
                       <div className="flex items-center justify-between">
@@ -1016,7 +1042,7 @@ function SettingsPageContent() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => openEditAcademicYear(year)}
-                            className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 flex items-center gap-1"
+                            className={`${SET_BTN_SECONDARY} !px-2 !py-1`}
                             title="Edit Academic Year"
                           >
                             <FiEdit3 className="w-3 h-3" />
@@ -1026,7 +1052,7 @@ function SettingsPageContent() {
                             <>
                               <button
                                 onClick={() => handleActivateAcademicYear(year.id)}
-                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center gap-1"
+                                className={`${SET_BTN_PRIMARY} !px-2 !py-1`}
                               >
                                 <FiPlay className="w-3 h-3" />
                                 Activate
@@ -1036,7 +1062,7 @@ function SettingsPageContent() {
                                   setYearToDelete(year);
                                   setShowDeleteYearConfirm(true);
                                 }}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center gap-1"
+                                className={`${SET_BTN_DANGER} !px-2 !py-1`}
                                 title="Delete Academic Year"
                               >
                                 <FiTrash2 className="w-3 h-3" />
@@ -1056,10 +1082,16 @@ function SettingsPageContent() {
 
           {/* Edit Academic Year Modal */}
           {showEditYearModal && yearToEdit && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <AppModal
+              open={showEditYearModal}
+              onClose={() => {
+                setShowEditYearModal(false);
+                setYearToEdit(null);
+              }}
+            >
+              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Edit Academic Year</h3>
+                  <h3 className={SET_H3}>Edit Academic Year</h3>
                   <button
                     onClick={() => {
                       setShowEditYearModal(false);
@@ -1073,31 +1105,31 @@ function SettingsPageContent() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year Name</label>
+                    <label className={SET_LABEL}>Academic Year Name</label>
                     <input
                       type="text"
                       value={editAcademicYear.name}
                       onChange={(e) => setEditAcademicYear({ ...editAcademicYear, name: e.target.value })}
                       placeholder="e.g. 2026-27"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <label className={SET_LABEL}>Start Date</label>
                     <input
                       type="date"
                       value={editAcademicYear.start_date}
                       onChange={(e) => setEditAcademicYear({ ...editAcademicYear, start_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <label className={SET_LABEL}>End Date</label>
                     <input
                       type="date"
                       value={editAcademicYear.end_date}
                       onChange={(e) => setEditAcademicYear({ ...editAcademicYear, end_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
                 </div>
@@ -1108,32 +1140,38 @@ function SettingsPageContent() {
                       setShowEditYearModal(false);
                       setYearToEdit(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className={`${SET_BTN_SECONDARY} flex-1`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleUpdateAcademicYear}
                     disabled={loading || !editAcademicYear.name || !editAcademicYear.start_date || !editAcademicYear.end_date}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`${SET_BTN_PRIMARY} flex-1`}
                   >
                     <FiSave className="w-4 h-4" />
                     Save Changes
                   </button>
                 </div>
               </div>
-            </div>
+              </AppModal>
           )}
 
           {/* Delete Academic Year Confirmation Modal */}
           {showDeleteYearConfirm && yearToDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <AppModal
+              open={showDeleteYearConfirm}
+              onClose={() => {
+                setShowDeleteYearConfirm(false);
+                setYearToDelete(null);
+              }}
+            >
+              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <FiAlertCircle className="w-6 h-6 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Academic Year</h3>
+                  <h3 className={SET_H3}>Delete Academic Year</h3>
           </div>
 
                 <p className="text-gray-600 mb-2">
@@ -1155,37 +1193,37 @@ function SettingsPageContent() {
                       setShowDeleteYearConfirm(false);
                       setYearToDelete(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className={`${SET_BTN_SECONDARY} flex-1`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteAcademicYear}
                 disabled={loading}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`${SET_BTN_DANGER} flex-1`}
                   >
                     <FiTrash2 className="w-4 h-4" />
                     Delete Year
                   </button>
                 </div>
               </div>
-            </div>
+              </AppModal>
           )}
 
           {/* User Management Tab */}
           {activeTab === 'users' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl  text-gray-900">User Management</h2>
-                <div className="flex items-center gap-3">
+            <div className={SET_TAB}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className={SET_H2}>User Management</h2>
+                <div className="flex items-center gap-2">
                   <div className="relative">
-                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                     <input
                       type="text"
                       placeholder="Search users..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-44 sm:w-52"
                     />
                   </div>
                   <button
@@ -1202,9 +1240,9 @@ function SettingsPageContent() {
                       });
                       setShowUserModal(true);
                     }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    className={SET_BTN_PRIMARY}
                   >
-                    <FiPlus className="w-4 h-4" />
+                    <FiPlus className="w-3.5 h-3.5" />
                     Add User
                   </button>
                 </div>
@@ -1214,7 +1252,7 @@ function SettingsPageContent() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setUserFilter('all')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'all'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1224,7 +1262,7 @@ function SettingsPageContent() {
                 </button>
                 <button
                   onClick={() => setUserFilter('student')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'student'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1234,7 +1272,7 @@ function SettingsPageContent() {
                 </button>
                 <button
                   onClick={() => setUserFilter('teacher')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'teacher'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1244,7 +1282,7 @@ function SettingsPageContent() {
                 </button>
                 <button
                   onClick={() => setUserFilter('parent')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'parent'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1254,7 +1292,7 @@ function SettingsPageContent() {
                 </button>
                 <button
                   onClick={() => setUserFilter('transport_manager')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'transport_manager'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1264,7 +1302,7 @@ function SettingsPageContent() {
                 </button>
                 <button
                   onClick={() => setUserFilter('admin')}
-                  className={`px-4 py-2 rounded-md font-medium ${
+                  className={`${SET_FILTER_BTN} ${
                     userFilter === 'admin'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1280,19 +1318,19 @@ function SettingsPageContent() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={SET_TABLE_HEAD}>
                           User
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={SET_TABLE_HEAD}>
                           Role
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={SET_TABLE_HEAD}>
                           Username
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={SET_TABLE_HEAD}>
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={SET_TABLE_HEAD}>
                           Actions
                         </th>
                       </tr>
@@ -1307,10 +1345,10 @@ function SettingsPageContent() {
                       ) : (
                         filteredUsers.map((user) => (
                           <tr key={user.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className={SET_TABLE_CELL}>
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <span className="text-blue-600 font-semibold">
+                                <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 text-xs font-semibold">
                                     {user.name?.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
@@ -1320,7 +1358,7 @@ function SettingsPageContent() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className={SET_TABLE_CELL}>
                               <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                 user.role === 'student' ? 'bg-blue-100 text-blue-800' :
                                 user.role === 'teacher' ? 'bg-green-100 text-green-800' :
@@ -1340,7 +1378,7 @@ function SettingsPageContent() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {user.username || 'N/A'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className={SET_TABLE_CELL}>
                               <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                 user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                               }`}>
@@ -1423,70 +1461,49 @@ function SettingsPageContent() {
             </div>
 
               {/* User Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-600">Total Users</p>
-                      <p className="text-xl text-blue-700 mt-1">{users.length}</p>
-                    </div>
-                    <FiUsers className="w-8 h-8 text-blue-600" />
-                  </div>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600">Active Users</p>
-                      <p className="text-xl text-green-700 mt-1">
-                        {users.filter(u => u.status === 'active').length}
-                      </p>
-                    </div>
-                    <FiUserCheck className="w-8 h-8 text-green-600" />
-                  </div>
-                </div>
-                <div className="bg-yellow-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-600">Students</p>
-                      <p className="text-xl text-yellow-700 mt-1">
-                        {users.filter(u => u.role === 'student').length}
-                      </p>
-                    </div>
-                    <FiBookOpen className="w-8 h-8 text-yellow-600" />
-                  </div>
-                </div>
-                <div className="bg-teal-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-teal-600">Teachers</p>
-                      <p className="text-xl text-teal-700 mt-1">
-                        {users.filter(u => u.role === 'teacher').length}
-                      </p>
-                    </div>
-                    <FiUsers className="w-8 h-8 text-teal-600" />
-                  </div>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-600">Transport</p>
-                      <p className="text-xl text-purple-700 mt-1">
-                        {users.filter(u => u.role === 'transport_manager').length}
-                      </p>
-                    </div>
-                    <FiActivity className="w-8 h-8 text-purple-600" />
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                <SettingsStatTile label="Total users" value={users.length} icon={FiUsers} tone="blue" />
+                <SettingsStatTile
+                  label="Active"
+                  value={users.filter((u) => u.status === 'active').length}
+                  icon={FiUserCheck}
+                  tone="green"
+                />
+                <SettingsStatTile
+                  label="Students"
+                  value={users.filter((u) => u.role === 'student').length}
+                  icon={FiBookOpen}
+                  tone="yellow"
+                />
+                <SettingsStatTile
+                  label="Teachers"
+                  value={users.filter((u) => u.role === 'teacher').length}
+                  icon={FiUsers}
+                  tone="teal"
+                />
+                <SettingsStatTile
+                  label="Transport"
+                  value={users.filter((u) => u.role === 'transport_manager').length}
+                  icon={FiActivity}
+                  tone="purple"
+                />
               </div>
             </div>
           )}
 
           {/* Password Reset Modal */}
           {showPasswordModal && selectedUser && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <AppModal
+              open={showPasswordModal}
+              onClose={() => {
+                setShowPasswordModal(false);
+                setSelectedUser(null);
+                setNewPassword('');
+              }}
+            >
+              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
+                  <h3 className={SET_H3}>Reset Password</h3>
               <button
                     onClick={() => {
                       setShowPasswordModal(false);
@@ -1518,7 +1535,7 @@ function SettingsPageContent() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                      className={`${SET_INPUT} pr-10`}
                     />
               <button
                       type="button"
@@ -1568,29 +1585,44 @@ function SettingsPageContent() {
                       setSelectedUser(null);
                       setNewPassword('');
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className={`${SET_BTN_SECONDARY} flex-1`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleResetPassword}
                     disabled={loading || passwordStrength < 50}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`${SET_BTN_PRIMARY} flex-1`}
                   >
                     <FiLock className="w-4 h-4" />
                     Reset Password
               </button>
             </div>
               </div>
-            </div>
+              </AppModal>
           )}
 
           {/* Create/Edit User Modal */}
           {showUserModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-              <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <AppModal
+              open={showUserModal}
+              onClose={() => {
+                setShowUserModal(false);
+                setEditingUser(null);
+                setUserFormData({
+                  name: '',
+                  email: '',
+                  username: '',
+                  password: '',
+                  role: 'student',
+                  status: 'active',
+                  phone: '',
+                });
+              }}
+            >
+              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className={SET_H3}>
                     {editingUser ? 'Edit User' : 'Create New User'}
                   </h3>
                   <button
@@ -1616,7 +1648,7 @@ function SettingsPageContent() {
                 <div className="space-y-4">
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={SET_LABEL}>
                       Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1624,14 +1656,14 @@ function SettingsPageContent() {
                       value={userFormData.name}
                       onChange={(e) => setUserFormData({...userFormData, name: e.target.value})}
                       placeholder="Enter full name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={SET_INPUT}
                     />
                   </div>
 
                   {/* Email & Username */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Email <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -1639,11 +1671,11 @@ function SettingsPageContent() {
                         value={userFormData.email}
                         onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
                         placeholder="user@example.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Username <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -1651,7 +1683,7 @@ function SettingsPageContent() {
                         value={userFormData.username}
                         onChange={(e) => setUserFormData({...userFormData, username: e.target.value})}
                         placeholder="username"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                   </div>
@@ -1659,7 +1691,7 @@ function SettingsPageContent() {
                   {/* Phone & Password */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Phone Number
                       </label>
                       <input
@@ -1667,11 +1699,11 @@ function SettingsPageContent() {
                         value={userFormData.phone}
                         onChange={(e) => setUserFormData({...userFormData, phone: e.target.value})}
                         placeholder="+91 1234567890"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Password {!editingUser && <span className="text-red-500">*</span>}
                         {editingUser && <span className="text-gray-500 text-xs">(Leave blank to keep current)</span>}
                       </label>
@@ -1680,7 +1712,7 @@ function SettingsPageContent() {
                         value={userFormData.password}
                         onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
                         placeholder={editingUser ? "Leave blank to keep current password" : "Enter password"}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                   </div>
@@ -1688,13 +1720,13 @@ function SettingsPageContent() {
                   {/* Role & Status */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Role <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={userFormData.role}
                         onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       >
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
@@ -1706,13 +1738,13 @@ function SettingsPageContent() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={SET_LABEL}>
                         Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={userFormData.status}
                         onChange={(e) => setUserFormData({...userFormData, status: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -1736,35 +1768,41 @@ function SettingsPageContent() {
                         phone: ''
                       });
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className={`${SET_BTN_SECONDARY} flex-1`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreateUser}
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`${SET_BTN_PRIMARY} flex-1`}
                   >
                     <FiSave className="w-4 h-4" />
                     {editingUser ? 'Update User' : 'Create User'}
                   </button>
                 </div>
               </div>
-            </div>
+              </AppModal>
           )}
 
           {/* Delete Confirmation Modal */}
           {showDeleteConfirm && userToDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <AppModal
+              open={showDeleteConfirm}
+              onClose={() => {
+                setShowDeleteConfirm(false);
+                setUserToDelete(null);
+              }}
+            >
+              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <FiAlertCircle className="w-6 h-6 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
+                  <h3 className={SET_H3}>Delete User</h3>
                 </div>
 
-                <p className="text-gray-600 mb-4">
+                <p className={SET_DESC}>
                   Are you sure you want to delete <span className="font-semibold">{userToDelete.name}</span>? This action cannot be undone.
                 </p>
 
@@ -1780,78 +1818,78 @@ function SettingsPageContent() {
                       setShowDeleteConfirm(false);
                       setUserToDelete(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className={`${SET_BTN_SECONDARY} flex-1`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteUser}
                 disabled={loading}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`${SET_BTN_DANGER} flex-1`}
                   >
                     <FiTrash2 className="w-4 h-4" />
                     Delete User
                   </button>
                 </div>
               </div>
-            </div>
+              </AppModal>
           )}
 
           {/* System Settings Tab */}
           {activeTab === 'system' && (
-            <div className="space-y-6">
+            <div className={SET_TAB}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl  text-gray-900">System Settings</h2>
+                <h2 className={SET_H2}>System Settings</h2>
                 <button
                   onClick={handleSaveSystemSettings}
                   disabled={loading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                  className={SET_BTN_PRIMARY}
                 >
                   <FiSave className="w-4 h-4" />
                   Save Settings
               </button>
             </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* School Information */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">School Information</h3>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">School Information</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                      <label className={SET_LABEL}>School Name</label>
                       <input
                         type="text"
                         value={systemSettings.school_name}
                         onChange={(e) => setSystemSettings({...systemSettings, school_name: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                      <label className={SET_LABEL}>Address</label>
                       <textarea
                         value={systemSettings.school_address}
                         onChange={(e) => setSystemSettings({...systemSettings, school_address: e.target.value})}
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={SET_INPUT}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <label className={SET_LABEL}>Phone</label>
                         <input
                           type="text"
                           value={systemSettings.school_phone}
                           onChange={(e) => setSystemSettings({...systemSettings, school_phone: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={SET_INPUT}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className={SET_LABEL}>Email</label>
                         <input
                           type="email"
                           value={systemSettings.school_email}
                           onChange={(e) => setSystemSettings({...systemSettings, school_email: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={SET_INPUT}
                         />
                       </div>
                     </div>
@@ -1859,16 +1897,16 @@ function SettingsPageContent() {
         </div>
 
                 {/* System Configuration */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">System Configuration</h3>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">System Configuration</h3>
           <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                        <label className={SET_LABEL}>Currency</label>
                         <select
                           value={systemSettings.currency}
                           onChange={(e) => setSystemSettings({...systemSettings, currency: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={SET_INPUT}
                         >
                           <option value="INR">INR (₹)</option>
                           <option value="USD">USD ($)</option>
@@ -1876,13 +1914,13 @@ function SettingsPageContent() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={SET_LABEL}>
                           Academic Year
                         </label>
                         <select
                           value={systemSettings.academic_year}
                           onChange={(e) => setSystemSettings({...systemSettings, academic_year: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-green-50"
+                          className={`${SET_INPUT} bg-green-50`}
                         >
                           {academicYears.filter(year => year.is_active).length === 0 ? (
                             <option value="">No active academic year available</option>
@@ -1910,21 +1948,21 @@ function SettingsPageContent() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Late Fee Percentage</label>
+                        <label className={SET_LABEL}>Late Fee Percentage</label>
                         <input
                           type="number"
                           value={systemSettings.late_fee_percentage}
                           onChange={(e) => setSystemSettings({...systemSettings, late_fee_percentage: parseFloat(e.target.value)})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={SET_INPUT}
                         />
       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Late Fee Days</label>
+                        <label className={SET_LABEL}>Late Fee Days</label>
                         <input
                           type="number"
                           value={systemSettings.late_fee_days}
                           onChange={(e) => setSystemSettings({...systemSettings, late_fee_days: parseInt(e.target.value)})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={SET_INPUT}
                         />
                       </div>
                     </div>
@@ -1936,7 +1974,7 @@ function SettingsPageContent() {
                           onChange={(e) => setSystemSettings({...systemSettings, auto_assign_fees: e.target.checked})}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">Auto-assign fees to new students</span>
+                        <span className="text-sm text-gray-700">Auto-assign fees to new students</span>
                       </label>
                       <label className="flex items-center gap-2">
                         <input
@@ -1945,7 +1983,7 @@ function SettingsPageContent() {
                           onChange={(e) => setSystemSettings({...systemSettings, send_notifications: e.target.checked})}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">Send notifications</span>
+                        <span className="text-sm text-gray-700">Send notifications</span>
                       </label>
                     </div>
                   </div>
@@ -1956,17 +1994,17 @@ function SettingsPageContent() {
 
           {/* Backup & Export Tab */}
           {activeTab === 'backup' && (
-            <div className="space-y-6">
-              <h2 className="text-xl  text-gray-900">Backup & Export</h2>
+            <div className={SET_TAB}>
+              <h2 className={SET_H2}>Backup & Export</h2>
 
               {/* Create Backup */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Create System Backup</h3>
-                <p className="text-gray-600 mb-4">Create a complete backup of your system data including students, fees, and settings.</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Create System Backup</h3>
+                <p className={SET_DESC}>Create a complete backup of your system data including students, fees, and settings.</p>
                 <button
                   onClick={handleCreateBackup}
                   disabled={loading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                  className={SET_BTN_PRIMARY}
                 >
                   <FiDatabase className="w-4 h-4" />
                   Create Backup
@@ -1974,14 +2012,14 @@ function SettingsPageContent() {
             </div>
 
               {/* Export Data */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Data</h3>
-                <p className="text-gray-600 mb-4">Export specific data types as CSV files for analysis or migration.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Export Data</h3>
+                <p className={SET_DESC}>Export specific data types as CSV files for analysis or migration.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   <button
                     onClick={() => handleExportData('students')}
                     disabled={loading}
-                    className="flex items-center gap-2 p-3 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 text-green-800 disabled:opacity-50"
+                    className={`${SET_BTN} bg-green-50 border border-green-200 text-green-800 hover:bg-green-100`}
                   >
                     <FiUsers className="w-4 h-4" />
                     Export Students
@@ -1989,7 +2027,7 @@ function SettingsPageContent() {
                   <button
                     onClick={() => handleExportData('fees')}
                     disabled={loading}
-                    className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 text-blue-800 disabled:opacity-50"
+                    className={`${SET_BTN} bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100`}
                   >
                     <RupeeIcon className="w-4 h-4" />
                     Export Fees
@@ -1997,7 +2035,7 @@ function SettingsPageContent() {
                   <button
                     onClick={() => handleExportData('payments')}
                     disabled={loading}
-                    className="flex items-center gap-2 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 text-purple-800 disabled:opacity-50"
+                    className={`${SET_BTN} bg-purple-50 border border-purple-200 text-purple-800 hover:bg-purple-100`}
                   >
                     <FiDownload className="w-4 h-4" />
                     Export Payments
@@ -2005,7 +2043,7 @@ function SettingsPageContent() {
                   <button
                     onClick={() => handleExportData('attendance')}
                     disabled={loading}
-                    className="flex items-center gap-2 p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 text-yellow-800 disabled:opacity-50"
+                    className={`${SET_BTN} bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100`}
                   >
                     <FiClock className="w-4 h-4" />
                     Export Attendance
@@ -2013,7 +2051,7 @@ function SettingsPageContent() {
                   <button
                     onClick={() => handleExportData('complete')}
                     disabled={loading}
-                    className="flex items-center gap-2 p-3 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 text-red-800 disabled:opacity-50"
+                    className={`${SET_BTN} bg-red-50 border border-red-200 text-red-800 hover:bg-red-100`}
                   >
                     <FiArchive className="w-4 h-4" />
                     Complete Export
@@ -2025,51 +2063,34 @@ function SettingsPageContent() {
 
           {/* Performance Tab */}
           {activeTab === 'performance' && (
-            <div className="space-y-6">
-              <h2 className="text-xl  text-gray-900">System Performance</h2>
+            <div className={SET_TAB}>
+              <h2 className={SET_H2}>System Performance</h2>
 
               {/* Performance Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-            <div>
-                      <p className="text-sm font-medium text-gray-600">Database Size</p>
-                      <p className="text-xl text-gray-900">
-                        {(systemPerformance.database_size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-            </div>
-                    <FiDatabase className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-                
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Users</p>
-                      <p className="text-xl text-gray-900">
-                        {systemPerformance.active_users}
-                      </p>
-      </div>
-                    <FiUsers className="w-8 h-8 text-green-600" />
-                  </div>
-                </div>
-                
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">System Uptime</p>
-                      <p className="text-xl text-gray-900">
-                        {Math.floor(systemPerformance.system_uptime / 3600)}h
-                      </p>
-                    </div>
-                    <FiClock className="w-8 h-8 text-purple-600" />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <SettingsStatTile
+                  label="Database"
+                  value={`${(systemPerformance.database_size / 1024 / 1024).toFixed(2)} MB`}
+                  icon={FiDatabase}
+                  tone="blue"
+                />
+                <SettingsStatTile
+                  label="Active users"
+                  value={systemPerformance.active_users}
+                  icon={FiUsers}
+                  tone="green"
+                />
+                <SettingsStatTile
+                  label="Uptime"
+                  value={`${Math.floor(systemPerformance.system_uptime / 3600)}h`}
+                  icon={FiClock}
+                  tone="purple"
+                />
               </div>
 
               {/* System Resources */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">System Resources</h3>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">System Resources</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <div className="flex justify-between items-center mb-2">
@@ -2102,57 +2123,57 @@ function SettingsPageContent() {
 
           {/* Maintenance Tab */}
           {activeTab === 'maintenance' && (
-            <div className="space-y-6">
-              <h2 className="text-xl  text-gray-900">System Maintenance</h2>
+            <div className={SET_TAB}>
+              <h2 className={SET_H2}>System Maintenance</h2>
 
               {/* Database Maintenance */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Maintenance</h3>
-                <p className="text-gray-600 mb-4">Optimize database performance and clean up old data.</p>
-                <div className="space-y-3">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Database Maintenance</h3>
+                <p className={SET_DESC}>Optimize database performance and clean up old data.</p>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleOptimizeDatabase}
                     disabled={loading}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className={SET_BTN_PRIMARY}
                   >
-                    <FiDatabase className="w-4 h-4" />
-                    Optimize Database
+                    <FiDatabase className="w-3.5 h-3.5" />
+                    Optimize database
                   </button>
-              <button
+                  <button
                     onClick={handleClearCache}
-                disabled={loading}
-                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                    disabled={loading}
+                    className={SET_BTN_SUCCESS}
                   >
-                    <FiRefreshCw className="w-4 h-4" />
-                    Clear System Cache
+                    <FiRefreshCw className="w-3.5 h-3.5" />
+                    Clear cache
                   </button>
                 </div>
               </div>
 
               {/* System Health Check */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health Check</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">System Health Check</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-green-50 rounded-md text-sm">
                     <div className="flex items-center gap-2">
-                      <FiCheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-green-800">Database Connection</span>
+                      <FiCheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-green-800">Database connection</span>
                     </div>
-                    <span className="text-green-600 font-medium">Healthy</span>
+                    <span className="text-green-600 font-medium text-xs">Healthy</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-2 bg-green-50 rounded-md text-sm">
                     <div className="flex items-center gap-2">
-                      <FiCheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-green-800">File System</span>
+                      <FiCheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-green-800">File system</span>
                     </div>
-                    <span className="text-green-600 font-medium">Healthy</span>
+                    <span className="text-green-600 font-medium text-xs">Healthy</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-2 bg-green-50 rounded-md text-sm">
                     <div className="flex items-center gap-2">
-                      <FiCheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-green-800">API Endpoints</span>
+                      <FiCheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-green-800">API endpoints</span>
                     </div>
-                    <span className="text-green-600 font-medium">Healthy</span>
+                    <span className="text-green-600 font-medium text-xs">Healthy</span>
                   </div>
                 </div>
               </div>
@@ -2161,82 +2182,80 @@ function SettingsPageContent() {
 
           {/* Fee Management Tab */}
           {activeTab === 'fees' && (
-            <div className="space-y-6">
-              <h2 className="text-xl  text-gray-900">Fee Management</h2>
+            <div className={SET_TAB}>
+              <h2 className={SET_H2}>Fee Management</h2>
 
-              {/* Fee Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FiSettings className="w-6 h-6 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Initialize System Fees</h3>
-                  </div>
-                  <p className="text-gray-600 mb-4">Create default fee structures for all classes.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className={SET_CARD}>
+                  <h3 className={SET_H3}>Initialize system fees</h3>
+                  <p className={SET_DESC}>Create default fee structures for all classes.</p>
                   <button
                     onClick={handleInitializeSystemFees}
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className={`${SET_BTN_PRIMARY} w-full`}
                   >
-                    <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Initialize Fees
-              </button>
-            </div>
+                    <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    Initialize fees
+                  </button>
+                </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FiUsers className="w-6 h-6 text-green-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Assign Missing Fees</h3>
-                  </div>
-                  <p className="text-gray-600 mb-4">Assign fee records to students who don't have them.</p>
-              <button
-                onClick={handleAssignMissingFees}
-                disabled={loading}
-                    className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                <div className={SET_CARD}>
+                  <h3 className={SET_H3}>Assign missing fees</h3>
+                  <p className={SET_DESC}>Assign fee records to students who don&apos;t have them.</p>
+                  <button
+                    onClick={handleAssignMissingFees}
+                    disabled={loading}
+                    className={`${SET_BTN_SUCCESS} w-full`}
                   >
-                    <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Assign Fees
-              </button>
-            </div>
+                    <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    Assign fees
+                  </button>
+                </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FiAlertCircle className="w-6 h-6 text-red-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Reset All Fees</h3>
-                  </div>
-                  <p className="text-gray-600 mb-4">Permanently delete ALL payment records and ALL student fee assignments. This will completely clear all fee data and requires regeneration.</p>
-              <button
-                onClick={handleResetAllFees}
-                disabled={loading}
-                    className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                <div className={SET_CARD}>
+                  <h3 className={SET_H3}>Reset all fees</h3>
+                  <p className={SET_DESC}>
+                    Permanently delete all payment records and student fee assignments.
+                  </p>
+                  <button
+                    onClick={handleResetAllFees}
+                    disabled={loading}
+                    className={`${SET_BTN_DANGER} w-full`}
                   >
-                    <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Reset Fees
-              </button>
-            </div>
-          </div>
+                    <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    Reset fees
+                  </button>
+                </div>
+              </div>
 
-              {/* Fee Statistics */}
               {systemStats && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Statistics</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-xl text-blue-700">₹{systemStats.totalPending?.toLocaleString() || '0'}</p>
-                      <p className="text-sm text-blue-600">Total Pending</p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-xl text-green-700">₹{systemStats.totalCollected?.toLocaleString() || '0'}</p>
-                      <p className="text-sm text-green-600">Total Collected</p>
-        </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <p className="text-xl text-purple-700">₹{systemStats.thisMonth?.toLocaleString() || '0'}</p>
-                      <p className="text-sm text-purple-600">This Month</p>
-            </div>
-          </div>
+                <div className={SET_CARD}>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Fee statistics</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <SettingsStatTile
+                      label="Pending"
+                      value={`₹${systemStats.totalPending?.toLocaleString() || '0'}`}
+                      icon={RupeeIcon}
+                      tone="blue"
+                    />
+                    <SettingsStatTile
+                      label="Collected"
+                      value={`₹${systemStats.totalCollected?.toLocaleString() || '0'}`}
+                      icon={RupeeIcon}
+                      tone="green"
+                    />
+                    <SettingsStatTile
+                      label="This month"
+                      value={`₹${systemStats.thisMonth?.toLocaleString() || '0'}`}
+                      icon={RupeeIcon}
+                      tone="purple"
+                    />
+                  </div>
                 </div>
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

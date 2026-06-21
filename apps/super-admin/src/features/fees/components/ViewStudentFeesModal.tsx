@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { FiX, FiFileText } from 'react-icons/fi';
 import ReceiptModal from '@/features/fees/components/ReceiptModal';
@@ -20,13 +21,6 @@ function getCurrentAcademicMonthIndex(): number {
 
 export default function ViewStudentFeesModal({ isOpen, onClose, student, onRecordPayment }: ViewStudentFeesModalProps) {
   const { settings } = useSettings();
-
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
 
   const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -148,13 +142,9 @@ export default function ViewStudentFeesModal({ isOpen, onClose, student, onRecor
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
-      <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full overflow-y-auto">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-xl text-gray-900">
@@ -520,6 +510,6 @@ export default function ViewStudentFeesModal({ isOpen, onClose, student, onRecor
           student={student}
         />
       )}
-    </div>
+    </AppModal>
   );
 }

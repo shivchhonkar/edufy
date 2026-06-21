@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
       address,
       city,
       state,
+      pincode,
       designation,
       last_designation,
       department,
@@ -142,6 +143,7 @@ export async function POST(request: NextRequest) {
       address: address || null,
       city: city || null,
       state: state || null,
+      pincode: pincode || null,
       designation: designation || null,
       last_designation: last_designation || null,
       department: department || null,
@@ -153,13 +155,13 @@ export async function POST(request: NextRequest) {
     const result = await db.query<Staff>(
       `INSERT INTO staff (
         employee_id, first_name, last_name, date_of_birth, gender, phone, email,
-        address, city, state, designation, last_designation, department, department_id, designation_id,
+        address, city, state, pincode, designation, last_designation, department, department_id, designation_id,
         qualification, experience_years, date_of_joining, employment_type, salary, status, notes, status_change_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING *`,
       [
         employee_id, first_name, last_name, sanitizedData.date_of_birth, gender, phone, sanitizedData.email,
-        sanitizedData.address, sanitizedData.city, sanitizedData.state, sanitizedData.designation,
+        sanitizedData.address, sanitizedData.city, sanitizedData.state, sanitizedData.pincode, sanitizedData.designation,
         sanitizedData.last_designation, sanitizedData.department, department_id || null, designation_id || null,
         sanitizedData.qualification, experience_years,
         date_of_joining, employment_type, salary, 'active', sanitizedData.notes, sanitizedData.status_change_date

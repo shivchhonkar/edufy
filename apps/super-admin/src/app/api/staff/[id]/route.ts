@@ -45,7 +45,7 @@ export async function PUT(
     await ensureHrSchema(db);
     const body = await request.json();
     const {
-      first_name, last_name, date_of_birth, gender, phone, email, address, city, state,
+      first_name, last_name, date_of_birth, gender, phone, email, address, city, state, pincode,
       designation, last_designation, department, department_id, designation_id,
       qualification, experience_years, date_of_joining, employment_type, salary,
       photo_url, status, notes, status_change_date,
@@ -55,17 +55,17 @@ export async function PUT(
     const result = await db.query(
       `UPDATE staff SET
         first_name = $1, last_name = $2, date_of_birth = $3, gender = $4, phone = $5,
-        email = $6, address = $7, city = $8, state = $9, designation = $10,
-        last_designation = $11, department = $12, department_id = $13, designation_id = $14,
-        qualification = $15, experience_years = $16, date_of_joining = $17,
-        employment_type = $18, salary = $19, photo_url = $20, status = $21,
-        notes = $22, status_change_date = $23,
-        bank_account_number = $24, bank_name = $25, bank_ifsc = $26, emergency_contact = $27,
+        email = $6, address = $7, city = $8, state = $9, pincode = $10, designation = $11,
+        last_designation = $12, department = $13, department_id = $14, designation_id = $15,
+        qualification = $16, experience_years = $17, date_of_joining = $18,
+        employment_type = $19, salary = $20, photo_url = $21, status = $22,
+        notes = $23, status_change_date = $24,
+        bank_account_number = $25, bank_name = $26, bank_ifsc = $27, emergency_contact = $28,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $28 RETURNING *`,
+      WHERE id = $29 RETURNING *`,
       [
         first_name, last_name, date_of_birth || null, gender, phone, email || null,
-        address || null, city || null, state || null, designation || null,
+        address || null, city || null, state || null, pincode || null, designation || null,
         last_designation || null, department || null, department_id || null, designation_id || null,
         qualification || null, experience_years || null, date_of_joining, employment_type,
         salary || null, photo_url || null, status || 'active', notes || null,

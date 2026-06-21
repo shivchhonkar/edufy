@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -612,8 +613,8 @@ export default function PayrollPage() {
         </div>
 
         {showPayModal && (
-          <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl border shadow-lg p-6 w-full max-w-md space-y-4">
+          <AppModal open={showPayModal} onClose={() => setShowPayModal(false)}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="text-lg font-bold text-gray-900">
                 {payTarget === 'all' ? 'Mark All as Paid' : payTarget === 'selected' ? `Mark ${selectedPendingPayrollIds.length} as Paid` : 'Record Payment'}
               </h2>
@@ -645,12 +646,12 @@ export default function PayrollPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
 
         {showAdvanceModal && (
-          <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl border shadow-lg p-6 w-full max-w-lg space-y-4">
+          <AppModal open={showAdvanceModal} onClose={() => setShowAdvanceModal(false)}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <FiZap className="text-purple-600" /> Pay in Advance
               </h2>
@@ -714,7 +715,7 @@ export default function PayrollPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

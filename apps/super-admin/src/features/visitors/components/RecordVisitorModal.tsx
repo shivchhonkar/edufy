@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import AppModal from '@/shared/components/common/AppModal';
+import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import StaffSearchField, { type StaffSearchOption } from '@/features/visitors/components/StaffSearchField';
 import {
@@ -42,15 +43,6 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
     setError('');
     setSmsWarning('');
   }, [isOpen]);
-
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const handleStaffSelect = (staff: StaffSearchOption) => {
     setForm((prev) => ({
@@ -125,19 +117,12 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
   };
 
   return (
-    <div
-      className={`fixed top-0 bottom-0 right-0 bg-black/50 z-[60] transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-56'
-      }`}
-      onClick={onClose}
-      role="presentation"
-    >
+    <AppModal open={isOpen} onClose={onClose}>
       <div
-        className="ml-auto h-full w-full bg-white shadow-2xl flex flex-col"
+        className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="record-visitor-title"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h2 id="record-visitor-title" className="text-lg font-medium text-gray-900">
@@ -337,6 +322,6 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
           </div>
         </form>
       </div>
-    </div>
+    </AppModal>
   );
 }

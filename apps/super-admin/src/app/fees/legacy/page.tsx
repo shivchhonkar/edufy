@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -1179,8 +1180,8 @@ function FeesPageContent() {
 
       {/* Clear All Payments Confirmation Dialog */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                 <FiAlertCircle className="w-6 h-6 text-red-600" />
@@ -1255,13 +1256,13 @@ function FeesPageContent() {
               </button>
             </div>
           </div>
-        </div>
+          </AppModal>
       )}
 
       {/* Assign Fees Confirmation Dialog */}
       {showAssignFees && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                 <FiUserCheck className="w-6 h-6 text-green-600" />
@@ -1312,13 +1313,13 @@ function FeesPageContent() {
               </button>
             </div>
           </div>
-        </div>
+          </AppModal>
       )}
 
       {/* Delete Fee Structure Confirmation Dialog */}
       {showDeleteConfirm && feeToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                 <FiTrash2 className="w-6 h-6 text-red-600" />
@@ -1384,13 +1385,13 @@ function FeesPageContent() {
               </button>
             </div>
           </div>
-        </div>
+          </AppModal>
       )}
 
       {/* Fix Missing Fees Confirmation Dialog */}
       {showAssignMissing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
                 <FiUserCheck className="w-6 h-6 text-orange-600" />
@@ -1442,7 +1443,7 @@ function FeesPageContent() {
               </button>
             </div>
           </div>
-        </div>
+          </AppModal>
       )}
 
       {/* Modals */}

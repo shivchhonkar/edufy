@@ -1,27 +1,31 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useEffect, useState } from 'react';
 import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar } from 'react-icons/fi';
 import { Staff } from '@/shared/types';
 import StaffDocumentsTab from '@/features/staff/components/StaffDocumentsTab';
 import StaffAttendanceHistoryTab from '@/features/staff/components/StaffAttendanceHistoryTab';
+import StaffTeachingTab from '@/features/staff/components/StaffTeachingTab';
 
-type StaffProfileTab = 'profile' | 'attendance' | 'documents';
+type StaffProfileTab = 'profile' | 'teaching' | 'attendance' | 'documents';
 
 interface ViewStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: Staff | null;
   initialTab?: StaffProfileTab;
+  onEdit?: () => void;
 }
 
 const TABS: { id: StaffProfileTab; label: string }[] = [
   { id: 'profile', label: 'Profile' },
+  { id: 'teaching', label: 'Class & Activity' },
   { id: 'attendance', label: 'Attendance History' },
   { id: 'documents', label: 'Documents' },
 ];
 
-export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'profile' }: ViewStaffModalProps) {
+export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'profile', onEdit }: ViewStaffModalProps) {
   const [activeTab, setActiveTab] = useState<StaffProfileTab>(initialTab);
 
   useEffect(() => {
@@ -29,15 +33,7 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
       setActiveTab(initialTab);
     }
   }, [isOpen, staff?.id, initialTab]);
-  // Get sidebar collapsed state from localStorage
-  const sidebarCollapsed = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
-    }
-    return false;
-  }, [isOpen]);
-
-  if (!isOpen || !staff) return null;
+  if (!staff) return null;
 
   const formatDate = (date: Date | string | null | undefined): string => {
     if (!date) return 'N/A';
@@ -60,10 +56,8 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
   );
 
   return (
-    <div className={`fixed top-0 bottom-0 right-0 bg-black bg-opacity-50 z-[60] transition-all duration-300 ${
-      sidebarCollapsed ? 'left-16' : 'left-56'
-    }`} style={{ width: sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 224px)' }}>
-      <div className="bg-gray-50 shadow-2xl w-full h-full overflow-y-auto">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="bg-gray-50 shadow-2xl w-full h-full overflow-y-auto min-h-0 min-w-0 flex flex-col">
         {/* Header */}
         <div className="px-4 py-2 sm:px-6 sm:py-3 bg-white border-b flex justify-between items-center sticky top-0 z-10">
           <div>
@@ -72,12 +66,24 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
               {staff.first_name} {staff.last_name} · {staff.employee_id}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <FiX size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100"
+              >
+                Edit Profile
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
         </div>
 
         <div className="px-4 sm:px-6 bg-white border-b sticky top-[57px] z-10">
@@ -104,6 +110,12 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
           {activeTab === 'attendance' && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <StaffAttendanceHistoryTab staffId={staff.id} />
+            </div>
+          )}
+
+          {activeTab === 'teaching' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <StaffTeachingTab staffId={staff.id} />
             </div>
           )}
 
@@ -289,7 +301,7 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
           </div>
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

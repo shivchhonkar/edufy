@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
 import StaffDocumentsTab from '@/features/staff/components/StaffDocumentsTab'
 import StaffAttendanceHistoryTab from '@/features/staff/components/StaffAttendanceHistoryTab'
+import StaffTeachingTab from '@/features/staff/components/StaffTeachingTab'
 import { Staff } from '@/shared/types'
 import {
   FiArrowLeft,
@@ -17,10 +18,11 @@ import {
   FiUser,
 } from 'react-icons/fi'
 
-type StaffProfileTab = 'profile' | 'attendance' | 'documents'
+type StaffProfileTab = 'profile' | 'teaching' | 'attendance' | 'documents'
 
 const TABS: { id: StaffProfileTab; label: string }[] = [
   { id: 'profile', label: 'Profile' },
+  { id: 'teaching', label: 'Class & Activity' },
   { id: 'attendance', label: 'Attendance History' },
   { id: 'documents', label: 'Documents' },
 ]
@@ -172,6 +174,7 @@ export default function StaffDetailPage() {
               {activeTab === 'attendance' && (
                 <StaffAttendanceHistoryTab staffId={staff.id} />
               )}
+              {activeTab === 'teaching' && <StaffTeachingTab staffId={staff.id} />}
               {activeTab === 'documents' && <StaffDocumentsTab staffId={staff.id} />}
               {activeTab === 'profile' && (
                 <>

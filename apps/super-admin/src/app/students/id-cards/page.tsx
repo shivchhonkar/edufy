@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -340,14 +341,8 @@ function StudentIdCardsPageContent() {
       </div>
 
       {showPreviewModal && selectedStudents.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:p-0 print:bg-white print:static print:inset-auto"
-          onClick={() => setShowPreviewModal(false)}
-        >
-          <div
-            className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl print:max-h-none print:max-w-none print:shadow-none print:rounded-none"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AppModal open={showPreviewModal} onClose={() => setShowPreviewModal(false)}>
+          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
             <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 print:hidden">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">ID Card Preview</h2>
@@ -386,7 +381,7 @@ function StudentIdCardsPageContent() {
               </div>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       <style jsx global>{`

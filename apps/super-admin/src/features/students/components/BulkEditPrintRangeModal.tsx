@@ -1,5 +1,6 @@
 'use client';
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiAlertCircle, FiChevronLeft, FiChevronRight, FiPrinter, FiX } from 'react-icons/fi';
@@ -97,14 +98,8 @@ export default function BulkEditPrintRangeModal({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center p-4"
-      style={{ zIndex: 99999 }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="bulk-print-range-title"
-    >
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full relative">
+    <AppModal open={isOpen} onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl relative">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-start gap-4">
             <div className="shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -236,7 +231,7 @@ export default function BulkEditPrintRangeModal({
           </button>
         </div>
       </div>
-    </div>,
+    </AppModal>,
     document.body
   );
 }

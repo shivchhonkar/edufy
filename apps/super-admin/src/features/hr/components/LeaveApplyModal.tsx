@@ -1,5 +1,6 @@
 'use client'
 
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react'
 import type { LeaveBalance, LeaveRecord, LeaveType } from '@/features/hr/types/leave'
 import { countWorkingDays } from '@/lib/leave-utils'
@@ -86,8 +87,8 @@ export default function LeaveApplyModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+    <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <div>
           <h2 className="text-lg font-bold text-gray-900">Apply Leave</h2>
           <p className="text-sm text-gray-500 mt-1">Submit a leave request on behalf of staff</p>
@@ -203,7 +204,7 @@ export default function LeaveApplyModal({
           </button>
         </div>
       </div>
-    </div>
+    </AppModal>
   )
 }
 
@@ -265,8 +266,8 @@ export function LeaveEditModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg space-y-4">
+    <AppModal open onClose={onClose}>
+      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
         <h2 className="text-lg font-bold text-gray-900">Edit Leave Request</h2>
         <p className="text-sm text-gray-500">
           {leave.first_name} {leave.last_name}
@@ -326,6 +327,6 @@ export function LeaveEditModal({
           </button>
         </div>
       </div>
-    </div>
+    </AppModal>
   )
 }

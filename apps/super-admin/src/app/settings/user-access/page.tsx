@@ -1,5 +1,6 @@
 'use client'
 
+import AppModal from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
@@ -159,14 +160,14 @@ export default function UserAccessPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <SettingsNav />
+        {/* <SettingsNav /> */}
         <div>
           <h1 className="text-xl text-gray-900 flex items-center gap-2">
             <FiShield className="text-primary-600" />
-            User Access
+            Parent Portal
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage Parent Portal access for students and parents (same permissions) and school administrators.
+            Parent and student portal permissions, passwords, and administrator overview.
           </p>
         </div>
 
@@ -389,7 +390,7 @@ export default function UserAccessPage() {
                 <p className="text-sm text-gray-500">Control who can access the admin dashboard.</p>
               </div>
               <Link href="/settings?tab=users" className="text-sm text-primary-600 hover:underline">
-                Manage users & passwords →
+                Full user management (roles, passwords) →
               </Link>
             </div>
             <table className="w-full text-sm">
@@ -444,8 +445,8 @@ export default function UserAccessPage() {
         )}
 
         {editStudent && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <AppModal open={!!editStudent} onClose={() => setEditStudent(null)}>
+            <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4 overflow-y-auto">
               <h3 className="text-lg font-semibold">Manage access — {studentName(editStudent)}</h3>
               <p className="text-sm text-gray-500">
                 Parents logging in with this student&apos;s phone see the same modules.
@@ -477,7 +478,7 @@ export default function UserAccessPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </AppModal>
         )}
       </div>
     </DashboardLayout>

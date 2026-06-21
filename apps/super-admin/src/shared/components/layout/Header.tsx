@@ -320,26 +320,26 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-3 sm:py-4">
-      <div className="flex items-center gap-3 lg:gap-6">
+    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-1.5 sm:py-2">
+      <div className="flex items-center gap-2 lg:gap-4">
         {onMenuClick ? (
           <button
             type="button"
             onClick={onMenuClick}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 lg:hidden"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 lg:hidden"
             aria-label="Open menu"
           >
-            <FiMenu className="h-5 w-5" />
+            <FiMenu className="h-4 w-4" />
           </button>
         ) : null}
         <div className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
-          <h1 className="text-base sm:text-sm text-gray-900 truncate">
+          <h1 className="text-sm text-gray-900 truncate leading-tight">
             {mounted ? `${greeting}, ${displayName}` : `Welcome, ${displayName}`}
-            <span aria-hidden className="ml-1.5">
+            <span aria-hidden className="ml-1">
               👋
             </span>
           </h1>
-          <p className="mt-0.5 text-xs text-gray-500" suppressHydrationWarning>
+          <p className="text-[10px] leading-tight text-gray-500" suppressHydrationWarning>
             {mounted ? formatHeaderDate(new Date()) : 'Loading date...'}
           </p>
         </div>
@@ -350,7 +350,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         >
           <div ref={searchContainerRef} className="relative w-full">
             <FiSearch
-              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
               aria-hidden
             />
             <input
@@ -362,11 +362,11 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 if (searchResults.length > 0) setSearchOpen(true)
               }}
               placeholder="Search students & staff by name, phone, parent..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-11 pr-16 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-9 pr-14 text-xs text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
               aria-label="Search students and staff"
               autoComplete="off"
             />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-500 sm:inline-block">
+            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-gray-200 bg-gray-50 px-1.5 py-px text-[10px] font-medium text-gray-500 sm:inline-block">
               {shortcutLabel}
             </kbd>
 
@@ -432,27 +432,27 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         </form>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={focusSearch}
-            className="md:hidden flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+            className="md:hidden flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
             aria-label="Search"
           >
-            <FiSearch className="h-5 w-5" />
+            <FiSearch className="h-4 w-4" />
           </button>
 
           <div ref={notificationsRef} className="relative">
             <button
               type="button"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
               aria-label="Recent transactions"
               aria-expanded={notificationsOpen}
               onClick={toggleNotifications}
             >
-              <FiBell className="h-5 w-5" />
+              <FiBell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-semibold text-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -550,20 +550,20 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
           <button
             type="button"
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+            className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
             aria-label="Attendance"
             onClick={() => router.push('/attendance/students')}
           >
-            <FiCalendar className="h-5 w-5" />
+            <FiCalendar className="h-4 w-4" />
           </button>
 
           <button
             type="button"
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+            className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
             aria-label="Messages"
             onClick={() => router.push('/communications')}
           >
-            <FiMessageSquare className="h-5 w-5" />
+            <FiMessageSquare className="h-4 w-4" />
           </button>
 
           <div ref={profileRef} className="relative">
@@ -573,7 +573,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 setProfileOpen((open) => !open)
                 setNotificationsOpen(false)
               }}
-              className="flex items-center gap-2 sm:gap-3 rounded-xl py-1 pl-1 pr-2 sm:pr-3 transition-colors hover:bg-white/70"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-lg py-0.5 pl-0.5 pr-1.5 sm:pr-2 transition-colors hover:bg-white/70"
               aria-expanded={profileOpen}
               aria-haspopup="menu"
             >
@@ -581,19 +581,19 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 <img
                   src={avatarUrl}
                   alt={displayName}
-                  className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white ring-2 ring-white shadow-sm">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white ring-2 ring-white shadow-sm">
                   {getInitials(displayName)}
                 </div>
               )}
               <div className="hidden lg:block text-left">
-                <p className="text-sm font-semibold text-gray-900 leading-tight">{displayName}</p>
-                <p className="text-xs text-gray-500">{displayRole}</p>
+                <p className="text-xs font-semibold text-gray-900 leading-tight">{displayName}</p>
+                <p className="text-[10px] leading-tight text-gray-500">{displayRole}</p>
               </div>
               <FiChevronDown
-                className={`hidden lg:block h-4 w-4 text-gray-400 transition-transform ${
+                className={`hidden lg:block h-3.5 w-3.5 text-gray-400 transition-transform ${
                   profileOpen ? 'rotate-180' : ''
                 }`}
               />
