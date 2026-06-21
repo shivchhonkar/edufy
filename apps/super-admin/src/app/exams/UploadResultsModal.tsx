@@ -1,9 +1,24 @@
 'use client';
 
-import { Fragment, useMemo } from 'react';
-import { FiX, FiSave } from 'react-icons/fi';
+import { Fragment, useMemo, useRef } from 'react';
+import {
+  FiX,
+  FiSave,
+  FiUpload,
+  FiDownload,
+  FiCopy,
+  FiMinusCircle,
+  FiTrendingUp,
+  FiUserX,
+  FiCheckCircle,
+} from 'react-icons/fi';
 import ContentAreaModal from '@/shared/components/common/ContentAreaModal';
 import { useDialog } from '@/shared/context/DialogContext';
+import {
+  downloadResultsTemplate,
+  parseResultsImportCsv,
+  type ResultInputRow,
+} from '@/features/exams/utils/exam-results-import-export';
 
 interface ExamSubject {
   subject_id: number;
@@ -26,6 +41,13 @@ interface Exam {
   passing_marks: number;
 }
 
+interface ExamSummary {
+  id: number;
+  name: string;
+  class_id: number;
+  exam_date: string;
+}
+
 interface Student {
   id: number;
   first_name: string;
@@ -34,32 +56,31 @@ interface Student {
   admission_number: string;
 }
 
-interface ResultInput {
-  marks: string;
-  absent: boolean;
-  remarks: string;
-}
-
 interface UploadResultsModalProps {
   show: boolean;
   exam: Exam | null;
+  exams: ExamSummary[];
   students: Student[];
-  resultInputs: Record<number, Record<number, ResultInput>>;
+  resultInputs: Record<number, Record<number, ResultInputRow>>;
   onClose: () => void;
   onSave: () => void;
   onUpdateInput: (studentId: number, subjectId: number, field: 'marks' | 'absent' | 'remarks', value: string | boolean) => void;
+  onReplaceInputs: (inputs: Record<number, Record<number, ResultInputRow>>) => void;
 }
 
 export default function UploadResultsModal({
   show,
   exam,
+  exams,
   students,
   resultInputs,
   onClose,
   onSave,
   onUpdateInput,
+  onReplaceInputs,
 }: UploadResultsModalProps) {
-  const { confirm } = useDialog();
+  const { confirm, alert } = useDialog();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const examSubjects = useMemo<ExamSubject[]>(() => {
     if (!exam) return [];
@@ -162,7 +183,186 @@ export default function UploadResultsModal({
     if (confirmed) onSave();
   };
 
-  const isMarksMissing = (input: ResultInput) => !input.absent && input.marks.trim() === '';
+  const isMarksMissing = (input: ResultInputRow) => !input.absent && input.marks.trim() === '';
+
+  const cloneInputs = () => JSON.parse(JSON.stringify(resultInputs)) as Record<
+    number,
+    Record<number,
+    ResultInputRow
+  >>;
+
+  const handleMarkAllPresent = () => {
+    const next = cloneInputs();
+    for (const student of students) {
+      for (const sub of examSubjects) {
+        const sid = sub.subject_id || 0;
+        const existing = next[student.id]?.[sid] || { marks: '', absent: false, remarks: '' };
+        next[student.id] = next[student.id] || {};
+        next[student.id][sid] = { ...existing, absent: false };
+      }
+    }
+    onReplaceInputs(next);
+  };
+
+  const handleMarkAllAbsent = () => {
+    const next = cloneInputs();
+    for (const student of students) {
+      for (const sub of examSubjects) {
+        const sid = sub.subject_id || 0;
+        const existing = next[student.id]?.[sid] || { marks: '', absent: false, remarks: '' };
+        next[student.id] = next[student.id] || {};
+        next[student.id][sid] = { ...existing, absent: true, marks: '' };
+      }
+    }
+    onReplaceInputs(next);
+  };
+
+  const handleAutoFillZero = () => {
+    const next = cloneInputs();
+    for (const student of students) {
+      for (const sub of examSubjects) {
+        const sid = sub.subject_id || 0;
+        const existing = next[student.id]?.[sid] || { marks: '', absent: false, remarks: '' };
+        if (existing.absent) continue;
+        next[student.id] = next[student.id] || {};
+        next[student.id][sid] = {
+          ...existing,
+          marks: existing.marks.trim() === '' ? '0' : existing.marks,
+          absent: false,
+        };
+      }
+    }
+    onReplaceInputs(next);
+  };
+
+  const handleAutoPass = () => {
+    const next = cloneInputs();
+    for (const student of students) {
+      for (const sub of examSubjects) {
+        const sid = sub.subject_id || 0;
+        const existing = next[student.id]?.[sid] || { marks: '', absent: false, remarks: '' };
+        if (existing.absent) continue;
+        next[student.id] = next[student.id] || {};
+        next[student.id][sid] = {
+          ...existing,
+          marks: String(sub.passing_marks),
+          absent: false,
+        };
+      }
+    }
+    onReplaceInputs(next);
+  };
+
+  const handleExportTemplate = () => {
+    downloadResultsTemplate(exam.name, students, examSubjects);
+  };
+
+  const handleImportFile = async (file: File) => {
+    const text = await file.text();
+    const { inputs, matchedRows, skippedRows } = parseResultsImportCsv(
+      text,
+      students,
+      examSubjects,
+      resultInputs,
+    );
+
+    if (matchedRows === 0) {
+      await alert(
+        'No matching students found in the file. Use the exported template and match by Admission Number or Roll Number.',
+        { title: 'Import failed', type: 'warning' },
+      );
+      return;
+    }
+
+    onReplaceInputs(inputs);
+    await alert(
+      `Imported marks for ${matchedRows} student${matchedRows === 1 ? '' : 's'}${skippedRows > 0 ? ` (${skippedRows} row${skippedRows === 1 ? '' : 's'} skipped)` : ''}.`,
+      { title: 'Import complete', type: 'success' },
+    );
+  };
+
+  const handleCopyPreviousMarks = async () => {
+    const previousExam = exams
+      .filter((e) => e.class_id === exam.class_id && e.id !== exam.id)
+      .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0];
+
+    if (!previousExam) {
+      await alert('No previous exam found for this class.', { title: 'Copy marks', type: 'warning' });
+      return;
+    }
+
+    const confirmed = await confirm(
+      `Copy marks from "${previousExam.name}" (${new Date(previousExam.exam_date).toLocaleDateString('en-IN')})? This will overwrite current entries for matching subjects.`,
+      {
+        title: 'Copy previous marks',
+        type: 'warning',
+        confirmText: 'Copy marks',
+        cancelText: 'Cancel',
+      },
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/exams/${previousExam.id}/results`);
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.data)) {
+        await alert(data.error || 'Failed to load previous exam results.', { title: 'Copy marks', type: 'error' });
+        return;
+      }
+
+      const next = cloneInputs();
+      let copied = 0;
+
+      for (const student of students) {
+        for (const sub of examSubjects) {
+          const sid = sub.subject_id || 0;
+          const prev = data.data.find(
+            (r: { student_id: number; subject_id?: number; marks_obtained: number; is_absent: boolean; remarks?: string }) =>
+              r.student_id === student.id && (r.subject_id === sid || (!r.subject_id && examSubjects.length === 1)),
+          );
+          if (!prev) continue;
+
+          copied += 1;
+          next[student.id] = next[student.id] || {};
+          next[student.id][sid] = {
+            marks: prev.is_absent ? '' : String(prev.marks_obtained),
+            absent: Boolean(prev.is_absent),
+            remarks: prev.remarks || next[student.id][sid]?.remarks || '',
+          };
+        }
+      }
+
+      if (copied === 0) {
+        await alert('No matching subject marks found in the previous exam.', { title: 'Copy marks', type: 'warning' });
+        return;
+      }
+
+      onReplaceInputs(next);
+      await alert(`Copied ${copied} mark entries from "${previousExam.name}".`, { title: 'Copy marks', type: 'success' });
+    } catch {
+      await alert('Failed to copy previous marks.', { title: 'Copy marks', type: 'error' });
+    }
+  };
+
+  const allMarkedAbsent = useMemo(() => {
+    if (students.length === 0 || examSubjects.length === 0) return false;
+    for (const student of students) {
+      for (const sub of examSubjects) {
+        const sid = sub.subject_id || 0;
+        const input = resultInputs[student.id]?.[sid];
+        if (!input?.absent) return false;
+      }
+    }
+    return true;
+  }, [students, examSubjects, resultInputs]);
+
+  const bulkActions = [
+    { label: 'Import Excel', icon: FiUpload, onClick: () => fileInputRef.current?.click() },
+    { label: 'Export Template', icon: FiDownload, onClick: handleExportTemplate },
+    { label: 'Copy Previous Marks', icon: FiCopy, onClick: handleCopyPreviousMarks },
+    { label: 'Auto Fill Zero', icon: FiMinusCircle, onClick: handleAutoFillZero },
+    { label: 'Auto Pass', icon: FiTrendingUp, onClick: handleAutoPass },
+  ];
 
   return (
     <ContentAreaModal open={show} onClose={handleAttemptClose}>
@@ -211,6 +411,57 @@ export default function UploadResultsModal({
                 </>
               )}
             </p>
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt,text/csv"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) await handleImportFile(file);
+              }}
+            />
+            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden shrink-0">
+              <button
+                type="button"
+                onClick={handleMarkAllPresent}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-r border-gray-300 transition-colors ${
+                  !allMarkedAbsent
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FiCheckCircle size={14} className="shrink-0" />
+                Mark All Present
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkAllAbsent}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  allMarkedAbsent
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FiUserX size={14} className="shrink-0" />
+                Mark All Absent
+              </button>
+            </div>
+            {bulkActions.map(({ label, icon: Icon, onClick }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50"
+              >
+                <Icon size={14} className="shrink-0" />
+                {label}
+              </button>
+            ))}
           </div>
           <div className="overflow-x-auto h-full">
             <table className="min-w-full divide-y divide-gray-200">

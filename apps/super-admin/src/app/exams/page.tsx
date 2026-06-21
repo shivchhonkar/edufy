@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -12,6 +12,10 @@ import ResultCompilationCard from '@/features/exams/components/result-compilatio
 import PromotionRecommendations from '@/features/exams/components/promotion-recommendations';
 import RankingTable from '@/features/exams/components/ranking-table';
 import ExamRawResultsTable from '@/features/exams/components/exam-raw-results-table';
+import {
+  buildExamResultInputs,
+  mergeExamSubjectsFromResults,
+} from '@/features/exams/utils/build-exam-result-inputs';
 import {
   FiAward, 
   FiPlus, 
@@ -214,6 +218,7 @@ export default function ExamsPage() {
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
   const [examForm, setExamForm] = useState<ExamFormState>(DEFAULT_EXAM_FORM);
+  const uploadResultsRequestRef = useRef(0);
 
   useEffect(() => {
     fetchData();
@@ -502,14 +507,21 @@ export default function ExamsPage() {
   };
 
   const handleUploadResults = async (exam: Exam) => {
+    const requestId = ++uploadResultsRequestRef.current;
+
+    setShowResultsModal(false);
+    setResultInputs({});
+    setSelectedExam(null);
     setLoading(true);
 
     try {
       const [examRes, studentsRes, resultsRes] = await Promise.all([
-        fetch(`/api/exams/${exam.id}`),
-        fetch(`/api/students?class_id=${exam.class_id}`),
-        fetch(`/api/exams/${exam.id}/results`),
+        fetch(`/api/exams/${exam.id}`, { cache: 'no-store' }),
+        fetch(`/api/students?class_id=${exam.class_id}&limit=50000&page=1`, { cache: 'no-store' }),
+        fetch(`/api/exams/${exam.id}/results`, { cache: 'no-store' }),
       ]);
+
+      if (requestId !== uploadResultsRequestRef.current) return;
 
       const [examData, studentsData, resultsData] = await Promise.all([
         examRes.json(),
@@ -517,44 +529,61 @@ export default function ExamsPage() {
         resultsRes.json(),
       ]);
 
-      const fullExam: Exam = examData.success ? examData.data : exam;
-      setSelectedExam(fullExam);
+      if (requestId !== uploadResultsRequestRef.current) return;
 
-      const examSubjects: ExamSubject[] = fullExam.subjects?.length
+      if (!examData.success) {
+        await alert(examData.error || 'Failed to load exam details.', { title: 'Upload results', type: 'error' });
+        return;
+      }
+
+      if (!studentsData.success) {
+        await alert(studentsData.error || 'Failed to load students.', { title: 'Upload results', type: 'error' });
+        return;
+      }
+
+      if (!resultsData.success) {
+        await alert(resultsData.error || 'Failed to load existing results.', { title: 'Upload results', type: 'error' });
+        return;
+      }
+
+      const fullExam: Exam = examData.data;
+      const baseSubjects: ExamSubject[] = fullExam.subjects?.length
         ? fullExam.subjects
         : fullExam.subject_id
-          ? [{ subject_id: fullExam.subject_id, subject_name: fullExam.subject_name, total_marks: fullExam.total_marks, passing_marks: fullExam.passing_marks }]
+          ? [{
+              subject_id: fullExam.subject_id,
+              subject_name: fullExam.subject_name,
+              total_marks: fullExam.total_marks,
+              passing_marks: fullExam.passing_marks,
+            }]
           : [];
 
-      if (studentsData.success) {
-        setStudents(studentsData.data);
+      const examSubjects = mergeExamSubjectsFromResults(
+        baseSubjects,
+        resultsData.data,
+        {
+          subject_id: fullExam.subject_id,
+          subject_name: fullExam.subject_name,
+          total_marks: fullExam.total_marks,
+          passing_marks: fullExam.passing_marks,
+        },
+      );
 
-        const inputs: Record<number, Record<number, { marks: string; absent: boolean; remarks: string }>> = {};
-        studentsData.data.forEach((student: { id: number }) => {
-          inputs[student.id] = {};
-          examSubjects.forEach((sub) => {
-            const existingResult = resultsData.data?.find(
-              (r: ExamResult) => r.student_id === student.id && (r.subject_id === sub.subject_id || !r.subject_id)
-            );
-            inputs[student.id][sub.subject_id] = {
-              marks: existingResult ? String(existingResult.marks_obtained) : '',
-              absent: existingResult ? existingResult.is_absent : false,
-              remarks: existingResult ? existingResult.remarks || '' : '',
-            };
-          });
-        });
-        setResultInputs(inputs);
-      }
+      const fullExamWithSubjects: Exam = { ...fullExam, subjects: examSubjects };
+      const inputs = buildExamResultInputs(studentsData.data, examSubjects, resultsData.data);
 
-      if (resultsData.success) {
-        setExamResults(resultsData.data);
-      }
-
+      setSelectedExam(fullExamWithSubjects);
+      setStudents(studentsData.data);
+      setResultInputs(inputs);
+      setExamResults(resultsData.data);
       setShowResultsModal(true);
     } catch (error) {
       console.error('Error loading results:', error);
+      await alert('Failed to load results. Please try again.', { title: 'Upload results', type: 'error' });
     } finally {
-      setLoading(false);
+      if (requestId === uploadResultsRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -614,6 +643,12 @@ export default function ExamsPage() {
       console.error('Error saving results:', error);
       await alert('Failed to save results', { title: 'Error', type: 'error' });
     }
+  };
+
+  const replaceResultInputs = (
+    inputs: Record<number, Record<number, { marks: string; absent: boolean; remarks: string }>>,
+  ) => {
+    setResultInputs(inputs);
   };
 
   const updateResultInput = (
@@ -1312,8 +1347,10 @@ export default function ExamsPage() {
 
         {/* Upload Results Modal */}
         <UploadResultsModal
+          key={selectedExam?.id ?? 'upload-results'}
           show={showResultsModal}
           exam={selectedExam}
+          exams={exams}
           students={students}
           resultInputs={resultInputs}
           onClose={() => {
@@ -1322,6 +1359,7 @@ export default function ExamsPage() {
           }}
           onSave={handleSaveResults}
           onUpdateInput={updateResultInput}
+          onReplaceInputs={replaceResultInputs}
         />
       </div>
     </DashboardLayout>
