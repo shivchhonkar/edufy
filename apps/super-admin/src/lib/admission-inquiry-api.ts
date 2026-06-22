@@ -20,6 +20,10 @@ export type InquirySource =
 
 export type InquiryPriority = 'low' | 'normal' | 'high';
 
+export type ParentRelation = 'father' | 'mother';
+
+export const PARENT_RELATIONS: ParentRelation[] = ['father', 'mother'];
+
 export type ActivityType = 'note' | 'call' | 'email' | 'visit' | 'sms' | 'status_change';
 
 export const INQUIRY_STATUSES: InquiryStatus[] = [
@@ -48,6 +52,10 @@ export function isValidInquiryStatus(value: string): value is InquiryStatus {
 
 export function isValidInquirySource(value: string): value is InquirySource {
   return INQUIRY_SOURCES.includes(value as InquirySource);
+}
+
+export function isValidParentRelation(value: string): value is ParentRelation {
+  return PARENT_RELATIONS.includes(value as ParentRelation);
 }
 
 export function generateInquiryNumber(): string {

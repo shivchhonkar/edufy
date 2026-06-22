@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react';
 import { FiPrinter, FiX } from 'react-icons/fi';
 import type { Student } from '@/shared/types';
@@ -99,7 +99,7 @@ export default function TransferCertificateModal({
   return (
     <>
       <AppModal open={isOpen} onClose={onClose}>
-        <div className="flex max-h-full h-full w-full flex-col overflow-hidden bg-white shadow-xl min-h-0">
+        <div className={APP_MODAL_PANEL}>
           <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Transfer Certificate</h2>

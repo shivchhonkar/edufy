@@ -72,6 +72,11 @@ export async function registerSchool(
 
   const schemaSql = readDatabaseSql('schema.sql');
 
+  const defaultYear = getDefaultAcademicYearConfig();
+  const academicYearName = input.academic_year_name?.trim() || defaultYear.name;
+  const academicYearStart = input.academic_year_start || defaultYear.start_date;
+  const academicYearEnd = input.academic_year_end || defaultYear.end_date;
+
   const schoolDb = createPlatformPool(getTenantDbConfig(dbName));
   try {
     await schoolDb.query(schemaSql);
@@ -93,11 +98,6 @@ export async function registerSchool(
        VALUES ($1, $2, 'super_admin', $3, $4, true)`,
       [input.admin_email, passwordHash, input.admin_name, input.admin_phone || null]
     );
-
-    const defaultYear = getDefaultAcademicYearConfig();
-    const academicYearName = input.academic_year_name?.trim() || defaultYear.name;
-    const academicYearStart = input.academic_year_start || defaultYear.start_date;
-    const academicYearEnd = input.academic_year_end || defaultYear.end_date;
 
     // Ensure academic_years + system_settings tables exist
     await schoolDb.query(`

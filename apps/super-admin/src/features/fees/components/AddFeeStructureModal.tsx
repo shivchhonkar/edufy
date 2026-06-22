@@ -314,8 +314,8 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
   return (
     <>
       <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
-          <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">
+      <div ref={modalContentRef} className={APP_MODAL_PANEL}>
+          <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0 sticky top-0 z-10 shrink-0">
             <h2 className="text-xl text-gray-900">
               {editingFeeStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
             </h2>

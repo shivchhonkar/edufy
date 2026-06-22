@@ -623,7 +623,7 @@ export default function SubjectsPage() {
 
       {showSubjectModal && (
         <AppModal open={showSubjectModal} onClose={() => { setShowSubjectModal(false); setEditingSubject(null); }}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="text-lg font-semibold">
                 {editingSubject ? 'Edit Subject' : 'Add Subject'}

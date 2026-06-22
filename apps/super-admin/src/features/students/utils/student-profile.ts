@@ -63,3 +63,13 @@ export function studentInitials(student: {
     : '';
   return (first + last).toUpperCase() || '?';
 }
+
+/** Primary contact phone: father's number, falling back to mother's. */
+export function getStudentContactPhone(student: {
+  parent_phone?: string | null;
+  mother_phone?: string | null;
+}): string {
+  const fatherPhone = student.parent_phone?.trim();
+  if (fatherPhone) return fatherPhone;
+  return student.mother_phone?.trim() || '';
+}

@@ -26,7 +26,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: SystemSettings = {
-  school_name: 'Shribi Edufy School',
+  school_name: '',
   school_address: '',
   school_phone: '',
   school_email: '',

@@ -149,7 +149,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'homework',
-    title: 'Homework & Lesson Plans',
+    title: 'Homework & Plans',
     icon: FiBookOpen,
     items: [
       { name: 'Homework', path: '/homework', icon: FiBookOpen },

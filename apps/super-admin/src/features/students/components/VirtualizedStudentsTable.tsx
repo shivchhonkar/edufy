@@ -2,18 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Student } from '@/shared/types';
-import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
+import { studentFullName, studentInitials, getStudentContactPhone } from '@/features/students/utils/student-profile';
 import { FiCheckSquare, FiEdit, FiSquare, FiTrash, FiEye } from 'react-icons/fi';
 import StudentRowMoreActions from '@/features/students/components/StudentRowMoreActions';
 
 const ROW_HEIGHT = 73;
 const OVERSCAN = 10;
 
+const ACTIONS_COLUMN = 'minmax(10rem, 1.1fr)';
+
 const GRID_COLUMNS =
-  'minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) minmax(7rem,0.9fr)';
+  `minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) ${ACTIONS_COLUMN}`;
 
 const GRID_COLUMNS_WITH_SELECT =
-  '2.75rem minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) minmax(7rem,0.9fr)';
+  `2.75rem minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) ${ACTIONS_COLUMN}`;
 
 interface VirtualizedStudentsTableProps {
   students: Student[];
@@ -96,7 +98,7 @@ export default function VirtualizedStudentsTable({
   return (
     <div>
       <div
-        className="grid items-center bg-gray-50 border-b"
+        className="grid w-full min-w-0 items-center bg-gray-50 border-b"
         style={{ gridTemplateColumns: gridColumns }}
       >
         {selectionEnabled && (
@@ -120,7 +122,7 @@ export default function VirtualizedStudentsTable({
         <HeaderCell>Gender</HeaderCell>
         <HeaderCell>Contact</HeaderCell>
         <HeaderCell>Status</HeaderCell>
-        <HeaderCell>Actions</HeaderCell>
+        <HeaderCell className="pr-5">Actions</HeaderCell>
       </div>
 
       <div
@@ -164,9 +166,17 @@ export default function VirtualizedStudentsTable({
   );
 }
 
-function HeaderCell({ children }: { children: React.ReactNode }) {
+function HeaderCell({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+    <div
+      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}
+    >
       {children}
     </div>
   );
@@ -193,9 +203,11 @@ function StudentRow({
   gridColumns,
   style,
 }: StudentRowProps) {
+  const contactPhone = getStudentContactPhone(student);
+
   return (
     <div
-      className={`grid items-center border-b border-gray-200 hover:bg-gray-50 ${
+      className={`grid w-full min-w-0 items-center border-b border-gray-200 hover:bg-gray-50 ${
         selected ? 'bg-primary-50/60' : 'bg-white'
       }`}
       style={{ gridTemplateColumns: gridColumns, ...style }}
@@ -237,7 +249,7 @@ function StudentRow({
           )}
           <div>
             <div className="text-sm font-medium text-gray-900">{studentFullName(student)}</div>
-            <div className="text-sm text-gray-500">{student.parent_phone}</div>
+            <div className="text-sm text-gray-500">{contactPhone}</div>
           </div>
         </div>
       </div>
@@ -248,9 +260,7 @@ function StudentRow({
 
       <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.gender}</div>
 
-      <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {student.parent_phone}
-      </div>
+      <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{contactPhone}</div>
 
       <div className="px-6 py-4 whitespace-nowrap">
         <span
@@ -264,31 +274,32 @@ function StudentRow({
         </span>
       </div>
 
-      <div className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onView(student)}
-            className="text-primary-600 hover:text-primary-900 p-1"
-            title="View Details"
-          >
-            <FiEye size={18} />
-          </button>
-          <button
-            onClick={() => onEdit(student)}
-            className="text-blue-600 hover:text-blue-900 p-1"
-            title="Edit"
-          >
-            <FiEdit size={18} />
-          </button>
-          <button
-            onClick={() => onDelete(student)}
-            className="text-red-600 hover:text-red-900 p-1"
-            title="Delete"
-          >
-            <FiTrash size={18} />
-          </button>
-          <StudentRowMoreActions student={student} />
-        </div>
+      <div className="flex h-full min-w-0 items-center justify-end gap-0.5 pl-3 pr-5">
+        <button
+          type="button"
+          onClick={() => onView(student)}
+          className="inline-flex shrink-0 items-center justify-center p-1 text-primary-600 hover:text-primary-900"
+          title="View Details"
+        >
+          <FiEye size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(student)}
+          className="inline-flex shrink-0 items-center justify-center p-1 text-blue-600 hover:text-blue-900"
+          title="Edit"
+        >
+          <FiEdit size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(student)}
+          className="inline-flex shrink-0 items-center justify-center p-1 text-red-600 hover:text-red-900"
+          title="Delete"
+        >
+          <FiTrash size={18} />
+        </button>
+        <StudentRowMoreActions student={student} />
       </div>
     </div>
   );

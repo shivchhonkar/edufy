@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useState } from 'react';
 import { FiUpload, FiX, FiDownload } from 'react-icons/fi';
 
@@ -60,7 +60,7 @@ export default function BulkImportModal({
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">{title}</h2>
           <button type="button" onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -101,7 +101,7 @@ export default function BulkImportModal({
             </div>
           )}
         </div>
-        <div className="p-4 border-t flex justify-end gap-2">
+        <div className="p-4 border-t flex justify-end gap-2 sticky bottom-0 z-10 shrink-0 bg-white">
           <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
           <button
             type="button"

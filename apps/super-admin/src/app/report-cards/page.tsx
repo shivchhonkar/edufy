@@ -363,7 +363,7 @@ export default function ReportCardsPage() {
                 <FiAward className="text-primary-600 shrink-0" /> Report Cards & Marksheets
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Print school-style performance reports (Term, Half Yearly, Annual) or CBSE marksheets
+                Print performance reports
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 shrink-0">

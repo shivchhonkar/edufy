@@ -504,7 +504,7 @@ export default function PayrollPage() {
 
         <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm min-w-[800px]">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
               <tr>
                 <th className="px-5 py-3 w-12">
                   <button
@@ -614,7 +614,7 @@ export default function PayrollPage() {
 
         {showPayModal && (
           <AppModal open={showPayModal} onClose={() => setShowPayModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="text-lg font-bold text-gray-900">
                 {payTarget === 'all' ? 'Mark All as Paid' : payTarget === 'selected' ? `Mark ${selectedPendingPayrollIds.length} as Paid` : 'Record Payment'}
               </h2>
@@ -651,7 +651,7 @@ export default function PayrollPage() {
 
         {showAdvanceModal && (
           <AppModal open={showAdvanceModal} onClose={() => setShowAdvanceModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <FiZap className="text-purple-600" /> Pay in Advance
               </h2>

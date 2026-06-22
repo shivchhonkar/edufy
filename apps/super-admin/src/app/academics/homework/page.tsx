@@ -1,6 +1,12 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, {
+  APP_MODAL_PANEL,
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+  APP_MODAL_FOOTER,
+} from '@/shared/components/common/AppModal';
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -22,7 +28,10 @@ interface Homework {
   id: number;
   title: string;
   description: string;
+  class_id?: number;
+  section_id?: number | null;
   class_name: string;
+  section_name?: string | null;
   subject_name: string;
   due_date: string;
   total_marks: number;
@@ -33,20 +42,44 @@ interface Homework {
   assigned_by_name: string;
 }
 
+interface SectionOption {
+  id: number;
+  name: string;
+  class_id: number;
+}
+
+interface HomeworkSubmission {
+  id: number;
+  student_id: number;
+  status: string;
+  first_name: string;
+  last_name: string;
+  admission_number?: string;
+  roll_number?: string | number | null;
+  submitted_at?: string | null;
+  submission_text?: string | null;
+  submission_file?: string | null;
+  marks_obtained?: number | null;
+  feedback?: string | null;
+}
+
 export default function HomeworkPage() {
   const { alert, confirm } = useDialog();
   const [homework, setHomework] = useState<Homework[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<SectionOption[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
+  const [loadingSubmissionsId, setLoadingSubmissionsId] = useState<number | null>(null);
   const [selectedHomework, setSelectedHomework] = useState<any>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<HomeworkSubmission[]>([]);
 
   // Filters
   const [search, setSearch] = useState('');
   const [filterClass, setFilterClass] = useState('');
+  const [filterSection, setFilterSection] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
@@ -54,13 +87,30 @@ export default function HomeworkPage() {
     fetchHomework();
     fetchClasses();
     fetchSubjects();
-  }, [filterClass, filterSubject, filterStatus, search]);
+  }, [filterClass, filterSection, filterSubject, filterStatus, search]);
+
+  useEffect(() => {
+    if (!filterClass) {
+      setSections([]);
+      setFilterSection('');
+      return;
+    }
+
+    fetch(`/api/sections?class_id=${filterClass}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSections(data.data);
+        else setSections([]);
+      })
+      .catch(() => setSections([]));
+  }, [filterClass]);
 
   const fetchHomework = async () => {
     try {
       let url = '/api/homework?';
       const params = [];
       if (filterClass) params.push(`class_id=${filterClass}`);
+      if (filterSection) params.push(`section_id=${filterSection}`);
       if (filterSubject) params.push(`subject_id=${filterSubject}`);
       if (filterStatus) params.push(`status=${filterStatus}`);
       if (search) params.push(`search=${search}`);
@@ -104,6 +154,8 @@ export default function HomeworkPage() {
   };
 
   const handleViewSubmissions = async (hw: Homework) => {
+    setShowModal(false);
+    setLoadingSubmissionsId(hw.id);
     try {
       const res = await fetch(`/api/homework/${hw.id}`);
       const data = await res.json();
@@ -111,9 +163,14 @@ export default function HomeworkPage() {
         setSelectedHomework(data.data);
         setSubmissions(data.data.submissions || []);
         setShowSubmissionsModal(true);
+      } else {
+        await alert(data.error || 'Failed to load submissions', { title: 'Error', type: 'error' });
       }
     } catch (error) {
       console.error('Error fetching submissions:', error);
+      await alert('Failed to load submissions', { title: 'Error', type: 'error' });
+    } finally {
+      setLoadingSubmissionsId(null);
     }
   };
 
@@ -175,7 +232,7 @@ export default function HomeworkPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <FiSearch className="absolute left-3 top-3 text-gray-400" />
               <input
@@ -190,12 +247,29 @@ export default function HomeworkPage() {
             <select
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
               value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
+              onChange={(e) => {
+                setFilterClass(e.target.value);
+                setFilterSection('');
+              }}
             >
               <option value="">All Classes</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
                   {cls.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+              value={filterSection}
+              onChange={(e) => setFilterSection(e.target.value)}
+              disabled={!filterClass}
+            >
+              <option value="">All Sections</option>
+              {sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.name}
                 </option>
               ))}
             </select>
@@ -225,7 +299,7 @@ export default function HomeworkPage() {
             </select>
           </div>
 
-          {(search || filterClass || filterSubject || filterStatus) && (
+          {(search || filterClass || filterSection || filterSubject || filterStatus) && (
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Active filters:</span>
@@ -237,6 +311,11 @@ export default function HomeworkPage() {
                 {filterClass && (
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                     Class: {classes.find(c => c.id.toString() === filterClass)?.name}
+                  </span>
+                )}
+                {filterSection && (
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                    Section: {sections.find(s => s.id.toString() === filterSection)?.name}
                   </span>
                 )}
                 {filterSubject && (
@@ -254,6 +333,7 @@ export default function HomeworkPage() {
                 onClick={() => {
                   setSearch('');
                   setFilterClass('');
+                  setFilterSection('');
                   setFilterSubject('');
                   setFilterStatus('');
                 }}
@@ -277,7 +357,7 @@ export default function HomeworkPage() {
               <FiBook className="w-16 h-16 text-gray-400 mb-4" />
               <p className="text-gray-500">No homework found</p>
               <p className="text-sm text-gray-400 mt-2">
-                {search || filterClass || filterSubject ? 
+                {search || filterClass || filterSection || filterSubject ? 
                   'Try adjusting your filters' : 
                   'Click "Assign Homework" to get started'
                 }
@@ -293,7 +373,12 @@ export default function HomeworkPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <h3 className="text-lg text-gray-900 mb-1">{hw.title}</h3>
-                      <p className="text-sm text-gray-600">{hw.class_name} • {hw.subject_name}</p>
+                      <p className="text-sm text-gray-600">
+                        {hw.class_name}
+                        {hw.section_name ? ` · ${hw.section_name}` : ''}
+                        {' · '}
+                        {hw.subject_name}
+                      </p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(hw.status)}`}>
                       {hw.status}
@@ -339,11 +424,15 @@ export default function HomeworkPage() {
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <button
+                      type="button"
                       onClick={() => handleViewSubmissions(hw)}
-                      className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-800"
+                      disabled={loadingSubmissionsId === hw.id}
+                      className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-800 disabled:opacity-50"
                     >
                       <FiEye size={16} />
-                      <span>View Submissions</span>
+                      <span>
+                        {loadingSubmissionsId === hw.id ? 'Loading…' : 'View Submissions'}
+                      </span>
                     </button>
                     <div className="flex items-center space-x-2">
                       <button
@@ -400,7 +489,7 @@ export default function HomeworkPage() {
             setSelectedHomework(null);
             setSubmissions([]);
           }}
-          onRefresh={() => handleViewSubmissions(selectedHomework)}
+          onRefresh={() => handleViewSubmissions({ id: selectedHomework.id } as Homework)}
         />
       )}
     </DashboardLayout>
@@ -411,17 +500,34 @@ export default function HomeworkPage() {
 function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any) {
   const { alert } = useDialog();
   const [formData, setFormData] = useState({
-    class_id: homework?.class_id || '',
-    subject_id: homework?.subject_id || '',
+    class_id: homework?.class_id ? String(homework.class_id) : '',
+    section_id: homework?.section_id ? String(homework.section_id) : '',
+    subject_id: homework?.subject_id ? String(homework.subject_id) : '',
     title: homework?.title || '',
     description: homework?.description || '',
     due_date: homework?.due_date?.split('T')[0] || '',
     total_marks: homework?.total_marks || 100,
     status: homework?.status || 'active',
   });
+  const [sections, setSections] = useState<SectionOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [attachments, setAttachments] = useState<any[]>(homework?.attachments || []);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!formData.class_id) {
+      setSections([]);
+      return;
+    }
+
+    fetch(`/api/sections?class_id=${formData.class_id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSections(data.data);
+        else setSections([]);
+      })
+      .catch(() => setSections([]));
+  }, [formData.class_id]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -465,7 +571,12 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
       const url = homework ? `/api/homework/${homework.id}` : '/api/homework';
       const method = homework ? 'PUT' : 'POST';
       
-      const payload: any = { ...formData };
+      const payload: any = {
+        ...formData,
+        class_id: formData.class_id ? parseInt(formData.class_id, 10) : null,
+        subject_id: formData.subject_id ? parseInt(formData.subject_id, 10) : null,
+        section_id: formData.section_id ? parseInt(formData.section_id, 10) : null,
+      };
       if (!homework) {
         payload.assigned_by = 1; // TODO: Get from session
       }
@@ -495,28 +606,34 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
 
   return (
     <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl text-gray-900">
-              {homework ? 'Edit Homework' : 'Assign New Homework'}
-            </h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <FiX size={24} />
-            </button>
-          </div>
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={`${APP_MODAL_HEADER} px-6 py-4`}>
+          <h2 className="text-xl text-gray-900">
+            {homework ? 'Edit Homework' : 'Assign New Homework'}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <FiX size={24} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className={`${APP_MODAL_BODY} p-6 space-y-4`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Class <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
                 value={formData.class_id}
-                onChange={(e) => setFormData({ ...formData, class_id: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, class_id: e.target.value, section_id: '' })
+                }
                 required
               >
                 <option value="">Select Class</option>
@@ -530,10 +647,29 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Section
+              </label>
+              <select
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+                value={formData.section_id}
+                onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
+                disabled={!formData.class_id}
+              >
+                <option value="">All Sections</option>
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Subject <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
                 value={formData.subject_id}
                 onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                 required
@@ -690,7 +826,9 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             </select>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          </div>
+
+          <div className={APP_MODAL_FOOTER}>
             <button
               type="button"
               onClick={onClose}
@@ -713,21 +851,36 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
 }
 
 // Submissions Modal Component
-function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
+function SubmissionsModal({
+  homework,
+  submissions,
+  onClose,
+  onRefresh,
+}: {
+  homework: Homework & { total_marks: number; description?: string };
+  submissions: HomeworkSubmission[];
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
   const { alert } = useDialog();
-  const [gradingSubmission, setGradingSubmission] = useState<any>(null);
+  const [gradingSubmission, setGradingSubmission] = useState<HomeworkSubmission | null>(null);
   const [marks, setMarks] = useState('');
   const [feedback, setFeedback] = useState('');
   const [grading, setGrading] = useState(false);
 
-  const handleGrade = async (submission: any) => {
+  const pendingCount = submissions.filter((s) => s.status === 'pending').length;
+  const submittedCount = submissions.filter((s) => s.status === 'submitted').length;
+  const gradedCount = submissions.filter((s) => s.status === 'graded').length;
+
+  const handleGrade = async (submission: HomeworkSubmission) => {
+    if (!marks.trim()) return;
     setGrading(true);
     try {
       const res = await fetch(`/api/homework/submissions/${submission.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          marks_obtained: parseInt(marks),
+          marks_obtained: parseInt(marks, 10),
           feedback,
           graded_by: 1, // TODO: Get from session
         }),
@@ -752,71 +905,107 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
 
   const getSubmissionStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'submitted': return 'bg-blue-100 text-blue-800';
-      case 'graded': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'submitted':
+        return 'bg-blue-100 text-blue-800';
+      case 'graded':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getSubmissionStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <FiClock className="text-yellow-600" />;
-      case 'submitted': return <FiCheckCircle className="text-blue-600" />;
-      case 'graded': return <FiCheckCircle className="text-green-600" />;
-      default: return <FiXCircle className="text-gray-600" />;
+      case 'pending':
+        return <FiClock className="text-yellow-600" />;
+      case 'submitted':
+        return <FiCheckCircle className="text-blue-600" />;
+      case 'graded':
+        return <FiCheckCircle className="text-green-600" />;
+      default:
+        return <FiXCircle className="text-gray-600" />;
     }
   };
 
+  const classLine = [
+    homework.class_name,
+    homework.section_name,
+    homework.subject_name,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
-        <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl text-gray-900">{homework.title}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {homework.class_name} • {homework.subject_name} • Due: {new Date(homework.due_date).toLocaleDateString()}
-              </p>
-              <div className="flex items-center space-x-4 mt-2">
-                <span className="text-sm text-gray-600">
-                  Total Marks: <span className="font-semibold">{homework.total_marks}</span>
-                </span>
-                <span className="text-sm text-gray-600">
-                  Submissions: <span className="font-semibold">{submissions.length}</span>
-                </span>
-              </div>
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={`${APP_MODAL_HEADER} items-start px-6 py-4`}>
+          <div className="min-w-0 pr-4">
+            <h2 className="text-xl text-gray-900 truncate">{homework.title}</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {classLine} · Due:{' '}
+              {new Date(homework.due_date).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
+              <span>
+                Total Marks: <span className="font-semibold text-gray-900">{homework.total_marks}</span>
+              </span>
+              <span>
+                Assigned: <span className="font-semibold text-gray-900">{submissions.length}</span>
+              </span>
+              <span>
+                Pending: <span className="font-semibold text-yellow-700">{pendingCount}</span>
+              </span>
+              <span>
+                Submitted: <span className="font-semibold text-blue-700">{submittedCount}</span>
+              </span>
+              <span>
+                Graded: <span className="font-semibold text-green-700">{gradedCount}</span>
+              </span>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <FiX size={24} />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <FiX size={24} />
+          </button>
         </div>
 
-        <div className="p-6">
+        <div className={`${APP_MODAL_BODY} p-6`}>
           {submissions.length === 0 ? (
             <div className="text-center py-12">
               <FiBook className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No submissions yet</p>
+              <p className="text-gray-500">No students assigned for this homework</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Submissions are created when homework is assigned to a class or section.
+              </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Student
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Submitted At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Marks
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -824,31 +1013,51 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {submissions.map((submission) => (
                     <tr key={submission.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             {submission.first_name} {submission.last_name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {submission.admission_number} {submission.roll_number && `• Roll: ${submission.roll_number}`}
+                            {submission.admission_number}
+                            {submission.roll_number != null && submission.roll_number !== ''
+                              ? ` · Roll: ${submission.roll_number}`
+                              : ''}
                           </div>
+                          {submission.submission_text ? (
+                            <p className="mt-1 max-w-xs truncate text-xs text-gray-500" title={submission.submission_text}>
+                              {submission.submission_text}
+                            </p>
+                          ) : null}
+                          {submission.submission_file ? (
+                            <a
+                              href={submission.submission_file}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 inline-block text-xs text-primary-600 hover:text-primary-800"
+                            >
+                              View attachment
+                            </a>
+                          ) : null}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
                           {getSubmissionStatusIcon(submission.status)}
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSubmissionStatusColor(submission.status)}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getSubmissionStatusColor(submission.status)}`}
+                          >
                             {submission.status}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {submission.submitted_at
                           ? new Date(submission.submitted_at).toLocaleString('en-IN')
-                          : '-'}
+                          : '—'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {submission.marks_obtained !== null ? (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {submission.marks_obtained != null ? (
                           <span className="text-sm font-semibold text-gray-900">
                             {submission.marks_obtained}/{homework.total_marks}
                           </span>
@@ -856,9 +1065,10 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
                           <span className="text-sm text-gray-400">Not graded</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {submission.status === 'submitted' || submission.status === 'graded' ? (
                           <button
+                            type="button"
                             onClick={() => {
                               setGradingSubmission(submission);
                               setMarks(submission.marks_obtained?.toString() || '');
@@ -869,7 +1079,7 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
                             {submission.status === 'graded' ? 'Re-grade' : 'Grade'}
                           </button>
                         ) : (
-                          <span className="text-gray-400">Pending</span>
+                          <span className="text-gray-400 capitalize">{submission.status}</span>
                         )}
                       </td>
                     </tr>
@@ -878,71 +1088,97 @@ function SubmissionsModal({ homework, submissions, onClose, onRefresh }: any) {
               </table>
             </div>
           )}
+
+          {gradingSubmission && (
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Grade — {gradingSubmission.first_name} {gradingSubmission.last_name}
+              </h3>
+
+              {gradingSubmission.submission_text ? (
+                <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Submission</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                    {gradingSubmission.submission_text}
+                  </p>
+                </div>
+              ) : null}
+
+              {gradingSubmission.submission_file ? (
+                <div className="mb-4">
+                  <a
+                    href={gradingSubmission.submission_file}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary-600 hover:text-primary-800"
+                  >
+                    Open submitted attachment
+                  </a>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Marks <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                    value={marks}
+                    onChange={(e) => setMarks(e.target.value)}
+                    min="0"
+                    max={homework.total_marks}
+                    placeholder={`Out of ${homework.total_marks}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Feedback</label>
+                  <textarea
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                    rows={3}
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Optional feedback for student..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGradingSubmission(null);
+                    setMarks('');
+                    setFeedback('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGrade(gradingSubmission)}
+                  disabled={!marks.trim() || grading}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {grading ? 'Grading…' : 'Submit Grade'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Grading Form */}
-        {gradingSubmission && (
-          <div className="border-t border-gray-200 p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Grade Submission - {gradingSubmission.first_name} {gradingSubmission.last_name}
-            </h3>
-            
-            {gradingSubmission.submission_text && (
-              <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-medium text-gray-700 mb-2">Submission:</p>
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">{gradingSubmission.submission_text}</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marks <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  value={marks}
-                  onChange={(e) => setMarks(e.target.value)}
-                  min="0"
-                  max={homework.total_marks}
-                  placeholder={`Out of ${homework.total_marks}`}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Feedback</label>
-                <textarea
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  rows={3}
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Optional feedback for student..."
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-4">
-              <button
-                onClick={() => {
-                  setGradingSubmission(null);
-                  setMarks('');
-                  setFeedback('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleGrade(gradingSubmission)}
-                disabled={!marks || grading}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-              >
-                {grading ? 'Grading...' : 'Submit Grade'}
-              </button>
-            </div>
-          </div>
-        )}
+        <div className={APP_MODAL_FOOTER}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </AppModal>
   );

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FiHeart } from 'react-icons/fi';
 import type { StudentMedicalRecord } from '@/shared/types';
+import { BLOOD_GROUPS } from '@/shared/constants/student-personal';
 
 interface MedicalTabProps {
   studentId: number;
+  onSaved?: () => void;
 }
 
 const emptyForm = {
@@ -19,7 +21,7 @@ const emptyForm = {
   medical_notes: '',
 };
 
-export default function MedicalTab({ studentId }: MedicalTabProps) {
+export default function MedicalTab({ studentId, onSaved }: MedicalTabProps) {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,6 +74,7 @@ export default function MedicalTab({ studentId }: MedicalTabProps) {
       const data = await res.json();
       if (data.success) {
         setSuccess('Medical record saved successfully');
+        onSaved?.();
         if (data.data) {
           const m: StudentMedicalRecord = data.data;
           setForm({
@@ -120,12 +123,24 @@ export default function MedicalTab({ studentId }: MedicalTabProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
-          <input
+          <select
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
             value={form.blood_group}
             onChange={(e) => setForm({ ...form, blood_group: e.target.value })}
-            placeholder="e.g. B+"
-          />
+          >
+            <option value="">Select blood group</option>
+            {BLOOD_GROUPS.map((bg) => (
+              <option key={bg} value={bg}>
+                {bg}
+              </option>
+            ))}
+            {form.blood_group && !BLOOD_GROUPS.includes(form.blood_group as (typeof BLOOD_GROUPS)[number]) && (
+              <option value={form.blood_group}>{form.blood_group}</option>
+            )}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Synced with Personal Information on the Profile tab.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Doctor Name</label>

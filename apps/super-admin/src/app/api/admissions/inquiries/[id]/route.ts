@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { ensureAdmissionInquirySchema } from '@/lib/ensure-admission-inquiry-schema';
 import {
   INQUIRY_FROM_JOIN,
   INQUIRY_SELECT,
   inquiryExists,
   isValidInquirySource,
   isValidInquiryStatus,
+  isValidParentRelation,
   logInquiryActivity,
 } from '@/lib/admission-inquiry-api';
 
@@ -20,6 +22,7 @@ export async function GET(
 ) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureAdmissionInquirySchema(db);
     const inquiryId = parseId(params.id);
     if (!inquiryId) {
       return NextResponse.json({ success: false, error: 'Invalid id' }, { status: 400 });
@@ -59,6 +62,7 @@ export async function PUT(
 ) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureAdmissionInquirySchema(db);
     const inquiryId = parseId(params.id);
     if (!inquiryId) {
       return NextResponse.json({ success: false, error: 'Invalid id' }, { status: 400 });
@@ -96,6 +100,7 @@ export async function PUT(
       'student_last_name',
       'date_of_birth',
       'gender',
+      'parent_relation',
       'parent_name',
       'parent_phone',
       'parent_email',
@@ -133,6 +138,12 @@ export async function PUT(
         }
         if (key === 'source' && body[key] && !isValidInquirySource(body[key])) {
           return NextResponse.json({ success: false, error: 'Invalid source' }, { status: 400 });
+        }
+        if (key === 'parent_relation' && body[key] && !isValidParentRelation(body[key])) {
+          return NextResponse.json(
+            { success: false, error: 'parent_relation must be father or mother' },
+            { status: 400 },
+          );
         }
         fields.push(`${key} = $${idx}`);
         values.push(body[key]);

@@ -53,7 +53,7 @@ export default function IncrementsPage() {
         </div>
         <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
               <tr>
                 <th className="text-left px-5 py-3">Employee</th>
                 <th className="text-left px-5 py-3">Previous</th>
@@ -85,7 +85,7 @@ export default function IncrementsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="font-bold">Record Increment</h2>
               <select value={form.staff_id} onChange={(e) => setForm({ ...form, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Select staff</option>

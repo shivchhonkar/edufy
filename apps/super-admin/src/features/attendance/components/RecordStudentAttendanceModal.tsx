@@ -150,7 +150,7 @@ export default function RecordStudentAttendanceModal({
     <AppModal open={isOpen} onClose={handleClose}>
       <div
         ref={modalContentRef}
-        className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-y-auto"
+        className={APP_MODAL_PANEL}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">

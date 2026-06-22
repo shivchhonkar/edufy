@@ -136,7 +136,7 @@ export default function EssPage() {
         {portalEnabled && allowedTabs.length > 0 && (
         <div className="bg-white border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
               <tr>
                 {tab === 'attendance' && <><th className="text-left px-5 py-3">Date</th><th className="text-left px-5 py-3">Status</th><th className="text-left px-5 py-3">Check In</th><th className="text-left px-5 py-3">Check Out</th></>}
                 {tab === 'leaves' && <><th className="text-left px-5 py-3">Type</th><th className="text-left px-5 py-3">Dates</th><th className="text-left px-5 py-3">Days</th><th className="text-left px-5 py-3">Status</th></>}
@@ -184,7 +184,7 @@ export default function EssPage() {
 
         {showLeaveForm && (
           <AppModal open={showLeaveForm} onClose={() => setShowLeaveForm(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="font-bold">Apply for Leave</h2>
               <select value={leaveForm.leave_type_id} onChange={(e) => setLeaveForm({ ...leaveForm, leave_type_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Leave type</option>

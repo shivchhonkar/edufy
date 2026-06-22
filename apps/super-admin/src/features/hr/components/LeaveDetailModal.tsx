@@ -54,7 +54,7 @@ export default function LeaveDetailModal({
 
   return (
     <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-bold text-gray-900">{title}</h2>
           <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
@@ -110,7 +110,7 @@ export default function LeaveDetailModal({
           )}
         </div>
 
-        <div className="px-6 py-4 border-t flex flex-wrap gap-2 justify-end">
+        <div className="px-6 py-4 border-t flex flex-wrap gap-2 justify-end sticky bottom-0 z-10 shrink-0 bg-white">
           {mode === 'view' && leave.status === 'pending' && (
             <>
               {onEdit && (

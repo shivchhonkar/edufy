@@ -103,6 +103,7 @@ body {
   background-color: var(--theme-header-bg) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--theme-font) 12%, transparent);
   color: var(--theme-font);
+  line-height: 1.25;
 }
 
 .portal-page-header-muted {

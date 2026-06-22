@@ -293,9 +293,9 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-600">
+        {/* <p className="text-sm text-gray-600">
           Plan daily lessons by class and subject — objectives, materials, procedure, and assessment.
-        </p>
+        </p> */}
         <button
           type="button"
           onClick={openCreate}
@@ -367,7 +367,7 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b text-xs uppercase text-gray-500">
+              <thead className="bg-gray-50 border-b text-xs uppercase text-gray-500 sticky top-0 z-10 shrink-0">
                 <tr>
                   <th className="text-left p-3">Date</th>
                   <th className="text-left p-3">Title</th>
@@ -380,7 +380,7 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
               </thead>
               <tbody>
                 {plans.map((plan) => (
-                  <tr key={plan.id} className="border-b hover:bg-gray-50">
+                  <tr key={plan.id} className="border-b hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                     <td className="p-3 whitespace-nowrap text-gray-700">
                       {formatLessonDate(plan.lesson_date)}
                     </td>
@@ -441,7 +441,7 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
 
       {showForm && (
         <AppModal open={showForm} onClose={() => setShowForm(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between">
               <h2 className="text-lg text-gray-900 flex items-center gap-2">
                 <FiBookOpen className="text-primary-600" />
@@ -637,7 +637,7 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
 
       {showView && (
         <AppModal open={Boolean(showView)} onClose={() => setShowView(null)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="border-b px-5 py-4 flex items-center justify-between">
               <h2 className="text-lg text-gray-900">{showView.title}</h2>
               <button type="button" onClick={() => setShowView(null)} className="text-gray-400 hover:text-gray-600">
@@ -685,7 +685,7 @@ export default function LessonPlansTab({ classes, academicYears }: LessonPlansTa
                   )
               )}
             </div>
-            <div className="border-t px-5 py-3 flex justify-end gap-2">
+            <div className="border-t px-5 py-3 flex justify-end gap-2 sticky bottom-0 z-10 shrink-0 bg-white">
               <button
                 type="button"
                 onClick={() => {

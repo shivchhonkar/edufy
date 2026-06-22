@@ -35,24 +35,44 @@ export default function ViewStudentModal({
   onEdit,
 }: ViewStudentModalProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabId>('profile');
+  const [studentData, setStudentData] = useState<
+    (Student & { class_name?: string; section_name?: string }) | null
+  >(student);
 
   useEffect(() => {
-    if (isOpen && student) {
+    setStudentData(student);
+  }, [student]);
+
+  const refreshStudent = async (studentId: number) => {
+    try {
+      const res = await fetch(`/api/students/${studentId}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setStudentData(data.data);
+      }
+    } catch {
+      // Keep existing data on refresh failure
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && student?.id) {
       setActiveTab('profile');
+      refreshStudent(student.id);
     }
   }, [isOpen, student?.id]);
 
-  if (!student) return null;
+  if (!student || !studentData) return null;
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-gray-50 shadow-2xl w-full h-full flex flex-col overflow-hidden min-h-0 min-w-0">
+      <div className={APP_MODAL_PANEL}>
         {/* Header */}
-        <div className="px-4 py-3 sm:px-6 bg-white border-b flex justify-between items-center flex-shrink-0">
+        <div className="px-4 py-3 sm:px-6 bg-white border-b flex justify-between items-center flex-shrink-0 sticky top-0 z-10 shrink-0">
           <div>
             <h2 className="text-xl text-gray-900">Student Profile</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              {studentFullName(student)} · {student.admission_number}
+              {studentFullName(studentData)} · {studentData.admission_number}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -76,40 +96,38 @@ export default function ViewStudentModal({
         </div>
 
         {/* Summary strip */}
-        <div className="px-4 sm:px-6 py-3 bg-white border-b flex items-center gap-4 flex-shrink-0">
-          {student.photo_url ? (
+        <div className="px-4 sm:px-6 py-3 bg-white border-b flex items-center gap-4 flex-shrink-0 sticky top-0 z-10 shrink-0">
+          {studentData.photo_url ? (
             <img
-              src={student.photo_url}
+              src={studentData.photo_url}
               alt=""
               className="h-14 w-14 rounded-full object-cover border-2 border-gray-200"
             />
           ) : (
             <div className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold">
-              {studentInitials(student)}
+              {studentInitials(studentData)}
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-gray-900 truncate">{studentFullName(student)}</p>
+            <p className="font-semibold text-gray-900 truncate">{studentFullName(studentData)}</p>
             <p className="text-sm text-gray-600">
-              {(student as { class_name?: string }).class_name || 'No class'}
-              {(student as { section_name?: string }).section_name
-                ? ` · ${(student as { section_name?: string }).section_name}`
-                : ''}
+              {studentData.class_name || 'No class'}
+              {studentData.section_name ? ` · ${studentData.section_name}` : ''}
             </p>
           </div>
           <span
             className={`px-2 py-1 text-xs font-semibold rounded-full ${
-              student.status === 'active'
+              studentData.status === 'active'
                 ? 'bg-green-100 text-green-800'
                 : 'bg-gray-100 text-gray-800'
             }`}
           >
-            {student.status.toUpperCase()}
+            {studentData.status.toUpperCase()}
           </span>
         </div>
 
         {/* Tabs */}
-        <div className="px-4 sm:px-6 bg-white border-b flex-shrink-0 overflow-x-auto">
+        <div className="px-4 sm:px-6 bg-white border-b flex-shrink-0 overflow-x-auto sticky top-0 z-10 shrink-0">
           <nav className="flex gap-1 min-w-max">
             {TABS.map((tab) => (
               <button
@@ -130,14 +148,19 @@ export default function ViewStudentModal({
 
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {activeTab === 'profile' && <ProfileTab student={student} />}
-          {activeTab === 'guardians' && <GuardiansTab studentId={student.id} />}
-          {activeTab === 'documents' && <DocumentsTab studentId={student.id} />}
-          {activeTab === 'medical' && <MedicalTab studentId={student.id} />}
-          {activeTab === 'history' && <EnrollmentsTab studentId={student.id} />}
+          {activeTab === 'profile' && <ProfileTab student={studentData} />}
+          {activeTab === 'guardians' && <GuardiansTab studentId={studentData.id} />}
+          {activeTab === 'documents' && <DocumentsTab studentId={studentData.id} />}
+          {activeTab === 'medical' && (
+            <MedicalTab
+              studentId={studentData.id}
+              onSaved={() => refreshStudent(studentData.id)}
+            />
+          )}
+          {activeTab === 'history' && <EnrollmentsTab studentId={studentData.id} />}
         </div>
 
-        <div className="px-4 py-3 bg-white border-t flex justify-end flex-shrink-0">
+        <div className="px-4 py-3 bg-white border-t flex justify-end flex-shrink-0 sticky bottom-0 z-10 shrink-0 bg-white">
           <button
             type="button"
             onClick={onClose}

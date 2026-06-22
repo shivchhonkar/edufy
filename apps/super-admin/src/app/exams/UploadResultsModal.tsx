@@ -13,6 +13,11 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 import ContentAreaModal from '@/shared/components/common/ContentAreaModal';
+import {
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+} from '@/shared/components/common/AppModal';
 import { useDialog } from '@/shared/context/DialogContext';
 import {
   downloadResultsTemplate,
@@ -366,8 +371,8 @@ export default function UploadResultsModal({
 
   return (
     <ContentAreaModal open={show} onClose={handleAttemptClose}>
-      <div className="flex flex-col h-full w-full bg-white shadow-2xl">
-        <div className="p-4 sm:p-6 border-b flex justify-between items-center shrink-0 bg-white gap-4">
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={`${APP_MODAL_HEADER} p-4 sm:p-6 gap-4`}>
           <div className="min-w-0">
             <h3 className="text-xl">Upload Results</h3>
             <p className="text-sm text-gray-600 mt-1">
@@ -396,8 +401,8 @@ export default function UploadResultsModal({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
-          <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div className={`${APP_MODAL_BODY} p-4 sm:p-6`}>
+          {/* <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
               {isMultiSubject ? (
                 <>
@@ -411,7 +416,7 @@ export default function UploadResultsModal({
                 </>
               )}
             </p>
-          </div>
+          </div> */}
 
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <input

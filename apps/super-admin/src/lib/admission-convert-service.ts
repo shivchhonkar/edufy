@@ -1,5 +1,6 @@
 import type { RequestDb } from '@/lib/request-db';
 import { logInquiryActivity } from '@/lib/admission-inquiry-api';
+import { ensureStudentMotherColumns } from '@/lib/student-profile-api';
 import { generateAdmissionNumber } from '@/lib/utils';
 
 interface InquiryRow {
@@ -10,6 +11,7 @@ interface InquiryRow {
   student_last_name: string | null;
   date_of_birth: string | null;
   gender: string | null;
+  parent_relation: 'father' | 'mother' | null;
   parent_name: string;
   parent_phone: string;
   parent_email: string | null;
@@ -99,6 +101,9 @@ export async function convertInquiryToStudent(
 
   const lastName = inquiry.student_last_name?.trim() || '—';
   const gender = inquiry.gender || 'Male';
+  const isMother = inquiry.parent_relation === 'mother';
+
+  await ensureStudentMotherColumns(db);
 
   let student: Record<string, unknown> | undefined;
   let admission_number = '';
@@ -110,8 +115,10 @@ export async function convertInquiryToStudent(
         `INSERT INTO students (
           admission_number, first_name, last_name, date_of_birth, gender,
           address, city, state, pincode, admission_date, class_id, section_id,
-          parent_name, parent_phone, parent_email, remarks, status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          parent_name, parent_phone, parent_email,
+          mother_name, mother_phone, mother_email,
+          remarks, status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
         RETURNING *`,
         [
           admission_number,
@@ -126,9 +133,12 @@ export async function convertInquiryToStudent(
           admissionDate,
           classId,
           sectionId,
-          inquiry.parent_name,
-          inquiry.parent_phone,
-          inquiry.parent_email,
+          isMother ? null : inquiry.parent_name,
+          isMother ? null : inquiry.parent_phone,
+          isMother ? null : inquiry.parent_email,
+          isMother ? inquiry.parent_name : null,
+          isMother ? inquiry.parent_phone : null,
+          isMother ? inquiry.parent_email : null,
           inquiry.remarks,
           'active',
         ]

@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useState, useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 import { Staff } from '@/shared/types';
@@ -357,8 +357,8 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
   return (
     <>
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
-          <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">
+      <div className={APP_MODAL_PANEL}>
+          <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0 sticky top-0 z-10 shrink-0">
             <h2 className="text-xl text-gray-900">
               {editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
             </h2>
@@ -378,7 +378,7 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
             </div>
           ) : (
             <>
-          <div className="px-4 sm:px-6 bg-white border-b flex-shrink-0">
+          <div className="px-4 sm:px-6 bg-white border-b flex-shrink-0 sticky top-0 z-10 shrink-0">
             <nav className="flex gap-4 sm:gap-6 -mb-px overflow-x-auto">
               {FORM_TABS.filter((tab) => !tab.editOnly || editingStaff).map((tab) => (
                 <button

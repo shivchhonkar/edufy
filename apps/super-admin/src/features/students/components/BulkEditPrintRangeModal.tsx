@@ -1,6 +1,11 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, {
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+  APP_MODAL_FOOTER,
+} from '@/shared/components/common/AppModal';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiAlertCircle, FiChevronLeft, FiChevronRight, FiPrinter, FiX } from 'react-icons/fi';
@@ -99,8 +104,8 @@ export default function BulkEditPrintRangeModal({
 
   return createPortal(
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl relative">
-        <div className="p-6 border-b border-gray-200">
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={`${APP_MODAL_HEADER} p-6`}>
           <div className="flex items-start gap-4">
             <div className="shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
               <FiAlertCircle className="w-6 h-6 text-yellow-600" />
@@ -126,7 +131,7 @@ export default function BulkEditPrintRangeModal({
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className={`${APP_MODAL_BODY} p-6 space-y-4`}>
           <div>
             <label htmlFor="print-batch-select" className="block text-sm font-medium text-gray-700 mb-1">
               Quick select batch
@@ -213,7 +218,7 @@ export default function BulkEditPrintRangeModal({
           </p>
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <div className={`${APP_MODAL_FOOTER} p-6 flex flex-col-reverse sm:flex-row justify-end gap-3`}>
           <button
             type="button"
             onClick={onClose}

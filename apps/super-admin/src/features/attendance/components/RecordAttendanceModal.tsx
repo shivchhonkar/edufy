@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiClock, FiUser, FiCalendar, FiMapPin } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -211,7 +211,7 @@ export default function RecordAttendanceModal({
     <AppModal open={isOpen} onClose={onClose}>
       <div
         ref={modalContentRef}
-        className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col"
+        className={APP_MODAL_PANEL}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl  text-gray-900">

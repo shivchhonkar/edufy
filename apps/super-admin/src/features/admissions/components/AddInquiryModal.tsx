@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import type { InquiryStatus } from '@/lib/admission-inquiry-api';
@@ -24,6 +24,7 @@ const emptyForm = {
   student_last_name: '',
   date_of_birth: '',
   gender: '',
+  parent_relation: 'father' as 'father' | 'mother',
   parent_name: '',
   parent_phone: '',
   parent_email: '',
@@ -94,7 +95,7 @@ export default function AddInquiryModal({
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl w-full h-full flex flex-col overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shrink-0">
           <div>
             <h2 className="text-lg sm:text-xl text-gray-900">New Admission Inquiry</h2>
@@ -196,7 +197,27 @@ export default function AddInquiryModal({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent name <span className="text-red-500">*</span>
+                    Relation with student <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={form.parent_relation}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        parent_relation: e.target.value as 'father' | 'mother',
+                      })
+                    }
+                    className={inputClass}
+                  >
+                    <option value="father">Father</option>
+                    <option value="mother">Mother</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {form.parent_relation === 'mother' ? 'Mother' : 'Father'} name{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     required
@@ -207,7 +228,8 @@ export default function AddInquiryModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent phone <span className="text-red-500">*</span>
+                    {form.parent_relation === 'mother' ? 'Mother' : 'Father'} phone{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     required
@@ -217,7 +239,9 @@ export default function AddInquiryModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Parent email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {form.parent_relation === 'mother' ? 'Mother' : 'Father'} email
+                  </label>
                   <input
                     type="email"
                     value={form.parent_email}

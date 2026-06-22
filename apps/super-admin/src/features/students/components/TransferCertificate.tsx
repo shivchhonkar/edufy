@@ -1,7 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { Student } from '@/shared/types';
 import { formatStudentDate, studentFullName } from '@/features/students/utils/student-profile';
+import { splitAddressIntoTwoLines } from '@/features/students/utils/school-document-utils';
 
 export interface TransferCertificateSchoolInfo {
   name: string;
@@ -77,47 +79,59 @@ export default function TransferCertificate({
   const fullName = studentFullName(student);
   const relation = genderLabel(student.gender);
   const classPhrase = formatClassPhrase(student.class_name, student.section_name);
+  const [addressLine1, addressLine2] = useMemo(
+    () => splitAddressIntoTwoLines(school.address),
+    [school.address],
+  );
 
   return (
     <div className="tc-sheet break-after-page bg-white text-gray-900">
-      <div className="tc-page relative mx-auto min-h-[277mm] max-w-[210mm] border border-gray-300 p-8 print:border-0 print:p-10">
+      <div className="tc-page relative mx-auto min-h-[277mm] max-w-[210mm] border border-gray-300 px-10 py-12 print:border-0 print:px-[15mm] print:py-[12mm]">
         {/* Header */}
-        <div className="flex items-start gap-4 border-b-2 border-primary-700 pb-4">
+        <div className="flex items-start gap-5 border-b-2 border-primary-700 pb-5">
           {school.logoUrl ? (
             <img
               src={school.logoUrl}
               alt=""
-              className="h-16 w-16 shrink-0 rounded-lg border border-gray-200 object-contain p-1"
+              className="h-[72px] w-[72px] shrink-0 rounded-lg border border-gray-200 object-contain p-1.5"
             />
           ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xs font-bold text-primary-700">
+            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xs font-bold text-primary-700">
               LOGO
             </div>
           )}
           <div className="min-w-0 flex-1 text-center">
-            <h1 className="text-xl font-bold uppercase tracking-wide text-primary-800">
+            <h1 className="text-2xl font-bold uppercase tracking-wide text-primary-800 leading-tight">
               {school.name}
             </h1>
-            {school.address ? (
-              <p className="mt-1 text-xs text-gray-600">{school.address}</p>
-            ) : null}
             {school.academicYear ? (
-              <p className="mt-0.5 text-xs text-gray-500">{school.academicYear}</p>
+              <p className="mt-2 text-sm font-medium text-gray-600">{school.academicYear}</p>
+            ) : null}
+            {addressLine1 || addressLine2 ? (
+              <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-gray-600">
+                {addressLine1}
+                {addressLine2 ? (
+                  <>
+                    <br />
+                    {addressLine2}
+                  </>
+                ) : null}
+              </p>
             ) : null}
           </div>
         </div>
-        <p className="mt-2 flex justify-end whitespace-nowrap text-sm text-gray-900">
+        <p className="mt-4 flex justify-end whitespace-nowrap text-sm text-gray-900">
           <span className="font-semibold">TC No.</span>
           <span className="ml-2 font-mono text-[13px] font-semibold tracking-tight text-primary-800">
             {options.tcNumber}
           </span>
         </p>
 
-        <h2 className="mt-6 text-center text-lg font-bold uppercase tracking-widest text-gray-900 underline decoration-primary-600 decoration-2 underline-offset-4">
+        <h2 className="mt-8 text-center text-lg font-bold uppercase tracking-[0.2em] text-gray-900 underline decoration-primary-600 decoration-2 underline-offset-[6px]">
           Transfer Certificate
         </h2>
 
-        <div className="mt-8 space-y-4 text-sm leading-7 text-gray-800">
+        <div className="mt-10 space-y-5 text-sm leading-8 text-gray-800">
           <p>
             This is to certify that{' '}
             {relation ? (
@@ -146,7 +160,7 @@ export default function TransferCertificate({
             .
           </p>
 
-          <div className="grid grid-cols-1 gap-1 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+          <div className="grid grid-cols-1 gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-5 py-4">
             <InfoLine label="Date of Birth" value={formatStudentDate(student.date_of_birth)} />
             <InfoLine label="Gender" value={student.gender} />
             <InfoLine
@@ -174,7 +188,7 @@ export default function TransferCertificate({
           </p>
         </div>
 
-        <div className="mt-12 flex items-end justify-between gap-6">
+        <div className="mt-16 flex items-end justify-between gap-8">
           <div className="text-sm text-gray-700">
             <p>
               <span className="font-semibold">Date of Issue:</span>{' '}

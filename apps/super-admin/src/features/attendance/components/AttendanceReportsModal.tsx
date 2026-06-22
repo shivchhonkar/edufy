@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import React, { useState, useEffect } from 'react';
 import { FiX, FiDownload, FiCalendar, FiUsers, FiClock, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
@@ -215,7 +215,7 @@ export default function AttendanceReportsModal({ isOpen, onClose, staff }: Atten
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
+      <div className={APP_MODAL_PANEL}>
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl  text-gray-900">Attendance Reports</h2>
           <button

@@ -86,7 +86,7 @@ export default function EditHolidayModal({ isOpen, onClose, onSuccess, holiday }
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
+      <div className={APP_MODAL_PANEL}>
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="text-xl text-gray-900">Edit Holiday</h2>
           <button

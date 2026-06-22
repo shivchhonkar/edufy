@@ -197,6 +197,11 @@ export const SOURCE_LABELS: Record<InquirySource, string> = {
   other: 'Other',
 };
 
+export const PARENT_RELATION_LABELS: Record<'father' | 'mother', string> = {
+  father: 'Father',
+  mother: 'Mother',
+};
+
 export function inquiryStudentName(inquiry: {
   student_first_name: string;
   student_last_name?: string | null;

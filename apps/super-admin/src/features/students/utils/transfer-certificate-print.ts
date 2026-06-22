@@ -4,6 +4,7 @@ import type {
   TransferCertificateSchoolInfo,
 } from '@/features/students/components/TransferCertificate';
 import { formatStudentDate, studentFullName } from '@/features/students/utils/student-profile';
+import { splitAddressIntoTwoLines } from '@/features/students/utils/school-document-utils';
 
 function escapeHtml(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -54,6 +55,13 @@ function buildSingleCertificateHtml(
   const photoUrl = toAbsoluteUrl(student.photo_url);
   const place =
     student.city?.trim() || school.address?.split(',').pop()?.trim() || '';
+  const [addressLine1, addressLine2] = splitAddressIntoTwoLines(school.address);
+  const addressHtml =
+    addressLine1 || addressLine2
+      ? `<p class="school-address">${escapeHtml(addressLine1)}${
+          addressLine2 ? `<br />${escapeHtml(addressLine2)}` : ''
+        }</p>`
+      : '';
 
   const relationText = relation
     ? `<strong>${escapeHtml(relation)}</strong> of`
@@ -89,8 +97,8 @@ function buildSingleCertificateHtml(
           ${logoBlock}
           <div class="tc-header-center">
             <h1 class="school-name">${escapeHtml(school.name)}</h1>
-            ${school.address ? `<p class="school-address">${escapeHtml(school.address)}</p>` : ''}
             ${school.academicYear ? `<p class="school-year">${escapeHtml(school.academicYear)}</p>` : ''}
+            ${addressHtml}
           </div>
         </header>
         <p class="tc-number-row">
@@ -173,18 +181,19 @@ const PRINT_STYLES = `
     width: 210mm;
     min-height: 277mm;
     margin: 0 auto;
-    padding: 2mm;
+    padding: 12mm 15mm;
   }
   .tc-header {
     display: flex;
     align-items: flex-start;
-    gap: 3px;
+    gap: 16px;
     border-bottom: 2px solid #155FA8;
-    padding-bottom: 3px;
+    padding-bottom: 16px;
+    margin-bottom: 8px;
   }
   .logo-img {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     object-fit: contain;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -192,8 +201,8 @@ const PRINT_STYLES = `
     flex-shrink: 0;
   }
   .logo-placeholder {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -211,28 +220,32 @@ const PRINT_STYLES = `
   }
   .school-name {
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    line-height: 1.25;
     color: #0D3D75;
   }
-  .school-address {
-    margin: 1px 0 0;
-    font-size: 12px;
+  .school-year {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-weight: 500;
     color: #4b5563;
   }
-  .school-year {
-    margin: 1px 0 0;
-    font-size: 12px;
-    color: #6b7280;
+  .school-address {
+    margin: 8px auto 0;
+    max-width: 420px;
+    font-size: 11px;
+    line-height: 1.55;
+    color: #4b5563;
   }
   .tc-number-row {
     display: flex;
     justify-content: flex-end;
     align-items: baseline;
     gap: 8px;
-    margin: 2px 0 0;
+    margin: 16px 0 0;
     white-space: nowrap;
     font-size: 14px;
     color: #111827;
@@ -249,7 +262,7 @@ const PRINT_STYLES = `
     color: #0D3D75;
   }
   .tc-title {
-    margin: 3px 0 0;
+    margin: 32px 0 0;
     text-align: center;
     font-size: 18px;
     font-weight: 700;
@@ -257,30 +270,30 @@ const PRINT_STYLES = `
     letter-spacing: 0.2em;
     text-decoration: underline;
     text-decoration-color: #1A73C7;
-    text-underline-offset: 4px;
+    text-underline-offset: 6px;
   }
   .tc-body {
-    margin-top: 6px;
+    margin-top: 40px;
     font-size: 14px;
-    line-height: 1.75;
+    line-height: 1.85;
     color: #1f2937;
   }
-  .tc-intro { margin: 0 0 3px; }
+  .tc-intro { margin: 0 0 20px; }
   .tc-details {
-    margin: 0 0 3px;
-    padding: 3px;
+    margin: 0 0 20px;
+    padding: 16px 20px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: rgba(249, 250, 251, 0.8);
   }
   .info-line {
-    margin: 0 0 1px;
+    margin: 0 0 6px;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.65;
   }
   .info-label { font-weight: 600; }
   .tc-footer {
-    margin-top: 10px;
+    margin-top: 64px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -290,7 +303,7 @@ const PRINT_STYLES = `
     font-size: 14px;
     color: #374151;
   }
-  .tc-footer-left p { margin: 0 0 1px; }
+  .tc-footer-left p { margin: 0 0 6px; }
   .tc-footer-right {
     display: flex;
     flex-direction: column;
@@ -325,8 +338,8 @@ const PRINT_STYLES = `
   }
   .student-photo {
     position: absolute;
-    right: 40px;
-    top: 144px;
+    right: 15mm;
+    top: 52mm;
     width: 80px;
     height: 96px;
     object-fit: cover;

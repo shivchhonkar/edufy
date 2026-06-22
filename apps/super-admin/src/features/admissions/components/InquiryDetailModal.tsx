@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import { FiX, FiUserPlus, FiTrash2 } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -9,6 +9,7 @@ import {
   SOURCE_LABELS,
   STATUS_COLORS,
   STATUS_LABELS,
+  PARENT_RELATION_LABELS,
   inquiryStudentName,
 } from '@/features/admissions/utils/inquiry-labels';
 
@@ -33,6 +34,7 @@ export interface Inquiry {
   student_last_name: string | null;
   date_of_birth: string | null;
   gender: string | null;
+  parent_relation?: 'father' | 'mother' | null;
   parent_name: string;
   parent_phone: string;
   parent_email: string | null;
@@ -223,7 +225,7 @@ export default function InquiryDetailModal({
   return (
     <>
       <AppModal open={isOpen} onClose={onClose}>
-        <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
+        <div className={APP_MODAL_PANEL}>
           <div className="flex items-center justify-between p-4 border-b">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -307,7 +309,20 @@ export default function InquiryDetailModal({
                     />
                   </div>
                   <div>
-                    <label className="text-gray-500 text-xs">Parent</label>
+                    <label className="text-gray-500 text-xs">Relation</label>
+                    <select
+                      value={inquiry.parent_relation || 'father'}
+                      onChange={(e) => updateField('parent_relation', e.target.value)}
+                      className="w-full border rounded px-2 py-1.5 mt-0.5"
+                    >
+                      <option value="father">Father</option>
+                      <option value="mother">Mother</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs">
+                      {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']}
+                    </label>
                     <p className="font-medium">{inquiry.parent_name}</p>
                     <p className="text-gray-600">{inquiry.parent_phone}</p>
                   </div>

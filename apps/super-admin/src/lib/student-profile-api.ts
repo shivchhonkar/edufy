@@ -149,6 +149,26 @@ export async function ensureDefaultStudentGuardians(
   );
 }
 
+/** Sync blood group from student personal info into the medical record. */
+export async function syncStudentMedicalBloodGroup(
+  db: RequestDb,
+  studentId: number,
+  bloodGroup: string | null | undefined,
+): Promise<void> {
+  if (bloodGroup === undefined) return;
+
+  const normalized = bloodGroup?.trim() || null;
+
+  await db.query(
+    `INSERT INTO student_medical_records (student_id, blood_group)
+     VALUES ($1, $2)
+     ON CONFLICT (student_id) DO UPDATE SET
+       blood_group = EXCLUDED.blood_group,
+       updated_at = CURRENT_TIMESTAMP`,
+    [studentId, normalized],
+  );
+}
+
 /** Keep current enrollment aligned when class/section is edited on the student record. */
 export async function syncCurrentEnrollmentFromStudent(
   db: RequestDb,

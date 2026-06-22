@@ -110,7 +110,7 @@ export default function ShiftsPage() {
         </div>
         <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
               <tr>
                 <th className="text-left px-5 py-3">Name</th>
                 <th className="text-left px-5 py-3">Start</th>
@@ -140,7 +140,7 @@ export default function ShiftsPage() {
         </div>
         {showShiftModal && (
           <AppModal open={showShiftModal} onClose={() => { setShowShiftModal(false); setEditingShift(null); }}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="font-bold">{editingShift ? 'Edit Shift' : 'Add Shift'}</h2>
               <input placeholder="Name" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               <div className="grid grid-cols-2 gap-2">
@@ -157,7 +157,7 @@ export default function ShiftsPage() {
         )}
         {showAssignModal && (
           <AppModal open={showAssignModal} onClose={() => setShowAssignModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="font-bold">Assign Shift</h2>
               <select value={assignForm.staff_id} onChange={(e) => setAssignForm({ ...assignForm, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Select staff</option>

@@ -89,8 +89,11 @@ export async function PUT(request: NextRequest) {
       send_notifications
     } = body;
 
-    // Check if settings exist
-    const existing = await db.query('SELECT id FROM system_settings LIMIT 1', []);
+    // Always read/update the latest settings row (matches GET).
+    const existing = await db.query(
+      'SELECT id FROM system_settings ORDER BY id DESC LIMIT 1',
+      [],
+    );
 
     let result;
     

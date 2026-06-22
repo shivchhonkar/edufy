@@ -486,7 +486,7 @@ export default function AddTransportAssignmentModal({
   return (
     <>
     <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div ref={modalContentRef} className={APP_MODAL_PANEL}>
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">
             {editingAssignment ? 'Edit Transport Assignment' : 'Assign Student to Transport'}
@@ -611,7 +611,7 @@ export default function AddTransportAssignmentModal({
                     {/* Dropdown with filtered students */}
                     {showStudentDropdown && (
                       <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-hidden">
-                        <div className="p-2 border-b bg-gray-50">
+                        <div className="p-2 border-b bg-gray-50 sticky top-0 z-10 shrink-0">
                           <div className="flex items-center justify-between gap-2">
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input
@@ -790,7 +790,7 @@ export default function AddTransportAssignmentModal({
                 {showRouteDropdown && filteredRoutes.length > 0 && (
                   <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-hidden">
                     {routeSearchInput && (
-                      <div className="px-3 py-2 border-b bg-gray-50">
+                      <div className="px-3 py-2 border-b bg-gray-50 sticky top-0 z-10 shrink-0">
                         <p className="text-xs text-gray-600">
                           {filteredRoutes.length} route{filteredRoutes.length !== 1 ? 's' : ''} found
                         </p>

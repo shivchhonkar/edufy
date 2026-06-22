@@ -88,7 +88,7 @@ export default function LeaveApplyModal({
 
   return (
     <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <div>
           <h2 className="text-lg font-bold text-gray-900">Apply Leave</h2>
           <p className="text-sm text-gray-500 mt-1">Submit a leave request on behalf of staff</p>
@@ -267,7 +267,7 @@ export function LeaveEditModal({
 
   return (
     <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <h2 className="text-lg font-bold text-gray-900">Edit Leave Request</h2>
         <p className="text-sm text-gray-500">
           {leave.first_name} {leave.last_name}

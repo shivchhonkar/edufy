@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -10,7 +10,13 @@ import {
   getDefaultAcademicYearConfig,
   formatAcademicYearDates,
 } from '@/lib/academic-year-utils';
-import { DEFAULT_REPORT_SETTINGS, mergeReportSettings, type ReportSettings } from '@/lib/report-settings';
+import {
+  DEFAULT_REPORT_SETTINGS,
+  buildFullSchoolAddress,
+  extractStreetFromSchoolAddress,
+  mergeReportSettings,
+  type ReportSettings,
+} from '@/lib/report-settings';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import {
   FiCheck,
@@ -304,7 +310,12 @@ export default function SetupWizardPage() {
         school_phone: s.school_phone || '',
         school_email: s.school_email || '',
         website: rs.website || '',
-        school_address: s.school_address || '',
+        school_address: extractStreetFromSchoolAddress(
+          s.school_address || '',
+          rs.city || '',
+          rs.state || '',
+          rs.pincode || '',
+        ),
         city: rs.city || '',
         state: rs.state || '',
         pincode: rs.pincode || '',
@@ -368,10 +379,12 @@ export default function SetupWizardPage() {
     setSaving(true);
     showMsg('');
 
-    const addressParts = [profile.school_address, profile.city, profile.state, profile.pincode]
-      .map((p) => p.trim())
-      .filter(Boolean);
-    const fullAddress = addressParts.join(', ');
+    const fullAddress = buildFullSchoolAddress({
+      street: profile.school_address,
+      city: profile.city,
+      state: profile.state,
+      pincode: profile.pincode,
+    });
 
     const [settingsRes, reportsRes] = await Promise.all([
       fetch('/api/settings', {
@@ -413,6 +426,19 @@ export default function SetupWizardPage() {
     const reportsData = await reportsRes.json();
 
     if (settingsData.success && reportsData.success) {
+      const rs = mergeReportSettings(reportsData.data);
+      setProfile((prev) => ({
+        ...prev,
+        school_address: extractStreetFromSchoolAddress(
+          settingsData.data.school_address || fullAddress,
+          rs.city || prev.city,
+          rs.state || prev.state,
+          rs.pincode || prev.pincode,
+        ),
+        city: rs.city || prev.city,
+        state: rs.state || prev.state,
+        pincode: rs.pincode || prev.pincode,
+      }));
       await completeStep('school_profile', 0);
       await refreshSettings();
       showMsg('School profile saved');
@@ -1621,7 +1647,7 @@ export default function SetupWizardPage() {
                   </div>
 
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-[1fr_auto_32px] gap-2 px-3 py-2 bg-gray-50 text-xs font-medium text-gray-600 border-b border-gray-200">
+                    <div className="grid grid-cols-[1fr_auto_32px] gap-2 px-3 py-2 bg-gray-50 text-xs font-medium text-gray-600 border-b border-gray-200 sticky top-0 z-10 shrink-0">
                       <span>Class name</span>
                       <span />
                       <span />
@@ -1985,7 +2011,7 @@ export default function SetupWizardPage() {
                     <div className="border border-gray-200 rounded-lg overflow-x-auto">
                       <table className="w-full text-xs min-w-[640px]">
                         <thead>
-                          <tr className="bg-gray-50 border-b border-gray-200">
+                          <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shrink-0">
                             <th className="text-left px-3 py-2 font-medium text-gray-600 sticky left-0 bg-gray-50">
                               Class
                             </th>
@@ -2060,7 +2086,7 @@ export default function SetupWizardPage() {
 
       {editingClass && (
         <AppModal open={!!editingClass} onClose={() => setEditingClass(null)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+          <div className={`${APP_MODAL_PANEL} p-6`}>
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit class</h3>
             <input
               value={editClassName}
@@ -2082,7 +2108,7 @@ export default function SetupWizardPage() {
 
       {editingSection && (
         <AppModal open={!!editingSection} onClose={() => setEditingSection(null)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+          <div className={`${APP_MODAL_PANEL} p-6`}>
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit section</h3>
             <input
               value={editSectionName}
@@ -2104,7 +2130,7 @@ export default function SetupWizardPage() {
 
       {editingYear && (
         <AppModal open={!!editingYear} onClose={() => setEditingYear(null)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+          <div className={`${APP_MODAL_PANEL} p-6`}>
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit academic year</h3>
             <div className="space-y-3">
               <div>

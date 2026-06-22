@@ -4,7 +4,7 @@ import { studentCountSearchSql, studentSearchSql } from '@/lib/student-search';
 import type { RequestDb } from '@/lib/request-db';
 import { Student } from '@/shared/types';
 import { generateAdmissionNumber, getPaginationParams } from '@/lib/utils';
-import { ensureDefaultStudentGuardians, ensureStudentMotherColumns } from '@/lib/student-profile-api';
+import { ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncStudentMedicalBloodGroup } from '@/lib/student-profile-api';
 
 // Helper function to assign default fees to a student (uses request-scoped db for multi-tenant)
 async function assignDefaultFeesToStudent(studentId: number, classId: number | null, db: RequestDb) {
@@ -334,6 +334,14 @@ export async function POST(request: NextRequest) {
       await ensureDefaultStudentGuardians(db, newStudent.id);
     } catch (guardianError) {
       console.error('Error syncing default guardians for new student:', guardianError);
+    }
+
+    if (blood_group) {
+      try {
+        await syncStudentMedicalBloodGroup(db, newStudent.id, blood_group);
+      } catch (medicalError) {
+        console.error('Error syncing medical blood group for new student:', medicalError);
+      }
     }
 
     return NextResponse.json({

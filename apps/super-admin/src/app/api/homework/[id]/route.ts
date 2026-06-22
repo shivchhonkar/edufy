@@ -1,5 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+
+async function fetchHomeworkSubmissions(db: Awaited<ReturnType<typeof getRequestDb>>['db'], homeworkId: string) {
+  try {
+    return await db.query(
+      `SELECT 
+        hs.*,
+        st.first_name,
+        st.last_name,
+        st.admission_number,
+        st.roll_number
+      FROM homework_submissions hs
+      JOIN students st ON hs.student_id = st.id
+      WHERE hs.homework_id = $1
+      ORDER BY hs.submitted_at DESC NULLS LAST, st.roll_number NULLS LAST`,
+      [homeworkId],
+    );
+  } catch {
+    return await db.query(
+      `SELECT 
+        hs.*,
+        hs.submission_date AS submitted_at,
+        hs.remarks AS feedback,
+        hs.submission_url AS submission_file,
+        st.first_name,
+        st.last_name,
+        st.admission_number,
+        st.roll_number
+      FROM homework_submissions hs
+      JOIN students st ON hs.student_id = st.id
+      WHERE hs.homework_id = $1
+      ORDER BY hs.submission_date DESC NULLS LAST, st.roll_number NULLS LAST`,
+      [homeworkId],
+    );
+  }
+}
+
 // GET - Fetch single homework with submissions
 export async function GET(
   request: NextRequest,
@@ -12,10 +48,12 @@ export async function GET(
       `SELECT 
         h.*,
         c.name as class_name,
+        sec.name as section_name,
         s.name as subject_name,
         u.full_name as assigned_by_name
       FROM homework h
       LEFT JOIN classes c ON h.class_id = c.id
+      LEFT JOIN sections sec ON h.section_id = sec.id
       LEFT JOIN subjects s ON h.subject_id = s.id
       LEFT JOIN users u ON h.assigned_by = u.id
       WHERE h.id = $1`,
@@ -29,20 +67,7 @@ export async function GET(
       );
     }
 
-    // Get submissions
-    const submissionsResult = await db.query(
-      `SELECT 
-        hs.*,
-        st.first_name,
-        st.last_name,
-        st.admission_number,
-        st.roll_number
-      FROM homework_submissions hs
-      JOIN students st ON hs.student_id = st.id
-      WHERE hs.homework_id = $1
-      ORDER BY hs.submitted_at DESC NULLS LAST, st.roll_number`,
-      [id]
-    );
+    const submissionsResult = await fetchHomeworkSubmissions(db, id);
 
     return NextResponse.json({
       success: true,
@@ -70,6 +95,9 @@ export async function PUT(
     const { id } = params;
     const body = await request.json();
     const {
+      class_id,
+      section_id,
+      subject_id,
       title,
       description,
       due_date,
@@ -80,16 +108,22 @@ export async function PUT(
 
     const result = await db.query(
       `UPDATE homework SET
-        title = COALESCE($1, title),
-        description = COALESCE($2, description),
-        due_date = COALESCE($3, due_date),
-        total_marks = COALESCE($4, total_marks),
-        attachments = COALESCE($5, attachments),
-        status = COALESCE($6, status),
+        class_id = COALESCE($1, class_id),
+        section_id = $2,
+        subject_id = COALESCE($3, subject_id),
+        title = COALESCE($4, title),
+        description = COALESCE($5, description),
+        due_date = COALESCE($6, due_date),
+        total_marks = COALESCE($7, total_marks),
+        attachments = COALESCE($8, attachments),
+        status = COALESCE($9, status),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
+      WHERE id = $10
       RETURNING *`,
       [
+        class_id ?? null,
+        section_id ?? null,
+        subject_id ?? null,
         title,
         description,
         due_date,

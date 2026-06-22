@@ -18,14 +18,31 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
-    const result = await db.query<StudentMedicalRecord>(
-      'SELECT * FROM student_medical_records WHERE student_id = $1',
+    const result = await db.query<
+      StudentMedicalRecord & { student_blood_group: string | null }
+    >(
+      `SELECT smr.*, s.blood_group AS student_blood_group
+       FROM students s
+       LEFT JOIN student_medical_records smr ON smr.student_id = s.id
+       WHERE s.id = $1`,
       [studentId]
     );
 
+    const row = result.rows[0];
+    const medicalRecord = row
+      ? {
+          ...row,
+          blood_group: row.blood_group || row.student_blood_group || null,
+        }
+      : null;
+
+    if (medicalRecord && 'student_blood_group' in medicalRecord) {
+      delete (medicalRecord as { student_blood_group?: string | null }).student_blood_group;
+    }
+
     return NextResponse.json({
       success: true,
-      data: result.rows[0] ?? null,
+      data: medicalRecord,
     });
   } catch (error) {
     console.error('Error fetching student medical record:', error);
@@ -92,10 +109,10 @@ export async function PUT(
       ]
     );
 
-    if (blood_group) {
+    if (Object.prototype.hasOwnProperty.call(body, 'blood_group')) {
       await db.query(
         'UPDATE students SET blood_group = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [blood_group, studentId]
+        [blood_group ?? null, studentId]
       );
     }
 

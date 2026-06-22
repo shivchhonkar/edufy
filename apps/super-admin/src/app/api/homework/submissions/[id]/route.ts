@@ -8,6 +8,7 @@ export async function PUT(
   try {
     const { db } = await getRequestDb(request);
     const { id } = params;
+    const body = await request.json();
     const {
       submission_text,
       submission_file,

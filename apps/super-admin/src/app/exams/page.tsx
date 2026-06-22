@@ -6,6 +6,7 @@ import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
 import UploadResultsModal from './UploadResultsModal';
 import ContentAreaModal from '@/shared/components/common/ContentAreaModal';
+import { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import PublishWorkflow from '@/features/exams/components/publish-workflow';
 import WorkflowBadge from '@/features/exams/components/workflow-badge';
 import ResultCompilationCard from '@/features/exams/components/result-compilation-card';
@@ -806,7 +807,7 @@ export default function ExamsPage() {
                 id="class-filter"
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm min-w-[150px]"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm min-w-[150px] sticky top-0 z-10 shrink-0"
               >
                 <option value="all">All Classes</option>
                 {classes.map((cls) => (
@@ -978,7 +979,7 @@ export default function ExamsPage() {
             setEditingExam(null);
           }}
         >
-          <div className="flex flex-col h-full w-full bg-white shadow-2xl">
+          <div className={APP_MODAL_PANEL}>
             <div className="p-4 sm:p-6 border-b flex justify-between items-center shrink-0">
               <h3 className="text-xl ">
                 {editingExam ? 'Edit Exam' : 'Create New Exam'}
@@ -1137,7 +1138,7 @@ export default function ExamsPage() {
                   {!examForm.use_same_marks && examForm.subject_ids.length > 0 && (
                     <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
                           <tr>
                             <th className="text-left px-4 py-2 font-medium text-gray-700">Subject</th>
                             <th className="text-left px-4 py-2 font-medium text-gray-700">Total Marks</th>
@@ -1191,7 +1192,7 @@ export default function ExamsPage() {
                   )}
                 </div>
             </div>
-            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0">
+            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0 sticky bottom-0 z-10 shrink-0 bg-white">
               <button
                 onClick={() => {
                   setShowExamModal(false);
@@ -1221,7 +1222,7 @@ export default function ExamsPage() {
           }}
         >
           {viewingExam && (
-          <div className="flex flex-col h-full w-full bg-white shadow-2xl">
+          <div className={APP_MODAL_PANEL}>
             <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
                 <div>
                   <h3 className="text-xl text-gray-900">{viewingExam.name}</h3>
@@ -1317,7 +1318,7 @@ export default function ExamsPage() {
                 </div>
             </div>
 
-            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0">
+            <div className="p-4 sm:p-6 border-t flex justify-end gap-3 shrink-0 sticky bottom-0 z-10 shrink-0 bg-white">
               <button
                 onClick={() => {
                   setShowViewModal(false);

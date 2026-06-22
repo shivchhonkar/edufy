@@ -97,6 +97,43 @@ export function mergeReportSettings(raw: unknown): ReportSettings {
   };
 }
 
+/** Join street + city + state + pincode for documents and system_settings.school_address. */
+export function buildFullSchoolAddress(parts: {
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}): string {
+  return [parts.street, parts.city, parts.state, parts.pincode]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
+/** Split combined DB address back into street-only for setup form fields. */
+export function extractStreetFromSchoolAddress(
+  combined: string,
+  city: string,
+  state: string,
+  pincode: string,
+): string {
+  const trimmed = combined.trim();
+  if (!trimmed) return '';
+
+  const tailParts = [city, state, pincode].map((part) => part.trim()).filter(Boolean);
+  if (tailParts.length === 0) return trimmed;
+
+  for (let i = tailParts.length; i >= 1; i -= 1) {
+    const suffix = tailParts.slice(-i).join(', ');
+    if (trimmed.endsWith(suffix)) {
+      const street = trimmed.slice(0, -suffix.length).replace(/,\s*$/, '').trim();
+      if (street) return street;
+    }
+  }
+
+  return trimmed;
+}
+
 export const REPORT_SETTINGS_MIGRATION_SQL = `
 ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS report_settings JSONB DEFAULT '{}'::jsonb;
 `;

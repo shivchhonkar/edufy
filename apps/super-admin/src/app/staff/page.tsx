@@ -1,22 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FiPlus, FiSearch, FiUpload } from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import AddStaffModal from '@/features/staff/components/AddStaffModal';
 import ViewStaffModal from '@/features/staff/components/ViewStaffModal';
+import StaffIdCardModal from '@/features/staff/components/StaffIdCardModal';
 import VirtualizedStaffTable, {
   type StaffListItem,
 } from '@/features/staff/components/VirtualizedStaffTable';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import { useDialog } from '@/shared/context/DialogContext';
+import { useSettings } from '@/shared/SettingsContext';
 import { Staff } from '@/shared/types';
+
+type StaffViewTab = 'profile' | 'teaching' | 'attendance' | 'documents';
 
 const STAFF_FETCH_LIMIT = 5000;
 
 export default function StaffPage() {
   const { alert } = useDialog();
+  const { settings } = useSettings();
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [totalStaff, setTotalStaff] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -26,6 +31,13 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
   const [viewingStaff, setViewingStaff] = useState<Staff | null>(null);
+  const [viewingStaffTab, setViewingStaffTab] = useState<StaffViewTab>('profile');
+  const [idCardStaff, setIdCardStaff] = useState<StaffListItem | null>(null);
+  const [reportSettings, setReportSettings] = useState<{
+    counsellor_name?: string;
+    counsellor_signature_url?: string;
+    website?: string;
+  }>({});
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
@@ -41,6 +53,31 @@ export default function StaffPage() {
   useEffect(() => {
     fetchStaff();
   }, [search, statusFilter, isSuperAdmin]);
+
+  useEffect(() => {
+    fetch('/api/settings/reports')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setReportSettings(d.data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const staffIdCardSchoolInfo = useMemo(
+    () => ({
+      name: settings.school_name || 'School',
+      logoUrl: settings.logo_url || undefined,
+      phone: settings.school_phone || undefined,
+      address: settings.school_address || undefined,
+      website: reportSettings.website || undefined,
+      academicYear: settings.academic_year
+        ? `Academic Year ${settings.academic_year}`
+        : undefined,
+      principalName: reportSettings.counsellor_name || undefined,
+      signatureUrl: reportSettings.counsellor_signature_url || undefined,
+    }),
+    [settings, reportSettings],
+  );
 
   const fetchStaff = async () => {
     setLoading(true);
@@ -71,6 +108,21 @@ export default function StaffPage() {
   };
 
   const handleView = (member: Staff) => {
+    setViewingStaffTab('profile');
+    setViewingStaff(member);
+  };
+
+  const handleGenerateId = (member: StaffListItem) => {
+    setIdCardStaff(member);
+  };
+
+  const handleViewAttendance = (member: StaffListItem) => {
+    setViewingStaffTab('attendance');
+    setViewingStaff(member);
+  };
+
+  const handleViewActivity = (member: StaffListItem) => {
+    setViewingStaffTab('teaching');
     setViewingStaff(member);
   };
 
@@ -192,6 +244,9 @@ export default function StaffPage() {
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
+              onGenerateId={handleGenerateId}
+              onViewAttendance={handleViewAttendance}
+              onViewActivity={handleViewActivity}
             />
           )}
 
@@ -225,7 +280,15 @@ export default function StaffPage() {
           isOpen={!!viewingStaff}
           onClose={() => setViewingStaff(null)}
           staff={viewingStaff}
+          initialTab={viewingStaffTab}
           onEdit={handleEditFromView}
+        />
+
+        <StaffIdCardModal
+          isOpen={!!idCardStaff}
+          onClose={() => setIdCardStaff(null)}
+          staff={idCardStaff}
+          school={staffIdCardSchoolInfo}
         />
 
         {/* Delete Confirmation Dialog */}

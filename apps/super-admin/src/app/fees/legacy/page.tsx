@@ -1181,7 +1181,7 @@ function FeesPageContent() {
       {/* Clear All Payments Confirmation Dialog */}
       {showClearConfirm && (
         <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                 <FiAlertCircle className="w-6 h-6 text-red-600" />
@@ -1262,7 +1262,7 @@ function FeesPageContent() {
       {/* Assign Fees Confirmation Dialog */}
       {showAssignFees && (
         <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                 <FiUserCheck className="w-6 h-6 text-green-600" />
@@ -1319,7 +1319,7 @@ function FeesPageContent() {
       {/* Delete Fee Structure Confirmation Dialog */}
       {showDeleteConfirm && feeToDelete && (
         <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                 <FiTrash2 className="w-6 h-6 text-red-600" />
@@ -1391,7 +1391,7 @@ function FeesPageContent() {
       {/* Fix Missing Fees Confirmation Dialog */}
       {showAssignMissing && (
         <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
                 <FiUserCheck className="w-6 h-6 text-orange-600" />

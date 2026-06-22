@@ -57,7 +57,7 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-gray-50 shadow-2xl w-full h-full overflow-y-auto min-h-0 min-w-0 flex flex-col">
+      <div className={APP_MODAL_PANEL}>
         {/* Header */}
         <div className="px-4 py-2 sm:px-6 sm:py-3 bg-white border-b flex justify-between items-center sticky top-0 z-10">
           <div>

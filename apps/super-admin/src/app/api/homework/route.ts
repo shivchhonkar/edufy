@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { db } = await getRequestDb(request);
     const searchParams = request.nextUrl.searchParams;
     const classId = searchParams.get('class_id');
+    const sectionId = searchParams.get('section_id');
     const subjectId = searchParams.get('subject_id');
     const status = searchParams.get('status');
     const search = searchParams.get('search');
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         h.*,
         c.name as class_name,
+        sec.name as section_name,
         s.name as subject_name,
         u.full_name as assigned_by_name,
         (
@@ -33,6 +35,7 @@ export async function GET(request: NextRequest) {
         ) as graded_count
       FROM homework h
       LEFT JOIN classes c ON h.class_id = c.id
+      LEFT JOIN sections sec ON h.section_id = sec.id
       LEFT JOIN subjects s ON h.subject_id = s.id
       LEFT JOIN users u ON h.assigned_by = u.id
       WHERE 1=1
@@ -45,6 +48,12 @@ export async function GET(request: NextRequest) {
       paramCount++;
       queryText += ` AND h.class_id = $${paramCount}`;
       queryParams.push(classId);
+    }
+
+    if (sectionId) {
+      paramCount++;
+      queryText += ` AND h.section_id = $${paramCount}`;
+      queryParams.push(sectionId);
     }
 
     if (subjectId) {
@@ -92,6 +101,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       class_id,
+      section_id,
       subject_id,
       title,
       description,
@@ -113,12 +123,13 @@ export async function POST(request: NextRequest) {
     // Create homework (with minimal required fields + assigned_date)
     const result = await db.query(
       `INSERT INTO homework (
-        class_id, subject_id, title, description, due_date, 
+        class_id, section_id, subject_id, title, description, due_date, 
         total_marks, assigned_by, assigned_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         class_id,
+        section_id || null,
         subject_id,
         title,
         description,
@@ -155,10 +166,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create submissions for all students in the class
-    const studentsResult = await db.query(
-      'SELECT id FROM students WHERE class_id = $1 AND status = $2',
-      [class_id, 'active']
-    );
+    const studentsResult = section_id
+      ? await db.query(
+          'SELECT id FROM students WHERE class_id = $1 AND section_id = $2 AND status = $3',
+          [class_id, section_id, 'active'],
+        )
+      : await db.query(
+          'SELECT id FROM students WHERE class_id = $1 AND status = $2',
+          [class_id, 'active'],
+        );
     
     for (const student of studentsResult.rows) {
       await db.query(

@@ -1,8 +1,6 @@
 import type { Student } from '@/shared/types';
-import type {
-  TransferCertificateOptions,
-  TransferCertificateSchoolInfo,
-} from '@/features/students/components/TransferCertificate';
+import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
+import { formatAcademicYearLabel } from '@/features/students/utils/school-document-utils';
 import { studentFullName } from '@/features/students/utils/student-profile';
 
 export interface TransferCertificateStudentSnapshot {
@@ -106,6 +104,51 @@ export function parseSchoolSnapshot(
     email: s.email,
     principalName: s.principalName,
     signatureUrl: s.signatureUrl,
+  };
+}
+
+export function buildTransferCertificateSchoolInfo(
+  settings: {
+    school_name?: string;
+    school_address?: string;
+    school_phone?: string;
+    school_email?: string;
+    academic_year?: string;
+    logo_url?: string;
+  },
+  reportSettings?: {
+    counsellor_name?: string;
+    counsellor_signature_url?: string;
+    logo_url?: string;
+  },
+): TransferCertificateSchoolInfo {
+  return {
+    name: settings.school_name?.trim() || 'School',
+    address: settings.school_address?.trim() || undefined,
+    logoUrl: reportSettings?.logo_url || settings.logo_url || undefined,
+    academicYear: formatAcademicYearLabel(settings.academic_year),
+    phone: settings.school_phone?.trim() || undefined,
+    email: settings.school_email?.trim() || undefined,
+    principalName: reportSettings?.counsellor_name?.trim() || undefined,
+    signatureUrl: reportSettings?.counsellor_signature_url?.trim() || undefined,
+  };
+}
+
+/** Apply current school settings for letterhead; ignore stale saved snapshot branding. */
+export function enrichSchoolSnapshot(
+  snapshot: TransferCertificateSchoolInfo,
+  fallback?: TransferCertificateSchoolInfo,
+): TransferCertificateSchoolInfo {
+  if (!fallback) return snapshot;
+  return {
+    name: fallback.name || snapshot.name?.trim() || 'School',
+    address: fallback.address || snapshot.address?.trim() || undefined,
+    logoUrl: fallback.logoUrl || snapshot.logoUrl,
+    academicYear: fallback.academicYear || snapshot.academicYear,
+    phone: fallback.phone || snapshot.phone,
+    email: fallback.email || snapshot.email,
+    principalName: fallback.principalName || snapshot.principalName,
+    signatureUrl: fallback.signatureUrl || snapshot.signatureUrl,
   };
 }
 

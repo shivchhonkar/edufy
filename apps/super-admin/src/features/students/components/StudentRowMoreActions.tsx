@@ -112,7 +112,7 @@ export default function StudentRowMoreActions({ student }: StudentRowMoreActions
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+        className="inline-flex shrink-0 items-center justify-center p-1 text-gray-500 hover:text-gray-700"
         title="More actions"
         aria-label="More actions"
         aria-haspopup="menu"

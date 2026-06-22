@@ -1,7 +1,7 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
-import { useState, useEffect, useRef } from 'react';
+import AppModal, { APP_MODAL_PANEL_STRUCTURED, APP_MODAL_HEADER, APP_MODAL_BODY, APP_MODAL_FOOTER, APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useState, useEffect } from 'react';
 import { FiX, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { Route } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -22,10 +22,6 @@ interface Stop {
 }
 
 export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute }: AddRouteModalProps) {
-  // Get sidebar collapsed state from localStorage
-
-  const modalContentRef = useRef<HTMLDivElement>(null);
-
   const [formData, setFormData] = useState({
     route_name: '',
     route_number: '',
@@ -177,8 +173,8 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
   return (
     <>
     <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
-        <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={`${APP_MODAL_HEADER} px-4 sm:px-6 py-3`}>
           <h2 className="text-lg sm:text-xl text-gray-900">
             {editingRoute ? 'Edit Route' : 'Add New Route'}
           </h2>
@@ -186,12 +182,14 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
             onClick={handleCancel}
             className="text-gray-400 hover:text-gray-600 transition-colors p-1"
             type="button"
+            aria-label="Close"
           >
             <FiX size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className={`${APP_MODAL_BODY} p-4 sm:p-6 space-y-6`}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -417,8 +415,9 @@ export default function AddRouteModal({ isOpen, onClose, onSuccess, editingRoute
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="sticky bottom-0 bg-white border-t pt-4 pb-2 flex justify-end space-x-3">
+          </div>
+
+          <div className={`${APP_MODAL_FOOTER} px-4 sm:px-6`}>
             <button
               type="button"
               onClick={handleCancel}

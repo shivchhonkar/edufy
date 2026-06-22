@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { IconType } from 'react-icons';
@@ -1089,7 +1089,7 @@ function SettingsPageContent() {
                 setYearToEdit(null);
               }}
             >
-              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+              <div className={`${APP_MODAL_PANEL} p-6`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={SET_H3}>Edit Academic Year</h3>
                   <button
@@ -1166,7 +1166,7 @@ function SettingsPageContent() {
                 setYearToDelete(null);
               }}
             >
-              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+              <div className={`${APP_MODAL_PANEL} p-6`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <FiAlertCircle className="w-6 h-6 text-red-600" />
@@ -1316,7 +1316,7 @@ function SettingsPageContent() {
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shrink-0">
                       <tr>
                         <th className={SET_TABLE_HEAD}>
                           User
@@ -1501,7 +1501,7 @@ function SettingsPageContent() {
                 setNewPassword('');
               }}
             >
-              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+              <div className={`${APP_MODAL_PANEL} p-6`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={SET_H3}>Reset Password</h3>
               <button
@@ -1620,7 +1620,7 @@ function SettingsPageContent() {
                 });
               }}
             >
-              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 overflow-y-auto">
+              <div className={`${APP_MODAL_PANEL} p-6`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={SET_H3}>
                     {editingUser ? 'Edit User' : 'Create New User'}
@@ -1794,7 +1794,7 @@ function SettingsPageContent() {
                 setUserToDelete(null);
               }}
             >
-              <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6">
+              <div className={`${APP_MODAL_PANEL} p-6`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <FiAlertCircle className="w-6 h-6 text-red-600" />

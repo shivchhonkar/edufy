@@ -178,7 +178,7 @@ export default function AssignVehicleToRouteModal({
   return (
     <>
     <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div ref={modalContentRef} className={APP_MODAL_PANEL}>
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">
             {editingAssignment ? 'Edit Vehicle Assignment' : 'Assign Vehicle to Route'}

@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -1298,7 +1298,7 @@ function GatePassPageContent() {
 
       {selectedRecord && (
         <AppModal open={!!selectedRecord} onClose={() => setSelectedRecord(null)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-slate-100 shadow-xl overflow-y-auto">
+          <div className={APP_MODAL_PANEL}>
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-slate-100/95 backdrop-blur border-b border-slate-200 px-4 py-3">
               <p className="text-sm font-medium text-slate-700">
                 Gate Pass
@@ -1346,7 +1346,7 @@ function GatePassPageContent() {
 
       {editingRecord && (
         <AppModal open={!!editingRecord} onClose={closeEditRecord}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-y-auto">
+          <div className={APP_MODAL_PANEL}>
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-4 py-3 bg-white">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Edit Gate Pass</p>

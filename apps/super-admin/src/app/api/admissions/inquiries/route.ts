@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { ensureAdmissionInquirySchema } from '@/lib/ensure-admission-inquiry-schema';
 import {
   generateInquiryNumber,
   INQUIRY_FROM_JOIN,
   INQUIRY_SELECT,
   isValidInquirySource,
   isValidInquiryStatus,
+  isValidParentRelation,
   logInquiryActivity,
 } from '@/lib/admission-inquiry-api';
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureAdmissionInquirySchema(db);
     const status = request.nextUrl.searchParams.get('status');
     const search = request.nextUrl.searchParams.get('search') || '';
     const priority = request.nextUrl.searchParams.get('priority');
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureAdmissionInquirySchema(db);
     const body = await request.json();
 
     const {
@@ -73,6 +77,7 @@ export async function POST(request: NextRequest) {
       student_last_name,
       date_of_birth,
       gender,
+      parent_relation = 'father',
       parent_name,
       parent_phone,
       parent_email,
@@ -100,6 +105,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid source' }, { status: 400 });
     }
 
+    if (parent_relation && !isValidParentRelation(parent_relation)) {
+      return NextResponse.json(
+        { success: false, error: 'parent_relation must be father or mother' },
+        { status: 400 },
+      );
+    }
+
     const initialStatus = status && isValidInquiryStatus(status) ? status : 'new';
 
     const inquiryNumber = generateInquiryNumber();
@@ -107,9 +119,9 @@ export async function POST(request: NextRequest) {
     const result = await db.query(
       `INSERT INTO admission_inquiries (
         inquiry_number, student_first_name, student_last_name, date_of_birth, gender,
-        parent_name, parent_phone, parent_email, address, city, state, pincode,
+        parent_relation, parent_name, parent_phone, parent_email, address, city, state, pincode,
         interested_class_id, academic_year, source, status, priority, follow_up_date, remarks
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
       RETURNING *`,
       [
         inquiryNumber,
@@ -117,6 +129,7 @@ export async function POST(request: NextRequest) {
         student_last_name?.trim() || null,
         date_of_birth || null,
         gender || null,
+        parent_relation,
         parent_name.trim(),
         parent_phone.trim(),
         parent_email?.trim() || null,

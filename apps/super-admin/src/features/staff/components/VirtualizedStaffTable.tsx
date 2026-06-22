@@ -6,6 +6,7 @@ import VirtualizedTable, {
   type VirtualizedTableColumn,
 } from '@/shared/components/common/VirtualizedTable';
 import { Staff } from '@/shared/types';
+import StaffRowMoreActions from './StaffRowMoreActions';
 
 export type StaffListItem = Staff & {
   department_name?: string | null;
@@ -37,6 +38,9 @@ interface VirtualizedStaffTableProps {
   onView: (member: Staff) => void;
   onEdit: (member: Staff) => void;
   onDelete: (member: Staff) => void;
+  onGenerateId: (member: StaffListItem) => void;
+  onViewAttendance: (member: StaffListItem) => void;
+  onViewActivity: (member: StaffListItem) => void;
 }
 
 export default function VirtualizedStaffTable({
@@ -44,6 +48,9 @@ export default function VirtualizedStaffTable({
   onView,
   onEdit,
   onDelete,
+  onGenerateId,
+  onViewAttendance,
+  onViewActivity,
 }: VirtualizedStaffTableProps) {
   const rows = useMemo<StaffRow[]>(
     () => staff.map((member, index) => ({ ...member, srNo: index + 1 })),
@@ -54,7 +61,7 @@ export default function VirtualizedStaffTable({
     () => [
       {
         key: 'srNo',
-        header: 'S.R. No',
+        header: 'S.R.',
         width: '4.5rem',
         headerClassName: 'text-left whitespace-nowrap',
         cellClassName: 'text-left',
@@ -139,7 +146,7 @@ export default function VirtualizedStaffTable({
       {
         key: 'actions',
         header: 'Actions',
-        width: '7rem',
+        width: '9rem',
         headerClassName: 'text-right whitespace-nowrap',
         cellClassName: 'justify-end',
         render: (member) => (
@@ -168,11 +175,17 @@ export default function VirtualizedStaffTable({
             >
               <FiTrash2 size={16} />
             </button>
+            <StaffRowMoreActions
+              staff={member}
+              onGenerateId={onGenerateId}
+              onViewAttendance={onViewAttendance}
+              onViewActivity={onViewActivity}
+            />
           </div>
         ),
       },
     ],
-    [onView, onEdit, onDelete],
+    [onView, onEdit, onDelete, onGenerateId, onViewAttendance, onViewActivity],
   );
 
   return (

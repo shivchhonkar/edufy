@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import AppLogo from '@/shared/components/common/AppLogo';
 import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/constants/sidebar';
 import { useSettings } from '@/shared/SettingsContext';
@@ -63,13 +63,20 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
     window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: isCollapsed }));
   }, [isCollapsed, onToggle]);
 
-  const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem('sidebarCollapsed', String(newState));
-    window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: newState }));
-    onToggle?.(newState);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsCollapsed((prev) => {
+      const newState = !prev;
+      localStorage.setItem('sidebarCollapsed', String(newState));
+      window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: newState }));
+      onToggle?.(newState);
+      return newState;
+    });
+  }, [onToggle]);
+
+  useEffect(() => {
+    window.addEventListener('sidebar-toggle-request', toggleSidebar);
+    return () => window.removeEventListener('sidebar-toggle-request', toggleSidebar);
+  }, [toggleSidebar]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -94,7 +101,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
             <Link
               href="/dashboard"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/40"
-              title={schoolName}
+              title={schoolName.length > 10 ? `${schoolName.slice(0, 10)}...` : schoolName}
             >
               <AppLogo variant="sidebar-collapsed" src={schoolLogo} alt={schoolName} />
             </Link>
@@ -107,35 +114,26 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
             </button>
           </div>
         ) : (
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-start justify-between gap-2">
             <Link
               href="/dashboard"
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 -m-1.5 transition-colors hover:bg-white/80"
+              className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden rounded-xl p-1.5 -m-1.5 transition-colors hover:bg-white/80"
               title={schoolName}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm">
                 <AppLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p
-                  className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2"
+                  className="truncate text-sm font-semibold leading-snug text-gray-900"
                   title={schoolName}
                 >
-                  {schoolName}
+                  {schoolName.length > 60 ? `${schoolName.slice(0, 60)}...` : schoolName}
                 </p>
               </div>
             </Link>
-            <button
-              onClick={toggleSidebar}
-              className="hidden lg:flex relative mt-0.5 p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300 group flex-shrink-0"
-              title="Collapse Menu"
-            >
-              <FiChevronsLeft size={18} className="text-gray-500" />
-            </button>
           </div>
         )}
-      </div>
-
       <nav className="mt-1 pb-6">
         {SIDEBAR_NAV_GROUPS.map((group) => {
           const Icon = group.icon;
@@ -297,6 +295,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
           );
         })}
       </nav>
+    </div>
     </div>
   );
 }

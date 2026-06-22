@@ -410,7 +410,7 @@ export default function CircularsTab({ classes }: CircularsTabProps) {
 
       {showForm && (
         <AppModal open={showForm} onClose={() => setShowForm(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="font-semibold text-gray-900">
                 {editing ? 'Edit Circular' : 'New Circular'}
@@ -574,7 +574,7 @@ export default function CircularsTab({ classes }: CircularsTabProps) {
 
       {showView && (
         <AppModal open={Boolean(showView)} onClose={() => setShowView(null)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="font-semibold text-gray-900">{showView.title}</h2>
               <button type="button" onClick={() => setShowView(null)} className="text-gray-500">

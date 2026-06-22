@@ -8,6 +8,7 @@ import VirtualizedStudentSelectTable from '@/features/students/components/Virtua
 import { usePreselectStudentIdsFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
 import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
 import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
+import { buildTransferCertificateSchoolInfo } from '@/features/students/utils/transfer-certificate-record';
 import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
 import type { Student } from '@/shared/types';
@@ -78,19 +79,8 @@ function GenerateTransferCertificatePageContent() {
   }, []);
 
   const tcSchoolInfo: TransferCertificateSchoolInfo = useMemo(
-    () => ({
-      name: settings.school_name || 'School',
-      address: settings.school_address || undefined,
-      logoUrl: settings.logo_url || undefined,
-      academicYear: settings.academic_year
-        ? `Academic Year ${settings.academic_year}`
-        : undefined,
-      phone: settings.school_phone || undefined,
-      email: settings.school_email || undefined,
-      principalName: reportSettings.counsellor_name || undefined,
-      signatureUrl: reportSettings.counsellor_signature_url || undefined,
-    }),
-    [settings, reportSettings]
+    () => buildTransferCertificateSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
   );
 
   const selectedStudents = useMemo(

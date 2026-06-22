@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import React, { useState, useEffect } from 'react';
 import { FiX, FiPlus, FiEdit, FiTrash2, FiRefreshCw, FiActivity, FiMapPin, FiMonitor } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -211,7 +211,7 @@ export default function PunchMachineModal({ isOpen, onClose }: PunchMachineModal
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
+      <div className={APP_MODAL_PANEL}>
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl  text-gray-900">Punch Machine Management</h2>
           <button

@@ -1,6 +1,11 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, {
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+  APP_MODAL_FOOTER,
+} from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { getCalendarDateString } from '@edulakhya/utils';
@@ -172,8 +177,8 @@ export default function AddCalendarEventModal({
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
+      <div className={APP_MODAL_PANEL_STRUCTURED}>
+        <div className={APP_MODAL_HEADER}>
           <h2 className="text-xl text-gray-900">
             {isEditing ? 'Edit Calendar Entry' : 'Add Calendar Entry'}
           </h2>
@@ -186,7 +191,8 @@ export default function AddCalendarEventModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className={`${APP_MODAL_BODY} p-6 space-y-5`}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -406,7 +412,9 @@ export default function AddCalendarEventModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          </div>
+
+          <div className={`${APP_MODAL_FOOTER} gap-3`}>
             <button
               type="submit"
               disabled={submitting}

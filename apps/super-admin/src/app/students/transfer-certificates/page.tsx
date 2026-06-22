@@ -1,14 +1,14 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
-import { useCallback, useEffect, useState } from 'react';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import TransferCertificate from '@/features/students/components/TransferCertificate';
 import type { TransferCertificateGeneration } from '@/shared/types';
 import {
+  buildTransferCertificateSchoolInfo,
   parseOptionsSnapshot,
-  parseSchoolSnapshot,
   parseStudentSnapshot,
   snapshotToStudent,
 } from '@/features/students/utils/transfer-certificate-record';
@@ -16,6 +16,7 @@ import { printTransferCertificatesViaIframe } from '@/features/students/utils/tr
 import { formatDateTime } from '@/lib/dashboard-time';
 import { formatStudentDate } from '@/features/students/utils/student-profile';
 import { useDialog } from '@/shared/context/DialogContext';
+import { useSettings } from '@/shared/SettingsContext';
 import {
   FiArrowLeft,
   FiChevronLeft,
@@ -37,6 +38,12 @@ interface HistoryResponse {
 
 export default function TransferCertificatesHistoryPage() {
   const { alert } = useDialog();
+  const { settings } = useSettings();
+  const [reportSettings, setReportSettings] = useState<{
+    counsellor_name?: string;
+    counsellor_signature_url?: string;
+    logo_url?: string;
+  }>({});
   const [items, setItems] = useState<TransferCertificateGeneration[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -47,6 +54,20 @@ export default function TransferCertificatesHistoryPage() {
   const [toDate, setToDate] = useState('');
   const [selected, setSelected] = useState<TransferCertificateGeneration | null>(null);
   const limit = 25;
+
+  useEffect(() => {
+    fetch('/api/settings/reports')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setReportSettings(d.data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const currentSchoolInfo = useMemo(
+    () => buildTransferCertificateSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
+  );
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -91,11 +112,10 @@ export default function TransferCertificatesHistoryPage() {
 
   const handleReprint = async (record: TransferCertificateGeneration) => {
     const studentSnapshot = parseStudentSnapshot(record.student_snapshot);
-    const school = parseSchoolSnapshot(record.school_snapshot);
     const options = parseOptionsSnapshot(record.options);
     const student = snapshotToStudent(studentSnapshot);
 
-    printTransferCertificatesViaIframe([student], school, { [student.id]: options });
+    printTransferCertificatesViaIframe([student], currentSchoolInfo, { [student.id]: options });
   };
 
   const openDetail = async (record: TransferCertificateGeneration) => {
@@ -347,7 +367,7 @@ export default function TransferCertificatesHistoryPage() {
 
       {selected && (
         <AppModal open={!!selected} onClose={() => setSelected(null)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
+          <div className={APP_MODAL_PANEL}>
             <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">Transfer Certificate Record</h2>
@@ -398,7 +418,7 @@ export default function TransferCertificatesHistoryPage() {
               <div className="overflow-x-auto rounded border bg-white">
                 <TransferCertificate
                   student={snapshotToStudent(parseStudentSnapshot(selected.student_snapshot))}
-                  school={parseSchoolSnapshot(selected.school_snapshot)}
+                  school={currentSchoolInfo}
                   options={parseOptionsSnapshot(selected.options)}
                 />
               </div>

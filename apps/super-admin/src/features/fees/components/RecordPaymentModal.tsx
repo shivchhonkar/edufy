@@ -1,6 +1,11 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, {
+  APP_MODAL_PANEL,
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+} from '@/shared/components/common/AppModal';
 import { useState, useEffect, useRef } from 'react';
 import { FiX, FiCheckCircle, FiCalendar, FiTruck } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
@@ -625,9 +630,9 @@ export default function RecordPaymentModal({
   return (
     <>
       <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="bg-white shadow-2xl w-full h-full flex flex-col">
+      <div ref={modalContentRef} className={APP_MODAL_PANEL_STRUCTURED}>
           {/* Fixed Header */}
-          <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white flex-shrink-0">
+          <div className={`${APP_MODAL_HEADER} px-4 py-2 sm:px-6 sm:py-3`}>
             <h2 className="text-xl text-gray-900">Record Payment</h2>
             <button
               onClick={handleCancel}
@@ -638,7 +643,7 @@ export default function RecordPaymentModal({
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className={APP_MODAL_BODY}>
             <form id="payment-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -1103,7 +1108,7 @@ export default function RecordPaymentModal({
       {/* Success Dialog */}
       {showSuccessDialog && savedPayment && (
         <AppModal open onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                 <FiCheckCircle className="h-10 w-10 text-green-600" />

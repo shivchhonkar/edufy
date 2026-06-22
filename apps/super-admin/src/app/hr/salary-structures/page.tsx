@@ -98,7 +98,7 @@ export default function SalaryStructuresPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="font-bold text-lg">Create Salary Structure</h2>
               <input placeholder="Structure name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               <select value={form.designation_id} onChange={(e) => setForm({ ...form, designation_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">

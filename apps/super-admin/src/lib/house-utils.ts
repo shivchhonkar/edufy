@@ -13,10 +13,22 @@ export interface SchoolHouse {
   updated_at?: string;
 }
 
+async function getActiveAcademicYear(db: RequestDb) {
+  const ayResult = await db.query<{ id: number; name: string }>(
+    'SELECT id, name FROM academic_years WHERE is_active = true LIMIT 1',
+  );
+  return {
+    academicYearId: ayResult.rows[0]?.id ?? null,
+    academicYear:
+      ayResult.rows[0]?.name ||
+      `${new Date().getFullYear()}-${String(new Date().getFullYear() + 1).slice(-2)}`,
+  };
+}
+
 export async function assignStudentsToHouse(
   db: RequestDb,
   studentIds: number[],
-  houseId: number | null
+  houseId: number | null,
 ): Promise<{ updated: number; created: number }> {
   if (studentIds.length === 0) {
     return { updated: 0, created: 0 };
@@ -26,56 +38,53 @@ export async function assignStudentsToHouse(
     `UPDATE student_enrollments
      SET house_id = $1, updated_at = CURRENT_TIMESTAMP
      WHERE student_id = ANY($2::int[]) AND is_current = true`,
-    [houseId, studentIds]
+    [houseId, studentIds],
   );
 
+  const missingResult = await db.query<{ student_id: number }>(
+    `SELECT s.id AS student_id
+     FROM unnest($1::int[]) AS s(id)
+     WHERE NOT EXISTS (
+       SELECT 1 FROM student_enrollments e
+       WHERE e.student_id = s.id AND e.is_current = true
+     )`,
+    [studentIds],
+  );
+
+  const missingIds = missingResult.rows.map((row) => row.student_id);
+  if (missingIds.length === 0) {
+    return { updated: updateResult.rowCount ?? 0, created: 0 };
+  }
+
+  const { academicYearId, academicYear } = await getActiveAcademicYear(db);
   let created = 0;
-  const updatedIdsResult = await db.query<{ student_id: number }>(
-    `SELECT student_id FROM student_enrollments
-     WHERE student_id = ANY($1::int[]) AND is_current = true`,
-    [studentIds]
-  );
-  const enrolledIds = new Set(updatedIdsResult.rows.map((r) => r.student_id));
-  const missingIds = studentIds.filter((id) => !enrolledIds.has(id));
 
-  if (missingIds.length > 0) {
-    const ayResult = await db.query<{ id: number; name: string }>(
-      'SELECT id, name FROM academic_years WHERE is_active = true LIMIT 1'
+  for (const studentId of missingIds) {
+    const studentResult = await db.query<{
+      class_id: number | null;
+      section_id: number | null;
+      roll_number: string | null;
+    }>('SELECT class_id, section_id, roll_number FROM students WHERE id = $1', [studentId]);
+
+    const student = studentResult.rows[0];
+    if (!student) continue;
+
+    await db.query(
+      `INSERT INTO student_enrollments (
+        student_id, academic_year_id, academic_year, class_id, section_id,
+        roll_number, house_id, status, is_current
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', true)`,
+      [
+        studentId,
+        academicYearId,
+        academicYear,
+        student.class_id,
+        student.section_id,
+        student.roll_number,
+        houseId,
+      ],
     );
-    const academicYear =
-      ayResult.rows[0]?.name ||
-      `${new Date().getFullYear()}-${String(new Date().getFullYear() + 1).slice(-2)}`;
-    const academicYearId = ayResult.rows[0]?.id ?? null;
-
-    for (const studentId of missingIds) {
-      const studentResult = await db.query<{
-        class_id: number | null;
-        section_id: number | null;
-        roll_number: string | null;
-      }>('SELECT class_id, section_id, roll_number FROM students WHERE id = $1', [studentId]);
-
-      const student = studentResult.rows[0];
-      if (!student) continue;
-
-      await db.query(
-        `INSERT INTO student_enrollments (
-          student_id, academic_year_id, academic_year, class_id, section_id,
-          roll_number, house_id, status, is_current
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', true)
-        ON CONFLICT (student_id, academic_year) DO UPDATE
-        SET house_id = EXCLUDED.house_id, updated_at = CURRENT_TIMESTAMP`,
-        [
-          studentId,
-          academicYearId,
-          academicYear,
-          student.class_id,
-          student.section_id,
-          student.roll_number,
-          houseId,
-        ]
-      );
-      created += 1;
-    }
+    created += 1;
   }
 
   return {

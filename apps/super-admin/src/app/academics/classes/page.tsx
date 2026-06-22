@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { Fragment, Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -819,7 +819,7 @@ function ClassesPageContent() {
       {/* Class Modal */}
       {showClassModal && (
         <AppModal open={showClassModal} onClose={() => setShowClassModal(false)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+          <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-lg font-semibold">{editingClass ? 'Edit Class' : 'Add Class'}</h2>
               <button onClick={() => setShowClassModal(false)} className="p-2 text-gray-400 hover:text-gray-600"><FiX size={20} /></button>
@@ -859,7 +859,7 @@ function ClassesPageContent() {
       {/* Section Modal */}
       {showSectionModal && (
         <AppModal open={showSectionModal} onClose={() => setShowSectionModal(false)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+          <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-lg font-semibold">{editingSection ? 'Edit Section' : 'Add Section'}</h2>
               <button onClick={() => setShowSectionModal(false)} className="p-2 text-gray-400 hover:text-gray-600"><FiX size={20} /></button>

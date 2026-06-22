@@ -97,7 +97,7 @@ export default function DesignationsPage() {
         </div>
         <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
               <tr>
                 <th className="text-left px-5 py-3">Name</th>
                 <th className="text-left px-5 py-3">Department</th>
@@ -109,7 +109,7 @@ export default function DesignationsPage() {
             <tbody>
               {loading ? <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">Loading...</td></tr>
               : items.map((d) => (
-                <tr key={d.id} className="border-b hover:bg-gray-50">
+                <tr key={d.id} className="border-b hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                   <td className="px-5 py-3 font-medium">{d.name}</td>
                   <td className="px-5 py-3">{d.department_name || '—'}</td>
                   <td className="px-5 py-3">{d.grade}</td>
@@ -129,7 +129,7 @@ export default function DesignationsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
               <h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} Designation</h2>
               <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">

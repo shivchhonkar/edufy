@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -628,7 +628,7 @@ export default function HousesPage() {
 
       {showHouseModal && (
         <AppModal open={showHouseModal} onClose={() => setShowHouseModal(false)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-y-auto">
+          <div className={APP_MODAL_PANEL}>
             <div className="flex items-center justify-between border-b px-4 py-3">
               <h2 className="text-sm font-semibold text-gray-900">
                 {editingHouse ? 'Edit House' : 'Add House'}

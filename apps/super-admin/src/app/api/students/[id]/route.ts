@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import { parseStudentId, ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncCurrentEnrollmentFromStudent } from '@/lib/student-profile-api';
+import {
+  parseStudentId,
+  ensureDefaultStudentGuardians,
+  ensureStudentMotherColumns,
+  syncCurrentEnrollmentFromStudent,
+  syncStudentMedicalBloodGroup,
+} from '@/lib/student-profile-api';
 import { Student } from '@/shared/types';
 
 // GET single student
@@ -155,6 +161,14 @@ export async function PUT(
       await syncCurrentEnrollmentFromStudent(db, studentId, class_id, section_id, roll_number);
     } catch (enrollmentError) {
       console.error('Error syncing current enrollment after student update:', enrollmentError);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'blood_group')) {
+      try {
+        await syncStudentMedicalBloodGroup(db, studentId, blood_group);
+      } catch (medicalError) {
+        console.error('Error syncing medical blood group after student update:', medicalError);
+      }
     }
 
     return NextResponse.json({

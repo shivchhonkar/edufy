@@ -13,6 +13,7 @@ import {
   getInquiryCardTags,
   inquiryClassDisplay,
   inquiryStudentName,
+  PARENT_RELATION_LABELS,
 } from '@/features/admissions/utils/inquiry-labels';
 import { FiAlertCircle, FiMoreVertical, FiPlus } from 'react-icons/fi';
 
@@ -83,7 +84,8 @@ function InquiryCard({
           )}
         </div>
         <p className="text-[10px] text-gray-400 mt-1 truncate">
-          {inquiry.parent_name} · {inquiry.parent_phone}
+          {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']}: {inquiry.parent_name} ·{' '}
+          {inquiry.parent_phone}
         </p>
       </button>
     );
@@ -117,7 +119,9 @@ function InquiryCard({
         {formatInquiryNumber(inquiry.inquiry_number)}
       </p>
 
-      <p className="text-[11px] text-gray-500 mt-1 truncate">{inquiry.parent_name}</p>
+      <p className="text-[11px] text-gray-500 mt-1 truncate">
+        {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']}: {inquiry.parent_name}
+      </p>
       <p className="text-[11px] text-gray-400 truncate">{inquiry.parent_phone}</p>
 
       {timeLabel && (

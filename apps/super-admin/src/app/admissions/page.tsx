@@ -17,6 +17,7 @@ import {
   formatInquiryNumber,
   inquiryClassDisplay,
   inquiryStudentName,
+  PARENT_RELATION_LABELS,
 } from '@/features/admissions/utils/inquiry-labels';
 import {
   FiAlertCircle,
@@ -385,7 +386,10 @@ export default function AdmissionsPage() {
                     </td>
                     <td className="px-3 py-2">
                       <div className="text-gray-800">{inquiry.parent_name}</div>
-                      <div className="text-[11px] text-gray-500">{inquiry.parent_phone}</div>
+                      <div className="text-[11px] text-gray-500">
+                        {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']} ·{' '}
+                        {inquiry.parent_phone}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-gray-600">
                       {(() => {

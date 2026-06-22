@@ -1,6 +1,6 @@
 'use client'
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
@@ -331,7 +331,7 @@ export default function StaffAccessPage() {
 
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full text-sm min-w-[900px]">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
                 <tr>
                   <th className="px-3 py-3 w-10">
                     <input
@@ -367,7 +367,7 @@ export default function StaffAccessPage() {
                   </tr>
                 ) : (
                   staff.map((row) => (
-                    <tr key={row.id} className="border-b hover:bg-gray-50">
+                    <tr key={row.id} className="border-b hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                       <td className="px-3 py-3">
                         <input
                           type="checkbox"
@@ -449,7 +449,7 @@ export default function StaffAccessPage() {
 
         {editStaff && (
           <AppModal open={!!editStaff} onClose={() => setEditStaff(null)}>
-            <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4 overflow-y-auto">
+            <div className={`${APP_MODAL_PANEL} p-6 space-y-4`}>
               <h3 className="text-lg font-semibold">Manage access — {staffName(editStaff)}</h3>
 
               <div className="rounded-lg border bg-gray-50 p-4 space-y-3">

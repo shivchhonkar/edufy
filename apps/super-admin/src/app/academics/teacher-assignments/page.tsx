@@ -4,7 +4,7 @@ import AppModal, {
   APP_MODAL_BODY,
   APP_MODAL_FOOTER,
   APP_MODAL_HEADER,
-  APP_MODAL_PANEL,
+  APP_MODAL_PANEL_STRUCTURED,
 } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -188,7 +188,7 @@ export default function TeacherAssignmentsPage() {
         <AppModal open={showModal} onClose={closeAssignModal}>
           <div className="flex min-h-full items-center justify-center p-4">
             <div
-              className={`${APP_MODAL_PANEL} relative z-10 w-full rounded-xl`}
+              className={`${APP_MODAL_PANEL_STRUCTURED} relative z-10 w-full rounded-xl`}
               style={{ maxWidth: '32rem', height: 'auto', maxHeight: '90vh' }}
             >
               <div className={APP_MODAL_HEADER}>

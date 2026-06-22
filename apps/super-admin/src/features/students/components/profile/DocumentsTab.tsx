@@ -33,7 +33,7 @@ export default function DocumentsTab({ studentId }: DocumentsTabProps) {
     try {
       const res = await fetch(`/api/students/${studentId}/documents`);
       const data = await res.json();
-      if (data.success) setDocuments(data.data);
+      if (data.success) setDocuments(data.data ?? []);
       else setError(data.error || 'Failed to load documents');
     } catch {
       setError('Failed to load documents');

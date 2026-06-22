@@ -183,7 +183,7 @@ export default function SimpleRecordPaymentModal({
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="bg-white shadow-2xl w-full h-full overflow-y-auto flex flex-col">
+      <div className={APP_MODAL_PANEL}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl  text-gray-900">Record Payment</h2>

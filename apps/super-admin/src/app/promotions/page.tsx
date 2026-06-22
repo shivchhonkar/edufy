@@ -21,8 +21,9 @@ interface Class {
 
 interface Section {
   id: number;
-  class_id: number;
+  class_id?: number | null;
   name: string;
+  assigned_classes?: Array<{ id: number; name: string }>;
 }
 
 interface AcademicYear {
@@ -63,24 +64,27 @@ function suggestNextClassId(classes: Class[], sourceClassId: string): string {
   return next ? String(next.id) : '';
 }
 
+function sectionMatchesClass(section: Section, classId: string): boolean {
+  if (!classId) return false;
+  if (section.class_id != null && section.class_id.toString() === classId) return true;
+  return section.assigned_classes?.some((cls) => cls.id.toString() === classId) ?? false;
+}
+
 function resolveSectionIdForClass(
   sectionId: string,
   classId: string,
   sections: Section[],
 ): string {
   if (!sectionId || !classId) return '';
-  return sections.some(
-    (s) => s.id.toString() === sectionId && s.class_id.toString() === classId,
-  )
-    ? sectionId
-    : '';
+  const section = sections.find((s) => s.id.toString() === sectionId);
+  if (!section || !sectionMatchesClass(section, classId)) return '';
+  return sectionId;
 }
 
 export default function PromotionsPage() {
   const { confirm } = useDialog();
   const [classes, setClasses] = useState<Class[]>([]);
-  const [sourceSections, setSourceSections] = useState<Section[]>([]);
-  const [targetSections, setTargetSections] = useState<Section[]>([]);
+  const [allSections, setAllSections] = useState<Section[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
 
   const [sourceClassId, setSourceClassId] = useState('');
@@ -101,6 +105,16 @@ export default function PromotionsPage() {
   const activeAcademicYear = useMemo(
     () => academicYears.find((y) => y.is_active),
     [academicYears],
+  );
+
+  const sourceSections = useMemo(
+    () => allSections.filter((section) => sectionMatchesClass(section, sourceClassId)),
+    [allSections, sourceClassId],
+  );
+
+  const targetSections = useMemo(
+    () => allSections.filter((section) => sectionMatchesClass(section, targetClassId)),
+    [allSections, targetClassId],
   );
 
   const sourceClass = classes.find((c) => c.id.toString() === sourceClassId);
@@ -150,19 +164,11 @@ export default function PromotionsPage() {
     }
   }, []);
 
-  const fetchSections = useCallback(async (classId: string, target: 'source' | 'target') => {
-    if (!classId) {
-      if (target === 'source') setSourceSections([]);
-      else setTargetSections([]);
-      return;
-    }
+  const fetchSections = useCallback(async () => {
     try {
-      const res = await fetch(`/api/sections?class_id=${classId}`);
+      const res = await fetch('/api/sections');
       const data = await res.json();
-      if (data.success) {
-        if (target === 'source') setSourceSections(data.data);
-        else setTargetSections(data.data);
-      }
+      if (data.success) setAllSections(data.data);
     } catch {
       console.error('Failed to fetch sections');
     }
@@ -210,19 +216,20 @@ export default function PromotionsPage() {
   useEffect(() => {
     fetchClasses();
     fetchAcademicYears();
-  }, [fetchClasses, fetchAcademicYears]);
+    fetchSections();
+  }, [fetchClasses, fetchAcademicYears, fetchSections]);
 
   useEffect(() => {
-    setSourceSectionId('');
-    setSourceSections([]);
-    fetchSections(sourceClassId, 'source');
-  }, [sourceClassId, fetchSections]);
+    setSourceSectionId((current) =>
+      resolveSectionIdForClass(current, sourceClassId, sourceSections),
+    );
+  }, [sourceClassId, sourceSections]);
 
   useEffect(() => {
-    setTargetSectionId('');
-    setTargetSections([]);
-    fetchSections(targetClassId, 'target');
-  }, [targetClassId, fetchSections]);
+    setTargetSectionId((current) =>
+      resolveSectionIdForClass(current, targetClassId, targetSections),
+    );
+  }, [targetClassId, targetSections]);
 
   useEffect(() => {
     fetchEligibleStudents();
@@ -369,7 +376,7 @@ export default function PromotionsPage() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl text-gray-900">Promotion Management</h1>
+            <h1 className="text-xl text-gray-900">Promotion Students</h1>
             <p className="text-sm text-gray-600 mt-1">
               Bulk promote, repeat, or transfer students and update enrollment history.
             </p>

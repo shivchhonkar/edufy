@@ -1,6 +1,7 @@
 import type { RequestDb } from '@/lib/request-db';
 import type { StudentEnrollmentStatus } from '@/shared/types';
 import type { QueryResult } from 'pg';
+import { ensureClassSectionsTable } from '@/lib/ensure-class-sections';
 
 export type PromotionAction = 'promoted' | 'repeated' | 'transferred';
 
@@ -89,11 +90,29 @@ export async function sectionBelongsToClass(
   sectionId: number,
   classId: number
 ): Promise<boolean> {
-  const result = await db.query<{ id: number }>(
-    'SELECT id FROM sections WHERE id = $1 AND class_id = $2',
-    [sectionId, classId]
-  );
-  return result.rows.length > 0;
+  try {
+    await ensureClassSectionsTable(db);
+    const result = await db.query<{ id: number }>(
+      `SELECT s.id
+       FROM sections s
+       WHERE s.id = $1
+         AND (
+           s.class_id = $2
+           OR EXISTS (
+             SELECT 1 FROM class_sections cs
+             WHERE cs.section_id = s.id AND cs.class_id = $2
+           )
+         )`,
+      [sectionId, classId]
+    );
+    return result.rows.length > 0;
+  } catch {
+    const legacy = await db.query<{ id: number }>(
+      'SELECT id FROM sections WHERE id = $1 AND class_id = $2',
+      [sectionId, classId]
+    );
+    return legacy.rows.length > 0;
+  }
 }
 
 export async function getCurrentEnrollment(

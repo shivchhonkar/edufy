@@ -1,6 +1,11 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, {
+  APP_MODAL_PANEL_STRUCTURED,
+  APP_MODAL_HEADER,
+  APP_MODAL_BODY,
+  APP_MODAL_FOOTER,
+} from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import StaffSearchField, { type StaffSearchOption } from '@/features/visitors/components/StaffSearchField';
@@ -119,12 +124,12 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
   return (
     <AppModal open={isOpen} onClose={onClose}>
       <div
-        className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl"
+        className={APP_MODAL_PANEL_STRUCTURED}
         role="dialog"
         aria-modal="true"
         aria-labelledby="record-visitor-title"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+        <div className={APP_MODAL_HEADER}>
           <h2 id="record-visitor-title" className="text-lg font-medium text-gray-900">
             Register Visitor
           </h2>
@@ -138,8 +143,8 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className={`${APP_MODAL_BODY} px-6 py-5 space-y-4`}>
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -291,7 +296,7 @@ export default function RecordVisitorModal({ isOpen, onClose, onSuccess }: Recor
             </div>
           </div>
 
-          <div className="shrink-0 border-t border-gray-200 px-6 py-4 bg-gray-50/80">
+          <div className={`${APP_MODAL_FOOTER} px-6 py-4 bg-gray-50/80`}>
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input

@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { FiX, FiUploadCloud } from 'react-icons/fi';
 import { Student } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
+import { INDIAN_STATES, isIndianState } from '@/shared/constants/indian-states';
+import { BLOOD_GROUPS } from '@/shared/constants/student-personal';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -25,7 +27,6 @@ interface SectionOption {
   name: string;
 }
 
-const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
 
 // Helper to format date for input type="date"
@@ -383,9 +384,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   return (
     <>
     <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div ref={modalContentRef} className={APP_MODAL_PANEL}>
         {/* Fixed Header */}
-        <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0">
+        <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0 sticky top-0 z-10 shrink-0">
           <h2 className="text-xl text-gray-900">
             {editingStudent ? 'Edit Student' : 'Add Student'}
           </h2>
@@ -660,12 +661,21 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   State
                 </label>
-                <input
-                  type="text"
+                <select
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                />
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map((stateName) => (
+                    <option key={stateName} value={stateName}>
+                      {stateName}
+                    </option>
+                  ))}
+                  {formData.state && !isIndianState(formData.state) && (
+                    <option value={formData.state}>{formData.state}</option>
+                  )}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

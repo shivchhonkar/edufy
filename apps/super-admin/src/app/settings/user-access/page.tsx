@@ -1,6 +1,6 @@
 'use client'
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
@@ -284,7 +284,7 @@ export default function UserAccessPage() {
 
               <div className="overflow-x-auto border rounded-lg">
                 <table className="w-full text-sm min-w-[800px]">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
                     <tr>
                       <th className="px-3 py-3 w-10">
                         <input
@@ -319,7 +319,7 @@ export default function UserAccessPage() {
                       </tr>
                     ) : (
                       students.map((student) => (
-                        <tr key={student.id} className="border-b hover:bg-gray-50">
+                        <tr key={student.id} className="border-b hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                           <td className="px-3 py-3">
                             <input
                               type="checkbox"
@@ -394,7 +394,7 @@ export default function UserAccessPage() {
               </Link>
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
                 <tr>
                   <th className="text-left px-5 py-3">Name</th>
                   <th className="text-left px-5 py-3">Email</th>
@@ -412,7 +412,7 @@ export default function UserAccessPage() {
                   </tr>
                 ) : (
                   admins.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
+                    <tr key={user.id} className="border-b hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                       <td className="px-5 py-3 font-medium">{user.name}</td>
                       <td className="px-5 py-3 text-gray-600">{user.email}</td>
                       <td className="px-5 py-3 capitalize">{user.role.replace('_', ' ')}</td>
@@ -446,7 +446,7 @@ export default function UserAccessPage() {
 
         {editStudent && (
           <AppModal open={!!editStudent} onClose={() => setEditStudent(null)}>
-            <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4 overflow-y-auto">
+            <div className={`${APP_MODAL_PANEL} p-6 space-y-4`}>
               <h3 className="text-lg font-semibold">Manage access — {studentName(editStudent)}</h3>
               <p className="text-sm text-gray-500">
                 Parents logging in with this student&apos;s phone see the same modules.

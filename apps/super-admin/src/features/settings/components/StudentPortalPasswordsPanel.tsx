@@ -1,6 +1,6 @@
 'use client'
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useState } from 'react'
 import { FiEye, FiEyeOff, FiKey, FiLock, FiRefreshCw, FiSearch } from 'react-icons/fi'
 import { useDialog } from '@/shared/context/DialogContext'
@@ -218,7 +218,7 @@ export default function StudentPortalPasswordsPanel() {
 
       <div className="overflow-x-auto border rounded-lg">
         <table className="w-full text-sm min-w-[720px]">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 border-b sticky top-0 z-10 shrink-0">
             <tr>
               <th className="px-3 py-3 w-10">
                 <input
@@ -251,7 +251,7 @@ export default function StudentPortalPasswordsPanel() {
               </tr>
             ) : (
               students.map((student) => (
-                <tr key={student.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                <tr key={student.id} className="border-b last:border-b-0 hover:bg-gray-50 sticky top-0 z-10 shrink-0">
                   <td className="px-3 py-3">
                     <input
                       type="checkbox"
@@ -313,7 +313,7 @@ export default function StudentPortalPasswordsPanel() {
             setPasswordTarget(null)
           }}
         >
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4">
+          <div className={`${APP_MODAL_PANEL} p-6 space-y-4`}>
             <h4 className="text-lg font-semibold text-gray-900">Set Portal Password</h4>
             <p className="text-sm text-gray-600">
               {studentName(passwordTarget)} · {passwordTarget.admission_number}
@@ -360,7 +360,7 @@ export default function StudentPortalPasswordsPanel() {
 
       {showBulkModal && (
         <AppModal open={showBulkModal} onClose={() => setShowBulkModal(false)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden p-6 space-y-4">
+          <div className={`${APP_MODAL_PANEL} p-6 space-y-4`}>
             <h4 className="text-lg font-semibold text-gray-900">Bulk Set Portal Passwords</h4>
             <p className="text-sm text-gray-600">
               {classId

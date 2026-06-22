@@ -17,6 +17,9 @@ export async function ensureHousesSchema(db: RequestDb): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_school_houses_name_unique
       ON school_houses (LOWER(TRIM(name)));
 
+    ALTER TABLE student_enrollments
+      ADD COLUMN IF NOT EXISTS house_id INTEGER;
+
     CREATE INDEX IF NOT EXISTS idx_student_enrollments_house_id
       ON student_enrollments (house_id)
       WHERE house_id IS NOT NULL;

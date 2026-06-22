@@ -57,10 +57,18 @@ function StudentsPageContent() {
   const [showImport, setShowImport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [deletingUnassigned, setDeletingUnassigned] = useState(false);
+  const [hasUnassignedStudents, setHasUnassignedStudents] = useState(false);
 
   useEffect(() => {
     fetchClasses();
+    fetchUnassignedCount();
   }, []);
+
+  useEffect(() => {
+    if (!hasUnassignedStudents && classFilter === UNASSIGNED_CLASS_FILTER) {
+      setClassFilter('');
+    }
+  }, [hasUnassignedStudents, classFilter]);
 
   useEffect(() => {
     const query = searchParams.get('search')?.trim();
@@ -81,6 +89,18 @@ function StudentsPageContent() {
       setSectionFilter('');
     }
   }, [classFilter]);
+
+  const fetchUnassignedCount = async () => {
+    try {
+      const response = await fetch('/api/students/unassigned');
+      const data = await response.json();
+      if (data.success) {
+        setHasUnassignedStudents((data.data?.count ?? 0) > 0);
+      }
+    } catch (error) {
+      console.error('Error fetching unassigned student count:', error);
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -125,6 +145,7 @@ function StudentsPageContent() {
         setStudents(data.data);
         setTotalStudents(data.pagination?.total ?? data.data.length);
       }
+      fetchUnassignedCount();
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
@@ -329,7 +350,9 @@ function StudentsPageContent() {
                   onChange={(e) => setClassFilter(e.target.value)}
                 >
                   <option value="">All Classes</option>
-                  <option value={UNASSIGNED_CLASS_FILTER}>Unassigned (no class)</option>
+                  {hasUnassignedStudents && (
+                    <option value={UNASSIGNED_CLASS_FILTER}>Unassigned (no class)</option>
+                  )}
                   {classes.map((cls) => (
                     <option key={cls.id} value={cls.id}>
                       {cls.name}

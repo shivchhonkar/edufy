@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -342,7 +342,7 @@ function StudentIdCardsPageContent() {
 
       {showPreviewModal && selectedStudents.length > 0 && (
         <AppModal open={showPreviewModal} onClose={() => setShowPreviewModal(false)}>
-          <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-xl overflow-hidden">
+          <div className={APP_MODAL_PANEL}>
             <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 print:hidden">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">ID Card Preview</h2>

@@ -298,6 +298,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   const displayName = (user?.full_name as string) || 'Admin'
+  const welcomeText = mounted ? `${greeting}, ${displayName}` : `Welcome, ${displayName}`
   const displayRole = userRole ? formatRole(userRole) : 'User'
   const avatarUrl = (user?.photo_url as string) || (user?.avatar_url as string) || ''
   const canAccessAdminLinks = useMemo(() => isAdminRole(userRole), [userRole])
@@ -307,6 +308,14 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   )
 
   const closeProfileMenu = () => setProfileOpen(false)
+
+  const handleSidebarToggle = useCallback(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onMenuClick?.()
+      return
+    }
+    window.dispatchEvent(new CustomEvent('sidebar-toggle-request'))
+  }, [onMenuClick])
 
   const toggleNotifications = () => {
     setNotificationsOpen((open) => {
@@ -322,26 +331,32 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   return (
     <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-1.5 sm:py-2">
       <div className="flex items-center gap-2 lg:gap-4">
-        {onMenuClick ? (
+        <div className="flex min-w-0 shrink items-center gap-2">
           <button
             type="button"
-            onClick={onMenuClick}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 lg:hidden"
-            aria-label="Open menu"
+            onClick={handleSidebarToggle}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            aria-label="Toggle sidebar"
           >
             <FiMenu className="h-4 w-4" />
           </button>
-        ) : null}
-        <div className="min-w-0 flex-1 lg:flex-none lg:shrink-0">
-          <h1 className="text-sm text-gray-900 truncate leading-tight">
-            {mounted ? `${greeting}, ${displayName}` : `Welcome, ${displayName}`}
-            <span aria-hidden className="ml-1">
+          <div className="min-w-0 shrink max-w-[min(42vw,9rem)] sm:max-w-[12rem] md:max-w-[14rem] lg:max-w-[15rem] xl:max-w-[17rem]">
+            <h1
+              className="flex min-w-0 items-center text-sm leading-tight text-gray-900"
+              title={welcomeText}
+            >
+              <span className="truncate">{welcomeText}</span>
+              {/* <span aria-hidden className="ml-1 shrink-0">
               👋
-            </span>
-          </h1>
-          <p className="text-[10px] leading-tight text-gray-500" suppressHydrationWarning>
-            {mounted ? formatHeaderDate(new Date()) : 'Loading date...'}
-          </p>
+            </span> */}
+            </h1>
+            <p
+              className="truncate text-[10px] leading-tight text-gray-500"
+              suppressHydrationWarning
+            >
+              {mounted ? formatHeaderDate(new Date()) : 'Loading date...'}
+            </p>
+          </div>
         </div>
 
         <form
@@ -588,9 +603,16 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   {getInitials(displayName)}
                 </div>
               )}
-              <div className="hidden lg:block text-left">
-                <p className="text-xs font-semibold text-gray-900 leading-tight">{displayName}</p>
-                <p className="text-[10px] leading-tight text-gray-500">{displayRole}</p>
+              <div className="hidden min-w-0 max-w-[8rem] lg:block text-left">
+                <p
+                  className="truncate text-xs font-semibold text-gray-900 leading-tight"
+                  title={displayName}
+                >
+                  {displayName}
+                </p>
+                <p className="truncate text-[10px] leading-tight text-gray-500" title={displayRole}>
+                  {displayRole}
+                </p>
               </div>
               <FiChevronDown
                 className={`hidden lg:block h-3.5 w-3.5 text-gray-400 transition-transform ${

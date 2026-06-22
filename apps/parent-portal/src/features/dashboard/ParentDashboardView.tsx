@@ -188,11 +188,10 @@ const CHIP_CLASS = {
 } as const
 
 const PAGE_CONTAINER = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
-const SECTION_STACK = 'flex flex-col gap-4 sm:gap-5'
-const GRID_GAP = 'gap-3 sm:gap-4'
-const GRID_GAP_LG = 'gap-4'
-const CARD_SHELL = 'portal-card rounded-xl p-4 sm:p-5 shadow-sm'
-const CARD_HEADER = 'flex items-center justify-between gap-2 mb-3 sm:mb-4 min-h-7'
+const SECTION_STACK = 'flex flex-col gap-3 sm:gap-4'
+const GRID_GAP_LG = 'gap-3 sm:gap-4'
+const CARD_SHELL = 'portal-card rounded-lg p-3.5 sm:p-4 shadow-sm'
+const CARD_HEADER = 'flex items-center justify-between gap-2 mb-2.5 sm:mb-3 min-h-6'
 
 export default function ParentDashboardView({
   userName,
@@ -216,36 +215,38 @@ export default function ParentDashboardView({
 
   return (
     <div className="portal-page-shell min-h-full">
-      <div className="portal-page-header">
-        <div className={`${PAGE_CONTAINER} py-4 sm:py-5`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 space-y-0.5">
-              <p className="portal-page-header-muted text-xs sm:text-sm font-medium">
-                {getGreeting()}, Welcome back, {userName}!
+      <div className="portal-page-header shrink-0">
+        <div className={`${PAGE_CONTAINER} py-2 sm:py-2.5`}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="min-w-0 flex flex-col gap-0 leading-tight">
+              <p className="portal-page-header-muted text-[11px] sm:text-xs font-medium truncate">
+                {getGreeting()}, Welcome back, <strong>{userName}</strong>!
               </p>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight portal-text">
-                Parent Dashboard
-              </h1>
-              <p className="portal-page-header-muted text-xs sm:text-sm max-w-2xl">
-                Here&apos;s what&apos;s happening with your child today.
-              </p>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                <h1 className="text-base sm:text-lg font-normal tracking-tight portal-text">
+                  Parent Dashboard
+                </h1>
+                <span className="hidden sm:inline text-[11px] portal-page-header-muted">
+                  · Here&apos;s what&apos;s happening today
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => router.push('/notifications')}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg portal-header-control shadow-sm transition-colors"
+                className="relative inline-flex h-8 w-8 items-center justify-center rounded-md portal-header-control shadow-sm transition-colors"
                 aria-label="Notifications"
               >
-                <FiBell className="h-4 w-4" />
+                <FiBell className="h-3.5 w-3.5" />
                 {(stats?.unreadNotices || 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-semibold text-white">
                     {stats?.unreadNotices}
                   </span>
                 )}
               </button>
-              <div className="inline-flex items-center gap-1.5 rounded-lg portal-header-control px-2.5 py-2 text-xs sm:text-sm shadow-sm">
-                <FiCalendar className="h-3.5 w-3.5 shrink-0 portal-text-muted" />
+              <div className="inline-flex items-center gap-1 rounded-md portal-header-control px-2 py-1.5 text-[11px] sm:text-xs shadow-sm">
+                <FiCalendar className="h-3 w-3 shrink-0 portal-text-muted" />
                 <span className="whitespace-nowrap portal-text">
                   {new Date().toLocaleDateString('en-IN', {
                     weekday: 'short',
@@ -260,9 +261,9 @@ export default function ParentDashboardView({
         </div>
       </div>
 
-      <div className={`${PAGE_CONTAINER} py-4 sm:py-6 pb-8 flex flex-col gap-4 sm:gap-5`}>
+      <div className={`${PAGE_CONTAINER} py-3 sm:py-4 pb-6 flex flex-col gap-3 sm:gap-4`}>
         {children.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
             {children.map((child) => {
               const active = child.id === selectedChild.id
               return (
@@ -270,11 +271,11 @@ export default function ParentDashboardView({
                   key={child.id}
                   type="button"
                   onClick={() => onChildChange(child)}
-                  className={`flex items-center shrink-0 rounded-full px-3 py-2 text-xs sm:text-sm font-medium transition-all gap-1.5 ${
+                  className={`flex items-center shrink-0 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all gap-1 ${
                     active ? 'portal-child-tab-active' : 'portal-child-tab'
                   }`}
                 >
-                  <FiUser className="h-4 w-4 shrink-0 opacity-80" />
+                  <FiUser className="h-3.5 w-3.5 shrink-0 opacity-80" />
                   {studentFullName(child)}
                 </button>
               )
@@ -282,33 +283,33 @@ export default function ParentDashboardView({
           </div>
         )}
 
-        <section className="portal-profile-banner rounded-xl shadow-sm">
-          <div className="flex flex-row items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4">
+        <section className="portal-profile-banner rounded-lg shadow-sm">
+          <div className="flex flex-row items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3">
             <StudentAvatar
               name={studentFullName(selectedChild)}
               photoUrl={selectedChild.photo_url}
-              className="h-10 w-10 sm:h-11 sm:w-11 rounded-full ring-2 ring-white/40 object-cover shadow-sm shrink-0"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full ring-2 ring-white/40 object-cover shadow-sm shrink-0"
             />
             <div className="flex-1 min-w-0 text-left">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h2 className="text-sm sm:text-base font-bold tracking-tight truncate">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <h2 className="text-sm font-bold tracking-tight truncate">
                   {studentFullName(selectedChild)}
                 </h2>
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold capitalize shrink-0">
+                <span className="rounded-full bg-white/20 px-1.5 py-px text-[9px] font-semibold capitalize shrink-0">
                   {selectedChild.status || 'Active'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-white/90 leading-snug mt-0.5 truncate sm:whitespace-normal">
+              <p className="text-[11px] sm:text-xs text-white/90 leading-snug mt-0.5 truncate sm:whitespace-normal">
                 {selectedChild.class_name}
                 {selectedChild.section_name ? ` • ${selectedChild.section_name}` : ''}
-                {selectedChild.roll_number ? ` • Roll No. ${selectedChild.roll_number}` : ''}
+                {selectedChild.roll_number ? ` • Roll ${selectedChild.roll_number}` : ''}
               </p>
-              <p className="text-xs text-white/75 mt-0.5 truncate">{branding.school_name}</p>
+              <p className="text-[10px] sm:text-[11px] text-white/75 mt-0.5 truncate">{branding.school_name}</p>
             </div>
             <button
               type="button"
               onClick={() => router.push(`/profile/${studentId}`)}
-              className="shrink-0 rounded-md portal-profile-btn px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors whitespace-nowrap"
+              className="shrink-0 rounded-md portal-profile-btn px-2.5 py-1 text-[11px] font-semibold shadow-sm transition-colors whitespace-nowrap"
             >
               View Profile
             </button>
@@ -321,7 +322,7 @@ export default function ParentDashboardView({
           </div>
         ) : stats ? (
           <div className={SECTION_STACK}>
-            <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 auto-rows-fr">
+            <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 auto-rows-fr">
               <StatusCard
                 title="Today's Attendance"
                 value={formatTodayAttendance(stats.attendance.todayStatus)}
@@ -381,15 +382,15 @@ export default function ParentDashboardView({
 
             <section className={`grid grid-cols-1 lg:grid-cols-2 ${GRID_GAP_LG}`}>
               <PanelCard title="Attendance Overview" actionLabel="This Month">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="portal-stat-cell px-2 py-3 flex items-center justify-center min-h-[5.5rem]">
-                    <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                  <div className="portal-stat-cell px-2 py-2.5 flex items-center justify-center min-h-[4.75rem]">
+                    <div className="relative h-16 w-16 sm:h-16 sm:w-16 shrink-0">
                       <AttendanceRing percentage={attendancePct} className="h-full w-full" />
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-base sm:text-lg font-bold portal-text tracking-tight leading-none">
+                        <span className="text-sm sm:text-base portal-text tracking-tight leading-none">
                           {attendancePct}%
                         </span>
-                        <span className="text-[9px] sm:text-[10px] font-medium portal-text-muted mt-0.5">
+                        <span className="text-[7px] sm:text-[7px] font-medium portal-text-muted mt-0.5">
                           Attendance
                         </span>
                       </div>
@@ -400,11 +401,11 @@ export default function ParentDashboardView({
                   <MiniStat label="Late" value={stats.attendance.lateDays} color="text-amber-600" />
                 </div>
                 {stats.attendance.trend.length > 0 && (
-                  <div className="mt-4 pt-4 border-t portal-divider">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide portal-text-muted mb-2 px-0.5">
+                  <div className="mt-3 pt-3 border-t portal-divider">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide portal-text-muted mb-1.5 px-0.5">
                       Attendance Trend
                     </p>
-                    <div className="flex items-end gap-2 sm:gap-3 h-16 sm:h-20 px-1 sm:px-2">
+                    <div className="flex items-end gap-1.5 sm:gap-2 h-14 sm:h-16 px-1">
                       {stats.attendance.trend.map((point) => (
                         <div key={point.label} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
                           <div className="w-full h-full flex items-end justify-center">
@@ -431,30 +432,30 @@ export default function ParentDashboardView({
                   <FeeRow label="Paid" value={formatCurrency(stats.fees.paid)} valueClass="text-green-600" />
                   <FeeRow label="Pending" value={formatCurrency(stats.fees.pending)} valueClass="text-orange-600" />
                 </div>
-                <div className="mt-4 pt-4 border-t portal-divider">
-                  <div className="flex justify-between text-xs font-medium portal-text-muted mb-2.5">
+                <div className="mt-3 pt-3 border-t portal-divider">
+                  <div className="flex justify-between text-[11px] font-medium portal-text-muted mb-2">
                     <span>Paid {stats.fees.paidPercent}%</span>
                     <span>Pending {100 - stats.fees.paidPercent}%</span>
                   </div>
-                  <div className="h-2.5 rounded-full portal-progress-track overflow-hidden">
+                  <div className="h-2 rounded-full portal-progress-track overflow-hidden">
                     <div
                       className="h-full rounded-full portal-progress-paid"
                       style={{ width: `${stats.fees.paidPercent}%` }}
                     />
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   <button
                     type="button"
                     onClick={() => router.push(`/fees/${studentId}`)}
-                    className="portal-btn-primary rounded-lg px-4 py-2 text-sm font-semibold"
+                    className="portal-btn-primary rounded-md px-3 py-1.5 text-xs font-semibold"
                   >
                     Pay Now
                   </button>
                   <button
                     type="button"
                     onClick={() => router.push(`/fees/${studentId}`)}
-                    className="rounded-lg border px-4 py-2 text-sm font-medium portal-text portal-card hover:opacity-90 transition-opacity"
+                    className="rounded-md border px-3 py-1.5 text-xs font-medium portal-text portal-card hover:opacity-90 transition-opacity"
                   >
                     Fee History
                   </button>
@@ -474,13 +475,13 @@ export default function ParentDashboardView({
                     {stats.schedule.map((slot, index) => (
                       <li
                         key={`${slot.period_name}-${index}`}
-                        className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                        className="flex items-start justify-between gap-2 py-1.5 first:pt-0 last:pb-0"
                       >
                         <div>
-                          <p className="font-medium portal-text">{slot.subject_name || 'Free period'}</p>
-                          <p className="text-xs portal-text-muted">{slot.period_name}</p>
+                          <p className="text-xs sm:text-sm font-medium portal-text">{slot.subject_name || 'Free period'}</p>
+                          <p className="text-[11px] portal-text-muted">{slot.period_name}</p>
                         </div>
-                        <span className="text-xs portal-text-muted whitespace-nowrap">
+                        <span className="text-[11px] portal-text-muted whitespace-nowrap">
                           {formatTimeLabel(slot.start_time)}
                           {slot.end_time ? ` - ${formatTimeLabel(slot.end_time)}` : ''}
                         </span>
@@ -500,11 +501,11 @@ export default function ParentDashboardView({
                 {stats.homework.recent.length > 0 ? (
                   <ul className="divide-y portal-divider">
                     {stats.homework.recent.map((hw) => (
-                      <li key={hw.id} className="py-2 first:pt-0 last:pb-0">
+                      <li key={hw.id} className="py-1.5 first:pt-0 last:pb-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="font-medium portal-text truncate">{hw.title}</p>
-                            <p className="text-xs portal-text-muted">{hw.subject_name || 'Subject'}</p>
+                            <p className="text-xs sm:text-sm font-medium portal-text truncate">{hw.title}</p>
+                            <p className="text-[11px] portal-text-muted">{hw.subject_name || 'Subject'}</p>
                           </div>
                           <span
                             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -537,9 +538,9 @@ export default function ParentDashboardView({
                 {stats.notifications?.length ? (
                   <ul className="divide-y portal-divider">
                     {stats.notifications.map((item) => (
-                      <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
-                        <p className="font-semibold portal-text leading-snug">{item.title}</p>
-                        <p className="text-sm portal-text-muted leading-relaxed line-clamp-2 mt-1">
+                      <li key={item.id} className="py-2 first:pt-0 last:pb-0">
+                        <p className="text-xs sm:text-sm font-semibold portal-text leading-snug">{item.title}</p>
+                        <p className="text-xs portal-text-muted leading-relaxed line-clamp-2 mt-0.5">
                           {item.message}
                         </p>
                         {(item.published_at || item.created_at) && (
@@ -601,13 +602,13 @@ export default function ParentDashboardView({
                 emptyMessage="No transport assigned."
               >
                 {stats.transport ? (
-                  <div className="space-y-2.5">
-                    <p className="font-semibold portal-text">{stats.transport.route_name || 'Assigned route'}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs sm:text-sm font-semibold portal-text">{stats.transport.route_name || 'Assigned route'}</p>
                     {stats.transport.stop_name && (
-                      <p className="text-sm portal-text-muted">Stop: {stats.transport.stop_name}</p>
+                      <p className="text-xs portal-text-muted">Stop: {stats.transport.stop_name}</p>
                     )}
                     {stats.transport.vehicle_number && (
-                      <p className="text-sm portal-text-muted opacity-90">Vehicle: {stats.transport.vehicle_number}</p>
+                      <p className="text-xs portal-text-muted opacity-90">Vehicle: {stats.transport.vehicle_number}</p>
                     )}
                   </div>
                 ) : null}
@@ -615,10 +616,10 @@ export default function ParentDashboardView({
             </section>
 
             <section>
-              <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider portal-text-muted mb-2 sm:mb-3">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider portal-text-muted mb-2">
                 Quick Actions
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 <QuickPill label="Apply Leave" icon={FiCalendar} onClick={() => router.push(`/attendance/${studentId}`)} />
                 <QuickPill label="Fee Payment" icon={RupeeIcon} onClick={() => router.push(`/fees/${studentId}`)} />
                 <QuickPill label="Homework" icon={FiBook} onClick={() => router.push(`/homework/${studentId}`)} />
@@ -653,23 +654,23 @@ function DashboardCardHeader({
     <div className={CARD_HEADER}>
       <div className="flex items-center gap-2 min-w-0">
         {Icon ? (
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md portal-icon-chip shrink-0">
-            <Icon className="h-3.5 w-3.5" />
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md portal-icon-chip shrink-0">
+            <Icon className="h-3 w-3" />
           </span>
         ) : null}
-        <h3 className="text-sm font-semibold portal-text tracking-tight truncate">{title}</h3>
+        <h3 className="text-xs sm:text-sm font-semibold portal-text tracking-tight truncate">{title}</h3>
       </div>
       {actionLabel ? (
         onAction ? (
           <button
             type="button"
             onClick={onAction}
-            className="text-xs sm:text-sm font-medium portal-link-accent shrink-0 transition-colors"
+            className="text-[11px] sm:text-xs font-medium portal-link-accent shrink-0 transition-colors"
           >
             {actionLabel}
           </button>
         ) : (
-          <span className="text-xs sm:text-sm font-medium portal-link-accent shrink-0">{actionLabel}</span>
+          <span className="text-[11px] sm:text-xs font-medium portal-link-accent shrink-0">{actionLabel}</span>
         )
       ) : null}
     </div>
@@ -697,30 +698,30 @@ function StatusCard({
     <button
       type="button"
       onClick={onClick}
-      className="group text-left portal-card rounded-xl p-4 shadow-sm h-full min-h-[8.5rem] flex flex-col gap-2.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+      className="group text-left portal-card rounded-lg p-3 sm:p-3.5 shadow-sm h-full min-h-[7.25rem] flex flex-col gap-2 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-xs sm:text-sm font-medium portal-text-muted leading-snug pr-1">{title}</p>
+      <div className="flex items-start justify-between gap-1.5">
+        <p className="text-[11px] sm:text-xs font-medium portal-text-muted leading-snug pr-1">{title}</p>
         <div
-          className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${CHIP_CLASS[chip]}`}
+          className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${CHIP_CLASS[chip]}`}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
 
-      <div className="flex-1 space-y-1 min-w-0">
-        <p className="text-base sm:text-lg font-bold portal-text leading-snug break-words">{value}</p>
+      <div className="flex-1 space-y-0.5 min-w-0">
+        <p className="text-sm sm:text-base portal-text leading-snug break-words line-clamp-2">{value}</p>
         {subtitle ? (
-          <p className="text-xs portal-text-muted leading-snug">{subtitle}</p>
+          <p className="text-[11px] portal-text-muted leading-snug line-clamp-1">{subtitle}</p>
         ) : (
-          <p className="text-xs sm:text-sm text-transparent select-none" aria-hidden>
+          <p className="text-xs text-transparent select-none" aria-hidden>
             &nbsp;
           </p>
         )}
       </div>
 
-      <p className="pt-0.5 text-xs sm:text-sm portal-link-action inline-flex items-center gap-1 group-hover:gap-1.5 transition-all">
-        {actionLabel} <FiChevronRight className="h-3.5 w-3.5 shrink-0" />
+      <p className="pt-0.5 text-[11px] sm:text-xs portal-link-action inline-flex items-center gap-0.5 group-hover:gap-1 transition-all">
+        {actionLabel} <FiChevronRight className="h-3 w-3 shrink-0" />
       </p>
     </button>
   )
@@ -747,9 +748,9 @@ function PanelCard({
 
 function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="portal-stat-cell px-2 py-3 text-center min-h-[5.5rem] flex flex-col items-center justify-center">
-      <p className={`text-xl font-bold tracking-tight ${color}`}>{value}</p>
-      <p className="text-[11px] font-medium portal-text-muted mt-1">{label}</p>
+    <div className="portal-stat-cell px-2 py-2.5 text-center min-h-[4.75rem] flex flex-col items-center justify-center">
+      <p className={`text-lg tracking-tight ${color}`}>{value}</p>
+      <p className="text-[10px] font-medium portal-text-muted mt-0.5">{label}</p>
     </div>
   )
 }
@@ -764,7 +765,7 @@ function FeeRow({
   valueClass?: string
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+    <div className="flex items-center justify-between gap-2 py-1 text-xs sm:text-sm">
       <span className="portal-text-muted">{label}</span>
       <span className={`font-semibold tabular-nums text-right ${valueClass}`}>{value}</span>
     </div>
@@ -789,14 +790,14 @@ function InfoCard({
   const hasContent = React.Children.count(children) > 0
 
   return (
-    <div className={`${CARD_SHELL} min-h-[11rem] sm:min-h-[12rem] flex flex-col h-full`}>
+    <div className={`${CARD_SHELL} min-h-[10rem] sm:min-h-[10.5rem] flex flex-col h-full`}>
       <DashboardCardHeader title={title} actionLabel={actionLabel} onAction={onAction} icon={Icon} />
       <div className="flex-1 min-h-0">
         {hasContent ? (
           children
         ) : (
-          <div className="h-full min-h-[5rem] flex items-center justify-center text-center px-2">
-            <p className="text-xs sm:text-sm portal-text-muted leading-relaxed max-w-[16rem]">{emptyMessage}</p>
+          <div className="h-full min-h-[4rem] flex items-center justify-center text-center px-2">
+            <p className="text-[11px] sm:text-xs portal-text-muted leading-relaxed max-w-[16rem]">{emptyMessage}</p>
           </div>
         )}
       </div>
@@ -817,9 +818,9 @@ function QuickPill({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full portal-quick-pill px-3 py-2 text-xs sm:text-sm font-medium shadow-sm transition-all"
+      className="inline-flex items-center gap-1.5 rounded-full portal-quick-pill px-2.5 py-1.5 text-[11px] sm:text-xs font-medium shadow-sm transition-all"
     >
-      <Icon className="h-3.5 w-3.5 portal-text-muted shrink-0" />
+      <Icon className="h-3 w-3 portal-text-muted shrink-0" />
       {label}
     </button>
   )
@@ -864,14 +865,14 @@ function AttendanceRing({
 function DashboardSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-32 rounded-xl portal-card p-4 shadow-sm animate-pulse" />
+          <div key={i} className="h-28 rounded-lg portal-card p-3.5 shadow-sm animate-pulse" />
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="h-64 rounded-xl portal-card p-4 shadow-sm animate-pulse" />
-        <div className="h-64 rounded-xl portal-card p-4 shadow-sm animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="h-56 rounded-lg portal-card p-3.5 shadow-sm animate-pulse" />
+        <div className="h-56 rounded-lg portal-card p-3.5 shadow-sm animate-pulse" />
       </div>
     </>
   )

@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal from '@/shared/components/common/AppModal';
+import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { FiX, FiMapPin, FiClock } from 'react-icons/fi';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import { Route } from '@/shared/types';
@@ -17,7 +17,7 @@ export default function ViewRouteModal({ isOpen, onClose, route }: ViewRouteModa
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col h-full w-full min-h-0 min-w-0 bg-white shadow-2xl overflow-hidden">
+      <div className={APP_MODAL_PANEL}>
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center z-10 shadow-sm">
           <h2 className="text-lg sm:text-xl text-gray-900">Route Details</h2>
           <button
@@ -31,7 +31,7 @@ export default function ViewRouteModal({ isOpen, onClose, route }: ViewRouteModa
         <div className="p-4 sm:p-6 space-y-6">
           {/* Route Information */}
           <div className="bg-white rounded-lg border border-gray-200">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shrink-0">
               <h3 className="text-base font-semibold text-gray-900">Route Information</h3>
             </div>
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,7 +74,7 @@ export default function ViewRouteModal({ isOpen, onClose, route }: ViewRouteModa
 
           {/* Route Stops */}
           <div className="bg-white rounded-lg border border-gray-200">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shrink-0">
               <h3 className="text-base font-semibold text-gray-900">Route Stops</h3>
             </div>
             <div className="p-4">
