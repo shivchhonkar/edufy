@@ -86,7 +86,7 @@ function EventDateBadge({
       <div className={`${headerColor} px-1 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide text-white`}>
         {month}
       </div>
-      <div className="py-1.5 sm:py-2 text-lg sm:text-xl font-bold leading-none portal-text">{day}</div>
+      <div className="py-1.5 sm:py-2 text-sm sm:text-sm leading-none portal-text">{day}</div>
     </div>
   )
 }
@@ -117,8 +117,8 @@ export default function ParentEventListRow({
     >
       <EventDateBadge date={event.start_date} headerColor={badgeColor} />
       <div className="min-w-0 flex-1">
-        <p className="font-semibold portal-text text-sm sm:text-[15px] leading-snug">{event.title}</p>
-        <p className="text-xs sm:text-sm portal-text-muted mt-0.5">{subtitle}</p>
+        <p className="portal-text text-sm sm:text-[13px] leading-snug">{event.title}</p>
+        <p className="text-xs sm:text-xs portal-text-muted mt-0.5">{subtitle}</p>
       </div>
     </li>
   )

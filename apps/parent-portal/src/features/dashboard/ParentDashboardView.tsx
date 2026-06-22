@@ -240,7 +240,7 @@ export default function ParentDashboardView({
               >
                 <FiBell className="h-3.5 w-3.5" />
                 {(stats?.unreadNotices || 0) > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-semibold text-white">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] text-white">
                     {stats?.unreadNotices}
                   </span>
                 )}
@@ -295,7 +295,7 @@ export default function ParentDashboardView({
                 <h2 className="text-sm font-bold tracking-tight truncate">
                   {studentFullName(selectedChild)}
                 </h2>
-                <span className="rounded-full bg-white/20 px-1.5 py-px text-[9px] font-semibold capitalize shrink-0">
+                <span className="rounded-full bg-white/20 px-1.5 py-px text-[9px] capitalize shrink-0">
                   {selectedChild.status || 'Active'}
                 </span>
               </div>
@@ -556,7 +556,7 @@ export default function ParentDashboardView({
                   </ul>
                 ) : stats.notice ? (
                   <div className="space-y-3">
-                    <p className="font-semibold portal-text leading-snug">{stats.notice.title}</p>
+                    <p className=" portal-text leading-snug">{stats.notice.title}</p>
                     <p className="text-sm portal-text-muted leading-relaxed line-clamp-4">{stats.notice.content}</p>
                   </div>
                 ) : null}
@@ -616,7 +616,7 @@ export default function ParentDashboardView({
             </section>
 
             <section>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider portal-text-muted mb-2">
+              <h3 className="text-[10px] uppercase tracking-wider portal-text-muted mb-2">
                 Quick Actions
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -658,7 +658,7 @@ function DashboardCardHeader({
             <Icon className="h-3 w-3" />
           </span>
         ) : null}
-        <h3 className="text-xs sm:text-sm font-semibold portal-text tracking-tight truncate">{title}</h3>
+        <h3 className="text-xs sm:text-sm portal-text tracking-tight truncate">{title}</h3>
       </div>
       {actionLabel ? (
         onAction ? (
@@ -767,7 +767,7 @@ function FeeRow({
   return (
     <div className="flex items-center justify-between gap-2 py-1 text-xs sm:text-sm">
       <span className="portal-text-muted">{label}</span>
-      <span className={`font-semibold tabular-nums text-right ${valueClass}`}>{value}</span>
+      <span className={`tabular-nums text-right ${valueClass}`}>{value}</span>
     </div>
   )
 }

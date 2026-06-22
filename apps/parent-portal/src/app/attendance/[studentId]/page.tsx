@@ -69,7 +69,7 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 mx-auto">
       <div className="mb-6">
         <h1 className="text-xl text-gray-900">Attendance</h1>
         <p className="text-gray-600 mt-1">Monthly attendance record for your child</p>
