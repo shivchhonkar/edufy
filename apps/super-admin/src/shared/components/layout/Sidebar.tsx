@@ -132,6 +132,15 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                 </p>
               </div>
             </Link>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden lg:flex shrink-0 rounded-lg p-1.5 transition-all duration-300 hover:bg-gray-100"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              <FiChevronsLeft size={20} className="text-primary-600" />
+            </button>
           </div>
         )}
       <nav className="mt-1 pb-6">
