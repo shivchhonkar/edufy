@@ -228,7 +228,7 @@ function StudentRow({
           </button>
         </div>
       )}
-      <div className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+      <div className="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
         {student.admission_number}
       </div>
 
