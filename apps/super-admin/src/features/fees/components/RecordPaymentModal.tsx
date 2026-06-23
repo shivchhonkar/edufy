@@ -27,6 +27,13 @@ import {
   FEE_STATUS,
   getMonthName,
 } from '@/shared/constants/constants';
+import OtherFeesPanel from '@/features/fees/components/OtherFeesPanel';
+import {
+  buildCollectibleOtherFees,
+  countSelectedOtherFees,
+  getCollectibleOtherFeeCharge,
+  type CollectibleFeeItem,
+} from '@/features/fees/utils/build-collectible-other-fees';
 import {
   aggregateFeeRows,
   getFeeLateFeeOutstanding,
@@ -168,6 +175,7 @@ export default function RecordPaymentModal({
   const [loadingFees, setLoadingFees] = useState(false);
   const [currentFeeStructures, setCurrentFeeStructures] = useState<any[]>([]);
   const [exemptLateFees, setExemptLateFees] = useState(false);
+  const [otherFeeItems, setOtherFeeItems] = useState<CollectibleFeeItem[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -223,11 +231,15 @@ export default function RecordPaymentModal({
     setStudentHasTransport(false);
     setTransportMonthlyFee(0);
     setExemptLateFees(false);
+    setOtherFeeItems([]);
   };
 
   const hasChanges = () => {
-    return JSON.stringify(formData) !== JSON.stringify(initialFormData) || 
-           monthFees.some(m => m.tuitionSelected || m.transportSelected);
+    return (
+      JSON.stringify(formData) !== JSON.stringify(initialFormData) ||
+      monthFees.some((m) => m.tuitionSelected || m.transportSelected) ||
+      otherFeeItems.some((item) => item.selected)
+    );
   };
 
   const handleCancel = () => {
@@ -281,19 +293,23 @@ export default function RecordPaymentModal({
         feeParams.set('academic_year', settings.academic_year);
       }
 
-      const response = await fetch(`/api/fees/student-fees?${feeParams}`);
+      const [response, paymentsResponse, transportResponse, structuresResponse] =
+        await Promise.all([
+          fetch(`/api/fees/student-fees?${feeParams}`),
+          fetch(`/api/fees?student_id=${studentId}`),
+          fetch(`/api/transport/assignments?student_id=${studentId}`),
+          fetch(
+            `/api/fees/structures?is_active=true${
+              settings.academic_year
+                ? `&academic_year=${encodeURIComponent(settings.academic_year)}`
+                : ''
+            }`,
+          ),
+        ]);
       const data = await response.json();
-      
-      // Get payment history to check transport payments
-      const paymentsResponse = await fetch(`/api/fees?student_id=${studentId}`);
       const paymentsData = await paymentsResponse.json();
-      
-      // Debug logging
-      console.log('Payment data for student:', studentId, paymentsData);
-      
-      // Get transport info
-      const transportResponse = await fetch(`/api/transport/assignments?student_id=${studentId}`);
       const transportData = await transportResponse.json();
+      const structuresData = await structuresResponse.json();
       
       const hasTransport = transportData.success && transportData.data && transportData.data.length > 0;
       setStudentHasTransport(hasTransport);
@@ -413,6 +429,22 @@ export default function RecordPaymentModal({
       }
       
       setMonthFees(generatedMonths);
+
+      const payingStudent =
+        students.find((s) => s.id === studentId) ||
+        (selectedStudent?.id === studentId ? selectedStudent : null);
+      const feeStructures = structuresData.success ? structuresData.data : currentFeeStructures;
+      if (structuresData.success) {
+        setCurrentFeeStructures(structuresData.data);
+      }
+
+      setOtherFeeItems(
+        buildCollectibleOtherFees({
+          studentFees: allStudentFees as Parameters<typeof buildCollectibleOtherFees>[0]['studentFees'],
+          feeStructures,
+          classId: payingStudent?.class_id ?? null,
+        }),
+      );
     } catch (error) {
       console.error('Error loading monthly fees:', error);
     } finally {
@@ -517,10 +549,18 @@ export default function RecordPaymentModal({
       }
     });
 
+    otherFeeItems.forEach((item) => {
+      total += getCollectibleOtherFeeCharge(item, exemptLateFees);
+      if (item.selected && item.calculated_late_fee) {
+        lateFeeTotal += item.calculated_late_fee;
+      }
+    });
+
     return { total, lateFeeTotal };
   };
 
-  const getSelectedCount = () => countChargeableSelections(monthFees);
+  const getSelectedCount = () =>
+    countChargeableSelections(monthFees) + countSelectedOtherFees(otherFeeItems);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -529,7 +569,7 @@ export default function RecordPaymentModal({
     
     const selectedCount = getSelectedCount();
     if (selectedCount === 0) {
-      setError('Please select at least one month to pay');
+      setError('Please select at least one fee to pay');
       return;
     }
 
@@ -576,7 +616,32 @@ export default function RecordPaymentModal({
         }
       });
 
+      const parsedYear = parseAcademicYear(
+        settings.academic_year
+          ? normalizeAcademicYear(settings.academic_year)
+          : getDefaultAcademicYearForDate().name,
+      );
+
       const studentFeeLateFees: Record<number, number> = {};
+
+      otherFeeItems.forEach((item) => {
+        if (!item.selected || item.outstanding <= 0) return;
+
+        if (item.id) {
+          selectedFeeIds.push(item.id);
+          if (!exemptLateFees && item.calculated_late_fee && item.calculated_late_fee > 0) {
+            studentFeeLateFees[item.id] = item.calculated_late_fee;
+          }
+        } else {
+          feeBreakdown.push({
+            fee_type: item.fee_type,
+            month: item.month,
+            year: item.year ?? calendarYearForMonth(parsedYear, item.month),
+            amount: item.outstanding,
+          });
+        }
+      });
+
       if (!exemptLateFees) {
         monthFees.forEach((m) => {
           if (m.tuitionSelected && hasTuitionOutstanding(m) && m.tuitionFee?.id) {
@@ -858,8 +923,10 @@ export default function RecordPaymentModal({
                                     transportSelected: false
                                   }));
                                   setMonthFees(newMonthFees);
+                                  setOtherFeeItems((items) =>
+                                    items.map((item) => ({ ...item, selected: false })),
+                                  );
                                 } else {
-                                  // Select all 12 months (both pending and advance)
                                   const newMonthFees = monthFees.map((m) => ({
                                     ...m,
                                     tuitionSelected: hasTuitionOutstanding(m),
@@ -867,6 +934,12 @@ export default function RecordPaymentModal({
                                       studentHasTransport && hasTransportOutstanding(m),
                                   }));
                                   setMonthFees(newMonthFees);
+                                  setOtherFeeItems((items) =>
+                                    items.map((item) => ({
+                                      ...item,
+                                      selected: item.outstanding > 0,
+                                    })),
+                                  );
                                 }
                               }}
                               className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
@@ -1055,6 +1128,15 @@ export default function RecordPaymentModal({
                       })}
                     </div>
 
+                    {otherFeeItems.length > 0 && (
+                      <div className="mt-4">
+                        <OtherFeesPanel
+                          items={otherFeeItems}
+                          onChange={setOtherFeeItems}
+                        />
+                      </div>
+                    )}
+
                     {/* Selection Summary - Compact */}
                     {selectedCount > 0 && (
                       <div className="mt-3 p-3 bg-gradient-to-r from-primary-50 to-blue-50 border-2 border-primary-300 rounded-md sticky bottom-0 shadow-lg">
@@ -1064,7 +1146,18 @@ export default function RecordPaymentModal({
                           </span>
                           <button
                             type="button"
-                            onClick={() => setMonthFees(monthFees.map(m => ({ ...m, tuitionSelected: false, transportSelected: false })))}
+                            onClick={() => {
+                              setMonthFees(
+                                monthFees.map((m) => ({
+                                  ...m,
+                                  tuitionSelected: false,
+                                  transportSelected: false,
+                                })),
+                              );
+                              setOtherFeeItems((items) =>
+                                items.map((item) => ({ ...item, selected: false })),
+                              );
+                            }}
                             className="text-xs text-primary-600 hover:text-primary-700 font-medium bg-white px-2 py-0.5 rounded"
                           >
                             Clear

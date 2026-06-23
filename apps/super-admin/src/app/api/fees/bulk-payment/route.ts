@@ -66,7 +66,7 @@ async function findExistingStudentFee(
      WHERE sf.student_id = $1 AND sf.academic_year = $2 AND sf.month = $3
        AND (
          ($4 ILIKE '%transport%' AND fs.fee_type ILIKE '%transport%')
-         OR ($4 NOT ILIKE '%transport%' AND fs.fee_type ILIKE '%tuition%')
+         OR ($4 ILIKE '%tuition%' AND fs.fee_type ILIKE '%tuition%')
          OR fs.fee_type ILIKE $4
        )
      LIMIT 1`,
