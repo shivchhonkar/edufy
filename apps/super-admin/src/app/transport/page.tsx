@@ -570,7 +570,7 @@ export default function TransportPage() {
                 </div>
               </div>
             </div>
-            <p className="text-gray-600 mt-1">Simple 3-step setup: Vehicles → Routes → Assign Students</p>
+            {/* <p className="text-gray-600 mt-1">Simple 3-step setup: Vehicles → Routes → Assign Students</p> */}
           </div>
           {activeTab === 'vehicles' && (
             <button 

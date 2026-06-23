@@ -136,7 +136,10 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Attendance',
     icon: FiUserCheck,
     items: [
-      { name: 'Student Attendance', path: '/attendance/students', icon: FiCheckCircle },
+      { name: 'Student Register', path: '/attendance', icon: FiCalendar },
+      { name: 'Staff Register', path: '/attendance/staff/register', icon: FiUsers },
+      { name: 'Mark Student Attendance', path: '/attendance/students', icon: FiCheckCircle },
+      { name: 'Mark Staff Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Attendance Reports', path: '/attendance/reports', icon: FiBarChart2 },
       {
         name: 'Biometric Integration',
@@ -144,7 +147,6 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
         icon: FiCpu,
         comingSoon: true,
       },
-      { name: 'Staff Attendance', path: '/attendance/staff', icon: FiUserCheck },
     ],
   },
   {

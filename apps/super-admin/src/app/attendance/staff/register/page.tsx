@@ -20,43 +20,26 @@ import {
   downloadRegisterExcel,
   printRegister,
 } from '@/features/attendance/utils/attendance-register-export'
-import { formatClassSectionLabel as formatClassLabel } from '@/features/attendance/utils/student-attendance-calendar-export'
-import { sortClassesByName } from '@/lib/class-sort'
 import { useSettings } from '@/shared/SettingsContext'
 
-interface ClassOption {
-  id: number
-  name: string
-}
-
-interface SectionOption {
-  id: number
-  class_id: number
-  name: string
-}
-
-interface StudentRow {
+interface StaffRow {
   id: number
   first_name: string
   last_name: string
 }
 
 interface AttendanceRecord {
-  student_id: number
-  date: string
+  staff_id: number
+  attendance_date: string
   status: string
 }
 
-export default function StudentMonthlyRegisterPage() {
+export default function StaffMonthlyRegisterPage() {
   const { settings } = useSettings()
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
-  const [classes, setClasses] = useState<ClassOption[]>([])
-  const [sections, setSections] = useState<SectionOption[]>([])
-  const [classId, setClassId] = useState('')
-  const [sectionId, setSectionId] = useState('')
-  const [students, setStudents] = useState<StudentRow[]>([])
+  const [staff, setStaff] = useState<StaffRow[]>([])
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -64,72 +47,24 @@ export default function StudentMonthlyRegisterPage() {
   const [cellEdit, setCellEdit] = useState<RegisterCellEditContext | null>(null)
   const [cellModalOpen, setCellModalOpen] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/classes')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          const sorted = sortClassesByName(data.data as ClassOption[])
-          setClasses(sorted)
-          setClassId((prev) => prev || (sorted[0] ? String(sorted[0].id) : ''))
-        }
-      })
-      .catch(console.error)
-  }, [])
-
-  useEffect(() => {
-    if (!classId) {
-      setSections([])
-      setSectionId('')
-      return
-    }
-    fetch(`/api/sections?class_id=${classId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) setSections(data.data)
-      })
-      .catch(console.error)
-  }, [classId])
-
   const loadRegister = useCallback(async () => {
-    if (!classId) {
-      setStudents([])
-      setRecords([])
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
     try {
       const { start, end } = getMonthDateRange(month, year)
-      const studentParams = new URLSearchParams({
-        class_id: classId,
-        limit: '500',
-        status: 'active',
-      })
-      if (sectionId) studentParams.set('section_id', sectionId)
-
       const attendanceParams = new URLSearchParams({ start_date: start, end_date: end })
-      attendanceParams.set('class_id', classId)
-      if (sectionId) attendanceParams.set('section_id', sectionId)
-
       const holidayParams = new URLSearchParams({ start_date: start, end_date: end })
 
-      const [studentsRes, attendanceRes, holidaysRes] = await Promise.all([
-        fetch(`/api/students?${studentParams.toString()}`),
-        fetch(`/api/attendance/students?${attendanceParams.toString()}`),
+      const [staffRes, attendanceRes, holidaysRes] = await Promise.all([
+        fetch('/api/staff?limit=500&status=active'),
+        fetch(`/api/attendance?${attendanceParams.toString()}`),
         fetch(`/api/holidays?${holidayParams.toString()}`),
       ])
 
-      const studentsData = await studentsRes.json()
+      const staffData = await staffRes.json()
       const attendanceData = await attendanceRes.json()
       const holidaysData = await holidaysRes.json()
 
-      if (studentsData.success) {
-        setStudents(studentsData.data)
-      } else {
-        setStudents([])
-      }
+      setStaff(staffData.success ? staffData.data : [])
 
       if (attendanceData.success) {
         setRecords(attendanceData.data)
@@ -150,11 +85,11 @@ export default function StudentMonthlyRegisterPage() {
         setHolidayDates(new Set())
       }
     } catch (error) {
-      console.error('Error loading student register:', error)
+      console.error('Error loading staff register:', error)
     } finally {
       setLoading(false)
     }
-  }, [classId, sectionId, month, year])
+  }, [month, year])
 
   useEffect(() => {
     loadRegister()
@@ -163,38 +98,26 @@ export default function StudentMonthlyRegisterPage() {
   const registerRows = useMemo(
     () =>
       buildMonthlyRegisterRows(
-        students.map((s) => ({
+        staff.map((s) => ({
           id: s.id,
           name: `${s.first_name} ${s.last_name}`.trim(),
         })),
         records.map((r) => ({
-          personId: r.student_id,
-          date: r.date,
+          personId: r.staff_id,
+          date: r.attendance_date,
           status: r.status,
         })),
         month,
         year,
         holidayDates,
       ),
-    [students, records, month, year, holidayDates],
+    [staff, records, month, year, holidayDates],
   )
 
-  const classLabel = useMemo(() => {
-    const className = classes.find((c) => String(c.id) === classId)?.name
-    const sectionName = sections.find((s) => String(s.id) === sectionId)?.name
-    return formatClassLabel(className, sectionName, 'Select class')
-  }, [classes, classId, sections, sectionId])
-
-  const filterSummary = useMemo(() => {
-    const monthName = getMonthLabel(month)
-    const sectionPart =
-      sectionId && sections.length
-        ? ` · ${sections.find((s) => String(s.id) === sectionId)?.name ?? 'Section'}`
-        : classId
-          ? ' · All Sections'
-          : ''
-    return `${classId ? classLabel : 'No class'}${sectionPart} · ${monthName} ${year}`
-  }, [classId, classLabel, sectionId, sections, month, year])
+  const filterSummary = useMemo(
+    () => `${getMonthLabel(month)} ${year} · All Staff`,
+    [month, year],
+  )
 
   const canExport = registerRows.length > 0 && !loading
 
@@ -203,13 +126,12 @@ export default function StudentMonthlyRegisterPage() {
       rows: registerRows,
       month,
       year,
-      entityLabel: 'Student',
-      classLabel: classId ? classLabel : undefined,
+      entityLabel: 'Staff',
       holidayDates,
       schoolName: settings.school_name || 'School',
-      filePrefix: 'student-attendance',
+      filePrefix: 'staff-attendance',
     }),
-    [registerRows, month, year, classId, classLabel, holidayDates, settings.school_name],
+    [registerRows, month, year, holidayDates, settings.school_name],
   )
 
   const handlePrint = () => printRegister(exportOptions)
@@ -219,8 +141,8 @@ export default function StudentMonthlyRegisterPage() {
     (selection: RegisterCellClick) => {
       const record = records.find(
         (r) =>
-          r.student_id === selection.personId &&
-          String(r.date).slice(0, 10) === selection.date,
+          r.staff_id === selection.personId &&
+          String(r.attendance_date).slice(0, 10) === selection.date,
       )
       setCellEdit({
         ...selection,
@@ -240,9 +162,9 @@ export default function StudentMonthlyRegisterPage() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Monthly Attendance Register</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Staff Monthly Attendance Register</h1>
             <p className="text-gray-500 mt-0.5 text-sm">
-              View student attendance by class and month. Default view for teachers and administrators.
+              View attendance for all staff members by month.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
@@ -265,7 +187,7 @@ export default function StudentMonthlyRegisterPage() {
               Download Excel
             </button>
             <Link
-              href="/attendance/students"
+              href="/attendance/staff"
               className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-700"
             >
               <FiCheckCircle size={14} />
@@ -277,41 +199,7 @@ export default function StudentMonthlyRegisterPage() {
         <AttendanceRegisterNav />
 
         <AttendanceRegisterFilters summary={filterSummary}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <label className="block text-xs font-medium text-gray-600">
-              Class
-              <select
-                value={classId}
-                onChange={(e) => {
-                  setClassId(e.target.value)
-                  setSectionId('')
-                }}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white"
-              >
-                <option value="">Select class</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-xs font-medium text-gray-600">
-              Section
-              <select
-                value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
-                disabled={!classId}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white disabled:bg-gray-50"
-              >
-                <option value="">All Sections</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
             <label className="block text-xs font-medium text-gray-600">
               Month
               <select
@@ -340,7 +228,7 @@ export default function StudentMonthlyRegisterPage() {
 
         {migrationRequired && (
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs">
-            Student attendance is not set up yet. Mark attendance to build records.
+            Staff attendance is not set up yet. Run the migration or mark attendance to build records.
           </div>
         )}
 
@@ -348,16 +236,12 @@ export default function StudentMonthlyRegisterPage() {
           rows={registerRows}
           month={month}
           year={year}
-          classLabel={classId ? classLabel : undefined}
+          entityLabel="Staff"
           holidayDates={holidayDates}
           loading={loading}
-          editable={!migrationRequired && Boolean(classId)}
+          editable={!migrationRequired}
           onCellClick={handleCellClick}
-          emptyMessage={
-            classId
-              ? 'No students found for the selected class and section.'
-              : 'Select a class to view the monthly register.'
-          }
+          emptyMessage="No staff members found."
         />
 
         <RegisterCellAttendanceModal
@@ -368,7 +252,7 @@ export default function StudentMonthlyRegisterPage() {
           }}
           onSuccess={handleCellSaved}
           context={cellEdit}
-          variant="student"
+          variant="staff"
         />
       </div>
     </DashboardLayout>
