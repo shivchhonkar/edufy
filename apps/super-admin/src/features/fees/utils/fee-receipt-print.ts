@@ -85,6 +85,7 @@ function getFeeTypeDisplay(feeType: string) {
     'Laboratory Fee': 'LABORATORY FEE',
     'Sports Fee': 'SPORTS FEE',
     'Examination Fee': 'EXAMINATION FEE',
+    'Registration Fee': 'REGISTRATION FEE',
     'Activity Fee': 'ACTIVITY FEE',
     'Late Fee': 'LATE FEE',
     'Other Charges': 'OTHER CHARGES',

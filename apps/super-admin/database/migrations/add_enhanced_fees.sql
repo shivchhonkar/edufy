@@ -38,6 +38,7 @@ INSERT INTO fee_categories (name, description) VALUES
     ('Laboratory Fee', 'Science lab and computer lab charges'),
     ('Sports Fee', 'Sports facilities and equipment charges'),
     ('Examination Fee', 'Exam paper and evaluation charges'),
+    ('Registration Fee', 'New student registration and admission charges'),
     ('Activity Fee', 'Extra-curricular activities charges'),
     ('Late Fee', 'Penalty for late payment'),
     ('Other Charges', 'Miscellaneous charges')

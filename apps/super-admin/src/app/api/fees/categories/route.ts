@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 // GET fee categories
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureFeeSchema(db);
     const searchParams = request.nextUrl.searchParams;
     const isActive = searchParams.get('is_active');
 

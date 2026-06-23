@@ -30,6 +30,7 @@ async function ensureFeeCategoriesOnly(client: PoolClient) {
       INSERT INTO fee_categories (name, description) VALUES
       ('Tuition Fee', 'Regular tuition fees for academic instruction'),
       ('Transport Fee', 'Bus or van transportation charges'),
+      ('Registration Fee', 'New student registration and admission charges'),
       ('Library Fee', 'Library maintenance and book lending charges'),
       ('Laboratory Fee', 'Science lab and computer lab charges'),
       ('Sports Fee', 'Sports facilities and equipment charges'),
@@ -57,6 +58,7 @@ async function initializeFees(client: PoolClient) {
       INSERT INTO fee_categories (name, description) VALUES
       ('Tuition Fee', 'Regular tuition fees for academic instruction'),
       ('Transport Fee', 'Bus or van transportation charges'),
+      ('Registration Fee', 'New student registration and admission charges'),
       ('Library Fee', 'Library maintenance and book lending charges'),
       ('Laboratory Fee', 'Science lab and computer lab charges'),
       ('Sports Fee', 'Sports facilities and equipment charges'),
@@ -119,6 +121,10 @@ async function initializeFees(client: PoolClient) {
             break;
           case 'Examination Fee':
             amount = 100;
+            frequency = 'yearly';
+            break;
+          case 'Registration Fee':
+            amount = 500;
             frequency = 'yearly';
             break;
           case 'Activity Fee':

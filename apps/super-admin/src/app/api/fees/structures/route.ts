@@ -226,8 +226,8 @@ async function createSingleFeeStructure(
         params.frequency,
         params.academic_year,
         params.description,
-        params.late_fee_percentage || 0,
-        params.late_fee_days || 7,
+        params.late_fee_percentage ?? 0,
+        params.late_fee_days ?? 0,
         params.is_active !== false,
       ]
     );
@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
       academic_year,
       description: description || null,
       late_fee_percentage: late_fee_percentage ?? 0,
-      late_fee_days: late_fee_days ?? 7,
+      late_fee_days: late_fee_days ?? 0,
       is_active: is_active !== false,
       installment_count: installment_count ? parseInt(String(installment_count), 10) : undefined,
     };
@@ -424,7 +424,7 @@ export async function PUT(request: NextRequest) {
       oldAmount !== newAmount ||
       oldRow.frequency !== frequency ||
       parseFloat(oldRow.late_fee_percentage ?? '0') !== parseFloat(late_fee_percentage ?? '0') ||
-      (oldRow.late_fee_days ?? 7) !== (late_fee_days ?? 7);
+      (oldRow.late_fee_days ?? 0) !== (late_fee_days ?? 0);
 
     if (materialChange) {
       await FeeStructureVersionService.createVersion(db, {
@@ -432,7 +432,7 @@ export async function PUT(request: NextRequest) {
         amount: newAmount,
         frequency,
         lateFeePercentage: parseFloat(late_fee_percentage ?? '0'),
-        lateFeeDays: late_fee_days ?? 7,
+        lateFeeDays: late_fee_days ?? 0,
       });
     }
 

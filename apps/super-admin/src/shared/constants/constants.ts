@@ -182,6 +182,7 @@ export const FEE_TYPE_LABELS: Record<string, { label: string; icon: string }> = 
   sports: { label: 'Sports Fee', icon: '⚽' },
   activity: { label: 'Activity Fee', icon: '🎨' },
   examination: { label: 'Examination Fee', icon: '📝' },
+  registration: { label: 'Registration Fee', icon: '📋' },
   computer: { label: 'Computer Fee', icon: '💻' },
   laboratory: { label: 'Laboratory Fee', icon: '🔬' },
   other: { label: 'Other Charges', icon: '📋' },

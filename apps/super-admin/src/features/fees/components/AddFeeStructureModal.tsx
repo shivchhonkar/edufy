@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { useSettings } from '@/shared/SettingsContext';
+import { getDefaultsForCategoryName } from '@/lib/fees/fee-category-defaults';
 
 interface AddFeeStructureModalProps {
   isOpen: boolean;
@@ -33,8 +34,8 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
     frequency: 'monthly',
     academic_year: settings.academic_year || new Date().getFullYear().toString(),
     description: '',
-    late_fee_percentage: '2',
-    late_fee_days: '7',
+    late_fee_percentage: '0',
+    late_fee_days: '0',
     is_active: true,
   });
   const [initialFormData, setInitialFormData] = useState(formData);
@@ -61,8 +62,14 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
           frequency: editingFeeStructure.frequency || 'monthly',
           academic_year: editingFeeStructure.academic_year || settings.academic_year || new Date().getFullYear().toString(),
           description: editingFeeStructure.description || '',
-          late_fee_percentage: editingFeeStructure.late_fee_percentage ? editingFeeStructure.late_fee_percentage.toString() : '2',
-          late_fee_days: editingFeeStructure.late_fee_days ? editingFeeStructure.late_fee_days.toString() : '7',
+          late_fee_percentage:
+            editingFeeStructure.late_fee_percentage != null
+              ? editingFeeStructure.late_fee_percentage.toString()
+              : '0',
+          late_fee_days:
+            editingFeeStructure.late_fee_days != null
+              ? editingFeeStructure.late_fee_days.toString()
+              : '0',
           is_active: editingFeeStructure.is_active !== undefined ? editingFeeStructure.is_active : true,
         };
         setFormData(data);
@@ -78,8 +85,8 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
           frequency: 'monthly',
           academic_year: settings.academic_year || new Date().getFullYear().toString(),
           description: '',
-          late_fee_percentage: '2',
-          late_fee_days: '7',
+          late_fee_percentage: '0',
+          late_fee_days: '0',
           is_active: true,
         };
         setFormData(data);
@@ -232,6 +239,19 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
+  };
+
+  const handleCategoryChange = (categoryId: string) => {
+    const category = categories.find((cat) => String(cat.id) === categoryId);
+    const defaults = getDefaultsForCategoryName(category?.name);
+
+    setFormData((prev) => ({
+      ...prev,
+      category_id: categoryId,
+      fee_type: defaults?.fee_type ?? prev.fee_type,
+      frequency: defaults?.frequency ?? prev.frequency,
+      description: defaults?.description ?? prev.description,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -414,7 +434,7 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
                   </label>
                   <select
                     value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
                   >
                     <option value="">Select Category</option>
@@ -536,7 +556,7 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
                     value={formData.late_fee_percentage}
                     onChange={(e) => setFormData({ ...formData, late_fee_percentage: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-                    placeholder="2.00"
+                    placeholder="0"
                   />
                   <p className="mt-1 text-xs text-gray-500">Percentage charged on overdue amount</p>
                 </div>
@@ -550,7 +570,7 @@ export default function AddFeeStructureModal({ isOpen, onClose, onSuccess, editi
                     value={formData.late_fee_days}
                     onChange={(e) => setFormData({ ...formData, late_fee_days: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-                    placeholder="7"
+                    placeholder="0"
                   />
                   <p className="mt-1 text-xs text-gray-500">Days after due date before late fee applies</p>
                 </div>
