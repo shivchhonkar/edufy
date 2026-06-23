@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiChevronDown, FiChevronUp, FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { compareClassNames } from '@/lib/class-sort';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -10,14 +10,37 @@ import { formatFeeCurrency } from '@/features/fees/utils/fees-format';
 interface FeeStructuresPanelProps {
   feeStructures: Array<Record<string, unknown>>;
   onRefresh: () => void;
+  showInlineAddButton?: boolean;
+  addStructureTriggerRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export default function FeeStructuresPanel({ feeStructures, onRefresh }: FeeStructuresPanelProps) {
+export default function FeeStructuresPanel({
+  feeStructures,
+  onRefresh,
+  showInlineAddButton = true,
+  addStructureTriggerRef,
+}: FeeStructuresPanelProps) {
   const { alert, confirm } = useDialog();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const openAddModal = useCallback(() => {
+    setEditing(null);
+    setShowModal(true);
+  }, []);
+
+  useEffect(() => {
+    if (addStructureTriggerRef) {
+      addStructureTriggerRef.current = openAddModal;
+    }
+    return () => {
+      if (addStructureTriggerRef) {
+        addStructureTriggerRef.current = null;
+      }
+    };
+  }, [addStructureTriggerRef, openAddModal]);
 
   const grouped = useMemo(() => {
     const map: Record<string, Array<Record<string, unknown>>> = {};
@@ -97,19 +120,18 @@ export default function FeeStructuresPanel({ feeStructures, onRefresh }: FeeStru
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setShowModal(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
-        >
-          <FiPlus size={16} />
-          Add Structure
-        </button>
-      </div>
+      {showInlineAddButton && (
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
+          >
+            <FiPlus size={16} />
+            Add Structure
+          </button>
+        </div>
+      )}
 
       {grouped.sortedKeys.map((className) => {
         const items = grouped.map[className];

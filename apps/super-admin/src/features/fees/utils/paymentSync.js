@@ -68,8 +68,8 @@ export async function universalPaymentReconciliation(academicYear = '2025-26') {
 export async function fixTransportFeePayments(academicYear = '2025-26') {
   const db = poolAsRequestDb();
   const recordsFixed = await PaymentReconciliationService.repairTransportFees(db, academicYear);
-  return {
-    success: true,
+    return {
+      success: true,
     message: 'Transport fee payments fixed',
     recordsFixed,
   };
@@ -78,7 +78,7 @@ export async function fixTransportFeePayments(academicYear = '2025-26') {
 export async function autoPaymentReconciliation(academicYear = '2025-26') {
   const db = poolAsRequestDb();
   const result = await PaymentReconciliationService.reconcileAll(db, { academicYear });
-  return {
+    return {
     success: result.success,
     message: result.message,
     transportFix: { recordsFixed: result.transportRecordsFixed },
@@ -92,7 +92,7 @@ export async function autoPaymentReconciliation(academicYear = '2025-26') {
 export async function isReconciliationNeeded(academicYear = '2025-26') {
   const db = poolAsRequestDb();
   const check = await PaymentReconciliationService.isReconciliationNeeded(db, academicYear);
-  return {
+    return {
     needed: check.needed,
     count: check.count,
   };

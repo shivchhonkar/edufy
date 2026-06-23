@@ -116,6 +116,7 @@ import {
   resolveMonthCalendarYear,
   sortMonthsInAcademicOrder,
 } from '@/lib/fees/fee-month-order';
+import { isRegistrationFeeType } from '@/features/fees/utils/fee-type-classification';
 
 function parseYearNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -182,14 +183,19 @@ export function buildFeeReceiptLineItems(
   const yearLabel = academicYear || payment.academic_year;
 
   if (payment.fee_breakdown?.length) {
-    const groups = new Map<string, { due: number; months: { m: number; y: number }[] }>();
+    const groups = new Map<
+      string,
+      { due: number; months: { m: number; y: number }[]; skipPeriodSuffix: boolean }
+    >();
 
     for (const fee of payment.fee_breakdown) {
-      const type = getFeeTypeDisplay(fee.fee_type || 'Fee Payment');
+      const rawType = fee.fee_type || 'Fee Payment';
+      const type = getFeeTypeDisplay(rawType);
       const amount = parseFloat(String(fee.amount)) || 0;
       const late = parseFloat(String(fee.late_fee)) || 0;
-      const entry = groups.get(type) || { due: 0, months: [] };
+      const entry = groups.get(type) || { due: 0, months: [], skipPeriodSuffix: false };
       entry.due += amount + late;
+      entry.skipPeriodSuffix = entry.skipPeriodSuffix || isRegistrationFeeType(rawType);
       if (fee.month) {
         const monthNum = parseMonthNumber(fee.month, undefined);
         const y = resolveMonthCalendarYear(
@@ -203,7 +209,9 @@ export function buildFeeReceiptLineItems(
     }
 
     const lineItems = Array.from(groups.entries()).map(([type, data]) => ({
-      label: `${type}${formatMonthSuffix(data.months, yearLabel)}`.replace(/\s+/g, ' ').trim(),
+      label: data.skipPeriodSuffix
+        ? type
+        : `${type}${formatMonthSuffix(data.months, yearLabel)}`.replace(/\s+/g, ' ').trim(),
       due: data.due,
       paid: data.due,
       balance: 0,
@@ -223,14 +231,17 @@ export function buildFeeReceiptLineItems(
     parseFloat(String(payment.discount_applied || 0)) -
     lateFee;
 
-  let label = getFeeTypeDisplay(payment.fee_type || 'Fee Payment');
-  if (payment.month) {
-    const year = payment.academic_year?.split('-')?.[0] || new Date().getFullYear();
-    label += formatMonthSuffix([
-      { m: parseMonthNumber(payment.month, Number(year)), y: Number(year) },
-    ]);
-  } else if (yearLabel) {
-    label += ` (ANNUAL (${formatAcademicYearShort(yearLabel)}))`;
+  const rawFeeType = payment.fee_type || 'Fee Payment';
+  let label = getFeeTypeDisplay(rawFeeType);
+  if (!isRegistrationFeeType(rawFeeType)) {
+    if (payment.month) {
+      const year = payment.academic_year?.split('-')?.[0] || new Date().getFullYear();
+      label += formatMonthSuffix([
+        { m: parseMonthNumber(payment.month, Number(year)), y: Number(year) },
+      ]);
+    } else if (yearLabel) {
+      label += ` (ANNUAL (${formatAcademicYearShort(yearLabel)}))`;
+    }
   }
 
   const due = gross > 0 ? gross : parseFloat(String(payment.amount_paid || 0));

@@ -96,9 +96,9 @@ function buildBreakdownFromPaymentReceiptRow(
   const totalTuition = Number(receiptData.total_tuition_paid || 0);
   const totalTransport = Number(receiptData.total_transport_paid || 0);
   const totalOther = Number(receiptData.total_other_paid || 0);
-  const tuitionPerMonth = Number(receiptData.tuition_fees_per_month || 0);
-  const transportPerMonth = Number(receiptData.transport_fees_per_month || 0);
-  const otherPerMonth = Number(receiptData.other_fees_per_month || 0);
+      const tuitionPerMonth = Number(receiptData.tuition_fees_per_month || 0);
+      const transportPerMonth = Number(receiptData.transport_fees_per_month || 0);
+      const otherPerMonth = Number(receiptData.other_fees_per_month || 0);
 
   const feeBreakdown: StoredFeeBreakdownItem[] = [];
   const orderedMonthNumbers = sortCalendarMonthNumbers(
@@ -110,35 +110,35 @@ function buildBreakdownFromPaymentReceiptRow(
     const y = resolveMonthCalendarYear(m, academicYear);
 
     if (totalTuition > 0 && tuitionPerMonth > 0) {
-      feeBreakdown.push({
-        fee_type: 'Tuition Fee',
-        month: monthName,
-        year: y,
-        amount: tuitionPerMonth,
-        late_fee: 0,
-      });
-    }
+          feeBreakdown.push({
+            fee_type: 'Tuition Fee',
+            month: monthName,
+            year: y,
+            amount: tuitionPerMonth,
+            late_fee: 0,
+          });
+        }
 
     if (totalTransport > 0 && transportPerMonth > 0) {
-      feeBreakdown.push({
-        fee_type: 'Transport Fee',
-        month: monthName,
-        year: y,
-        amount: transportPerMonth,
-        late_fee: 0,
-      });
-    }
+          feeBreakdown.push({
+            fee_type: 'Transport Fee',
+            month: monthName,
+            year: y,
+            amount: transportPerMonth,
+            late_fee: 0,
+          });
+        }
 
     if (totalOther > 0 && otherPerMonth > 0) {
-      feeBreakdown.push({
-        fee_type: 'Examination & Activity Fee',
-        month: monthName,
-        year: y,
-        amount: otherPerMonth,
-        late_fee: 0,
-      });
-    }
-  }
+          feeBreakdown.push({
+            fee_type: 'Examination & Activity Fee',
+            month: monthName,
+            year: y,
+            amount: otherPerMonth,
+            late_fee: 0,
+          });
+        }
+      }
 
   return feeBreakdown;
 }
@@ -309,7 +309,7 @@ export async function GET(
     }
 
     const result = await db.query(
-      `SELECT
+      `SELECT 
         fp.*,
         s.id as student_id,
         s.first_name,

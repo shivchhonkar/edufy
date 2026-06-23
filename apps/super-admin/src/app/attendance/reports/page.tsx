@@ -693,13 +693,13 @@ export default function StudentAttendanceReportsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-            <Link
-              href="/attendance/students"
+          <Link
+            href="/attendance/students"
               className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-700"
-            >
+          >
               <FiCheckCircle size={14} />
-              Mark Attendance
-            </Link>
+            Mark Attendance
+          </Link>
             {canExportOrPrint && (
               <>
                 <button
@@ -774,8 +774,8 @@ export default function StudentAttendanceReportsPage() {
         )}
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <button
-            type="button"
+              <button
+                type="button"
             onClick={() => setFiltersExpanded((open) => !open)}
             className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
             aria-expanded={filtersExpanded}
@@ -798,7 +798,7 @@ export default function StudentAttendanceReportsPage() {
                     {search ? ` · "${search}"` : ''}
                   </p>
                 )}
-              </div>
+          </div>
             </div>
             {filtersExpanded ? (
               <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" aria-hidden />
@@ -812,79 +812,79 @@ export default function StudentAttendanceReportsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
                 <label className="block text-xs font-medium text-gray-600">
                   Month
-                  <select
-                    value={month}
-                    onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+              <select
+                value={month}
+                onChange={(e) => setMonth(parseInt(e.target.value, 10))}
                     className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {new Date(2000, i).toLocaleString('default', { month: 'long' })}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </label>
                 <label className="block text-xs font-medium text-gray-600">
                   Year
-                  <input
-                    type="number"
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value, 10) || year)}
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value, 10) || year)}
                     className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm"
-                  />
-                </label>
+              />
+            </label>
                 <label className="block text-xs font-medium text-gray-600">
                   Class
-                  <select
-                    value={classId}
-                    onChange={(e) => {
-                      setClassId(e.target.value);
-                      setSectionId('');
-                    }}
+              <select
+                value={classId}
+                onChange={(e) => {
+                  setClassId(e.target.value);
+                  setSectionId('');
+                }}
                     className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white"
-                  >
-                    <option value="">All Classes</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              >
+                <option value="">All Classes</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
                 <label className="block text-xs font-medium text-gray-600">
                   Section
-                  <select
-                    value={sectionId}
-                    onChange={(e) => setSectionId(e.target.value)}
-                    disabled={!classId}
+              <select
+                value={sectionId}
+                onChange={(e) => setSectionId(e.target.value)}
+                disabled={!classId}
                     className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white disabled:bg-gray-50"
-                  >
-                    <option value="">All Sections</option>
-                    {sections.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              >
+                <option value="">All Sections</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
                 <label className="block text-xs font-medium text-gray-600">
                   Search student
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name or admission no."
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Name or admission no."
                     className="mt-1 w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm"
-                  />
-                </label>
-              </div>
+              />
+            </label>
+          </div>
 
-              {period.start_date && (
-                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+          {period.start_date && (
+            <p className="text-xs text-gray-500 flex items-center gap-1.5">
                   <FiCalendar size={13} />
-                  Period: {new Date(period.start_date).toLocaleDateString('en-IN')} –{' '}
-                  {new Date(period.end_date).toLocaleDateString('en-IN')}
-                </p>
+              Period: {new Date(period.start_date).toLocaleDateString('en-IN')} –{' '}
+              {new Date(period.end_date).toLocaleDateString('en-IN')}
+            </p>
               )}
 
               <div className="flex flex-wrap gap-1.5">
@@ -929,7 +929,7 @@ export default function StudentAttendanceReportsPage() {
               {tab.label}
             </button>
           ))}
-        </div>
+                    </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-3">
           <div className="min-w-0 space-y-3">
@@ -937,7 +937,7 @@ export default function StudentAttendanceReportsPage() {
               loading ? (
                 <div className="flex justify-center py-12 bg-white border border-gray-200 rounded-lg">
                   <div className="animate-spin h-7 w-7 border-b-2 border-primary-600 rounded-full" />
-                </div>
+                    </div>
               ) : summary ? (
                 <div className="space-y-3">
                   <StudentAttendanceReportOverview
@@ -957,7 +957,7 @@ export default function StudentAttendanceReportsPage() {
                       >
                         View all
                       </button>
-                    </div>
+                  </div>
                     <VirtualizedTable
                       key={`overview-summary-${month}-${year}-${classId}-${sectionId}-${search}`}
                       rows={filteredStudents}
@@ -968,8 +968,8 @@ export default function StudentAttendanceReportsPage() {
                       rowHeight={44}
                       maxHeight="min(45vh, 420px)"
                     />
-                  </div>
                 </div>
+          </div>
               ) : (
                 <div className="bg-white border border-gray-200 rounded-lg p-6 text-sm text-gray-500 text-center">
                   No attendance data for the selected filters.
@@ -982,15 +982,15 @@ export default function StudentAttendanceReportsPage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     {canExportOrPrint && (
                       <>
-                        <button
-                          type="button"
+              <button
+                type="button"
                           onClick={handleExportPdf}
                           disabled={exporting}
                           className="inline-flex items-center gap-1.5 text-sm text-primary-700 border border-primary-200 px-2.5 py-1.5 rounded-md hover:bg-primary-50 disabled:opacity-50"
-                        >
-                          <FiDownload size={14} />
+              >
+                <FiDownload size={14} />
                           Export PDF
-                        </button>
+              </button>
                         <button
                           type="button"
                           onClick={handleExportExcel}
@@ -1012,18 +1012,18 @@ export default function StudentAttendanceReportsPage() {
                       </>
                     )}
                   </div>
-                </div>
+          </div>
 
-                {loading ? (
+          {loading ? (
                   <div className="flex justify-center py-12">
                     <div className="animate-spin h-7 w-7 border-b-2 border-primary-600 rounded-full" />
-                  </div>
+            </div>
                 ) : isStudentTableTab ? (
-                  <VirtualizedTable
+            <VirtualizedTable
                     key={`${reportTab}-${month}-${year}-${classId}-${sectionId}-${search}`}
                     rows={activeTableRows as StudentReportRow[]}
-                    columns={summaryColumns}
-                    getRowKey={(row) => row.student_id}
+              columns={summaryColumns}
+              getRowKey={(row) => row.student_id}
                     emptyMessage={
                       reportTab === 'absentees'
                         ? 'No absent students for the selected filters.'
@@ -1034,22 +1034,22 @@ export default function StudentAttendanceReportsPage() {
                     minWidth={1200}
                     rowHeight={44}
                     maxHeight="min(65vh, 680px)"
-                  />
-                ) : (
-                  <VirtualizedTable
-                    key={`daily-${month}-${year}-${classId}-${sectionId}-${search}`}
-                    rows={filteredDaily}
-                    columns={dailyColumns}
-                    getRowKey={(row) => row.id}
-                    emptyMessage="No attendance records found for the selected period."
-                    minWidth={900}
+            />
+          ) : (
+            <VirtualizedTable
+              key={`daily-${month}-${year}-${classId}-${sectionId}-${search}`}
+              rows={filteredDaily}
+              columns={dailyColumns}
+              getRowKey={(row) => row.id}
+              emptyMessage="No attendance records found for the selected period."
+              minWidth={900}
                     rowHeight={44}
                     maxHeight="min(65vh, 680px)"
-                  />
-                )}
-              </div>
+            />
+          )}
+        </div>
             )}
-          </div>
+      </div>
 
           <aside className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 h-fit xl:sticky xl:top-3">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Quick Actions</h3>
