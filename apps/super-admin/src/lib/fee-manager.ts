@@ -12,6 +12,8 @@
  */
 
 import pool from './db';
+import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
+import { clientAsRequestDb } from '@/lib/fees/request-db-adapter';
 
 export interface FeeUpdateOptions {
   studentId?: number;
@@ -344,8 +346,7 @@ export async function syncTransportFeesForStudent(
 }
 
 /**
- * Generate Fees for Student - Creates fee records for all applicable fee structures
- * This ensures consistency across all fee types
+ * Generate Fees for Student - delegates to FeeGenerationService
  */
 export async function generateFeesForStudent(
   studentId: number,
@@ -353,85 +354,30 @@ export async function generateFeesForStudent(
   months: number[]
 ): Promise<{ success: boolean; created: number; message: string; error?: string }> {
   const client = await pool.connect();
-  
+
   try {
-    await client.query('BEGIN');
+    const db = clientAsRequestDb(client);
 
-    try {
-      // Get student details
-      const studentResult = await client.query(
-        `SELECT class_id FROM students WHERE id = $1`,
-        [studentId]
-      );
+    const result = await FeeGenerationService.generateMonths(db, {
+      academicYear,
+      months,
+      studentIds: [studentId],
+      monthlyOnly: true,
+      conflictStrategy: 'ignore',
+    });
 
-      if (studentResult.rows.length === 0) {
-        throw new Error('Student not found');
-      }
-
-      const classId = studentResult.rows[0].class_id;
-
-      // Get all applicable fee structures
-      const feeStructuresResult = await client.query(
-        `SELECT * FROM fee_structures 
-         WHERE (class_id = $1 OR class_id IS NULL)
-         AND frequency = 'monthly'
-         AND is_active = true
-         AND academic_year = $2`,
-        [classId, academicYear]
-      );
-
-      let createdCount = 0;
-
-      // Generate fees for each month and fee structure
-      for (const month of months) {
-        for (const feeStructure of feeStructuresResult.rows) {
-          const year = new Date().getFullYear();
-          const dueDate = new Date(year, month - 1, 10);
-
-          try {
-            await client.query(
-              `INSERT INTO student_fees (
-                student_id, fee_structure_id, academic_year, amount_due,
-                due_date, month, status, created_at, updated_at
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-              ON CONFLICT (student_id, fee_structure_id, academic_year, month) 
-              DO NOTHING`,
-              [
-                studentId,
-                feeStructure.id,
-                academicYear,
-                feeStructure.amount,
-                dueDate.toISOString().split('T')[0],
-                month,
-                'pending'
-              ]
-            );
-            createdCount++;
-          } catch (err) {
-            console.error(`Error creating fee for month ${month}:`, err);
-          }
-        }
-      }
-
-      await client.query('COMMIT');
-
-      return {
-        success: true,
-        created: createdCount,
-        message: `Generated ${createdCount} fee record(s)`
-      };
-
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    }
-  } catch (error: any) {
+    return {
+      success: true,
+      created: result.feesAssigned,
+      message: `Generated ${result.feesAssigned} fee record(s)`,
+    };
+  } catch (error: unknown) {
     console.error('Error generating fees:', error);
     return {
       success: false,
       created: 0,
       message: 'Failed to generate fees',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   } finally {
     client.release();

@@ -4,6 +4,9 @@ import { bulkUpdateFees } from '@/lib/fee-manager';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
 import { classNameOrderSql } from '@/lib/class-sort';
+import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
+import { FeeStructureVersionService } from '@/lib/fees/FeeStructureVersionService';
+import { InstallmentService } from '@/lib/fees/InstallmentService';
 import type { RequestDb } from '@/lib/request-db';
 
 // Function to automatically clean up duplicate fee structures (per class only)
@@ -95,17 +98,7 @@ export async function GET(request: NextRequest) {
     await ensureFeeSchema(db);
     const searchParams = request.nextUrl.searchParams;
     const academicYear = await resolveAcademicYear(db, searchParams.get('academic_year'));
-    
-    // Auto-cleanup duplicate fee structures if needed
-    try {
-      const duplicatesCleaned = await autoCleanupDuplicateFeeStructures(db, academicYear);
-      if (duplicatesCleaned > 0) {
-        console.log(`🔧 Auto-cleaned ${duplicatesCleaned} duplicate fee structures`);
-      }
-    } catch (error) {
-      console.error('❌ Error in auto-cleanup of duplicate fee structures:', error);
-      // Don't fail the request if cleanup fails
-    }
+
     const classId = searchParams.get('class_id');
     const categoryId = searchParams.get('category_id');
     const isActive = searchParams.get('is_active');
@@ -172,79 +165,13 @@ async function autoAssignFeeStructureToStudents(
 ) {
   try {
     console.log(`🎯 Auto-assigning new fee structure "${feeType}" to existing students`);
-
-    const studentsQuery = classId
-      ? `SELECT id FROM students WHERE status = 'active' AND class_id = $1`
-      : `SELECT id FROM students WHERE status = 'active'`;
-
-    const studentsParams = classId ? [classId] : [];
-    const studentsResult = await db.query(studentsQuery, studentsParams);
-    const students = studentsResult.rows;
-
-    let feesAssigned = 0;
-    const currentDate = new Date();
-
-    let academicYearStart: Date;
-    if (currentDate.getMonth() >= 3) {
-      academicYearStart = new Date(currentDate.getFullYear(), 3, 1);
-    } else {
-      academicYearStart = new Date(currentDate.getFullYear() - 1, 3, 1);
-    }
-
-    for (const student of students) {
-      let feeAmount = parseFloat(String(amount));
-      let monthsToGenerate = 12;
-
-      switch (frequency) {
-        case 'monthly':
-          monthsToGenerate = 12;
-          break;
-        case 'quarterly':
-          monthsToGenerate = 4;
-          feeAmount = feeAmount / 4;
-          break;
-        case 'half_yearly':
-          monthsToGenerate = 2;
-          feeAmount = feeAmount / 2;
-          break;
-        case 'yearly':
-        case 'one_time':
-          monthsToGenerate = 1;
-          break;
-      }
-
-      for (let i = 0; i < monthsToGenerate; i++) {
-        const dueDate = new Date(academicYearStart);
-        dueDate.setMonth(academicYearStart.getMonth() + i);
-        dueDate.setDate(10);
-
-        if (frequency === 'one_time' && i > 0) continue;
-
-        try {
-          await db.query(
-            `INSERT INTO student_fees (
-              student_id, fee_structure_id, academic_year, amount_due,
-              due_date, month, status, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-            ON CONFLICT (student_id, fee_structure_id, academic_year, month)
-            DO NOTHING`,
-            [
-              student.id,
-              feeStructureId,
-              academicYear,
-              feeAmount,
-              dueDate.toISOString().split('T')[0],
-              i + 1,
-              'pending',
-            ]
-          );
-          feesAssigned++;
-        } catch (error) {
-          console.error(`Error assigning fee to student ${student.id}:`, error);
-        }
-      }
-    }
-
+    const feesAssigned = await FeeGenerationService.assignNewFeeStructure(db, {
+      feeStructureId,
+      classId,
+      amount,
+      frequency,
+      academicYear,
+    });
     console.log(`✅ Auto-assigned ${feesAssigned} fee records for new fee structure "${feeType}"`);
     return feesAssigned;
   } catch (autoAssignError) {
@@ -266,6 +193,7 @@ async function createSingleFeeStructure(
     late_fee_percentage: number;
     late_fee_days: number;
     is_active: boolean;
+    installment_count?: number;
   }
 ) {
   try {
@@ -304,6 +232,15 @@ async function createSingleFeeStructure(
       ]
     );
 
+    await FeeStructureVersionService.ensureCurrentVersion(db, result.rows[0].id);
+
+    if (params.installment_count && params.installment_count > 1) {
+      await InstallmentService.upsertPlan(db, {
+        feeStructureId: result.rows[0].id,
+        installmentCount: params.installment_count,
+      });
+    }
+
     if (params.is_active !== false) {
       await autoAssignFeeStructureToStudents(
         db,
@@ -341,6 +278,7 @@ export async function POST(request: NextRequest) {
       late_fee_percentage,
       late_fee_days,
       is_active,
+      installment_count,
     } = body;
 
     if (!fee_type || amount == null || !frequency || !academic_year) {
@@ -360,6 +298,7 @@ export async function POST(request: NextRequest) {
       late_fee_percentage: late_fee_percentage ?? 0,
       late_fee_days: late_fee_days ?? 7,
       is_active: is_active !== false,
+      installment_count: installment_count ? parseInt(String(installment_count), 10) : undefined,
     };
 
     const targetClassIds: (number | null)[] = Array.isArray(class_ids) && class_ids.length > 0
@@ -432,6 +371,7 @@ export async function PUT(request: NextRequest) {
       late_fee_percentage,
       late_fee_days,
       is_active,
+      installment_count,
     } = body;
 
     if (!id) {
@@ -443,7 +383,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the old fee structure to check if amount changed
     const oldStructureResult = await db.query(
-      'SELECT amount FROM fee_structures WHERE id = $1',
+      `SELECT amount, frequency, late_fee_percentage, late_fee_days FROM fee_structures WHERE id = $1`,
       [id]
     );
 
@@ -454,7 +394,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const oldAmount = parseFloat(oldStructureResult.rows[0].amount);
+    const oldRow = oldStructureResult.rows[0];
+    const oldAmount = parseFloat(oldRow.amount);
     const newAmount = parseFloat(amount);
 
     // Update the fee structure
@@ -478,6 +419,29 @@ export async function PUT(request: NextRequest) {
         late_fee_days, is_active, id
       ]
     );
+
+    const materialChange =
+      oldAmount !== newAmount ||
+      oldRow.frequency !== frequency ||
+      parseFloat(oldRow.late_fee_percentage ?? '0') !== parseFloat(late_fee_percentage ?? '0') ||
+      (oldRow.late_fee_days ?? 7) !== (late_fee_days ?? 7);
+
+    if (materialChange) {
+      await FeeStructureVersionService.createVersion(db, {
+        feeStructureId: id,
+        amount: newAmount,
+        frequency,
+        lateFeePercentage: parseFloat(late_fee_percentage ?? '0'),
+        lateFeeDays: late_fee_days ?? 7,
+      });
+    }
+
+    if (installment_count && parseInt(String(installment_count), 10) > 1) {
+      await InstallmentService.upsertPlan(db, {
+        feeStructureId: id,
+        installmentCount: parseInt(String(installment_count), 10),
+      });
+    }
 
     let updatedStudentFeesCount = 0;
 

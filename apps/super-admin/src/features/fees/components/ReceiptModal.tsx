@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
 import { useState, useRef } from 'react';
 import { FiX, FiPrinter, FiDownload } from 'react-icons/fi';
 import PrintableReceipt from '@/features/fees/components/PrintableReceipt';
@@ -61,38 +61,49 @@ export default function ReceiptModal({ isOpen, onClose, payment, student }: Rece
 
   return (
     <AppModal open={isOpen} onClose={onClose}>
-      <div className={APP_MODAL_PANEL}>
-        <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-xl text-gray-900">Payment Receipt</h2>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="h-10 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm font-medium transition-colors shadow-sm"
-            >
-              <FiPrinter size={18} />
-              Print (A4)
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPDF}
-              disabled={downloading}
-              className="h-10 px-4 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-100 flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FiDownload size={18} />
-              {downloading ? 'Downloading...' : 'Download PDF'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <FiX size={28} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-6 flex justify-center bg-gray-50 min-h-[calc(100vh-120px)]">
+      <AppModalShell
+        header={
+          <>
+            <h2 className="text-xl text-gray-900">Payment Receipt</h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="h-10 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm font-medium transition-colors shadow-sm"
+              >
+                <FiPrinter size={18} />
+                Print (A4)
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                className="h-10 px-4 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-100 flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FiDownload size={18} />
+                {downloading ? 'Downloading...' : 'Download PDF'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FiX size={28} />
+              </button>
+            </div>
+          </>
+        }
+        footer={
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+        }
+      >
+        <div className="p-4 sm:p-6 flex justify-center bg-gray-50">
           <div
             ref={receiptRef}
             className="bg-white shadow-sm border border-gray-200 rounded-lg p-1"
@@ -101,17 +112,7 @@ export default function ReceiptModal({ isOpen, onClose, payment, student }: Rece
             <PrintableReceipt payment={payment} student={student} />
           </div>
         </div>
-
-        <div className="flex justify-end gap-3 p-4 sm:p-6 border-t sticky bottom-0 bg-white">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
+      </AppModalShell>
     </AppModal>
   );
 }

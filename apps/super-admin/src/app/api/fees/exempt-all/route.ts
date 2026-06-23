@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { calculateDueDate } from '@/lib/fees/FeeDateService';
+import {
+  calendarYearForMonth,
+  getAcademicSequence,
+  parseAcademicYear,
+} from '@/lib/fees/AcademicYear';
 // POST - Exempt all months' fees for a student
 export async function POST(request: NextRequest) {
   try {
@@ -59,18 +65,13 @@ export async function POST(request: NextRequest) {
       [exemption_reason || 'All fees exempted by admin', student_id, academic_year]
     );
 
-    // Get the academic year start year
-    const yearParts = academic_year.split('-');
-    const startYear = parseInt(yearParts[0]);
+    const parsedYear = parseAcademicYear(academic_year);
 
-    // Create fee records for months that don't exist yet (April to March)
-    const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+    const months = [...getAcademicSequence()];
     const exemptedMonths = [];
 
     for (const month of months) {
-      const year = month >= 4 ? startYear : startYear + 1;
-      
-      // Check if record exists
+      const dueDate = calculateDueDate({ academicYear: academic_year, calendarMonth: month });
       const existingCheck = await db.query(
         `SELECT id FROM student_fees 
          WHERE student_id = $1 AND month = $2 AND academic_year = $3`,
@@ -82,8 +83,8 @@ export async function POST(request: NextRequest) {
         await db.query(
           `INSERT INTO student_fees (
             student_id, fee_structure_id, month, academic_year,
-            amount_due, amount_paid, status, exemption_reason
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            amount_due, amount_paid, due_date, status, exemption_reason
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             student_id,
             feeStructureId,
@@ -91,11 +92,12 @@ export async function POST(request: NextRequest) {
             academic_year,
             defaultAmount,
             defaultAmount,
+            dueDate,
             'exempted',
-            exemption_reason || 'All fees exempted by admin'
+            exemption_reason || 'All fees exempted by admin',
           ]
         );
-        exemptedMonths.push(`${month}/${year}`);
+        exemptedMonths.push(`${month}/${calendarYearForMonth(parsedYear, month)}`);
       }
     }
 

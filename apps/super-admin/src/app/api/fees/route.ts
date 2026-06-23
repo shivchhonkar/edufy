@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { FeePayment } from '@/shared/types';
-import { generateRandomString } from '@/lib/utils';
-import { syncPaymentWithFees } from '@/features/fees/utils/paymentSync';
+import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
+import { ensureFeeExtensions } from '@/lib/fees/ensure-fee-extensions';
+import { generateNextReceiptNumber } from '@/lib/fees/ReceiptNumberService';
+import { buildBreakdownFromPaymentFees } from '@/lib/fees/payment-fee-breakdown';
 
 // Conditional import for payment receipts (optional feature)
 let createPaymentReceipt: any = null;
@@ -74,6 +76,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureFeeSchema(db);
+    await ensureFeeExtensions(db);
     const body = await request.json();
     const {
       student_id,
@@ -100,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate receipt number
-    const receipt_number = `RCP${new Date().getFullYear()}${generateRandomString(6)}`;
+    const receipt_number = await generateNextReceiptNumber(db, academic_year || new Date().getFullYear().toString());
 
     // Start transaction
     await db.query('BEGIN');
@@ -238,15 +242,27 @@ export async function POST(request: NextRequest) {
 
         if (feeDetailsResult.rows.length > 0) {
           const feeDetails = feeDetailsResult.rows[0];
+          const breakdown = buildBreakdownFromPaymentFees(
+            [
+              {
+                fee_type: feeDetails.fee_type,
+                month: feeDetails.month,
+                year: academic_year,
+                amount: parseFloat(amount_paid) - parseFloat(late_fee_charged || 0),
+                late_fee_amount: late_fee_charged || 0,
+              },
+            ],
+            academic_year || '',
+          );
+
+          await db.query(
+            `UPDATE fee_payments SET fee_breakdown = $1::jsonb WHERE id = $2`,
+            [JSON.stringify(breakdown), result.rows[0].id],
+          );
+
           responseData = {
             ...responseData,
-            fee_breakdown: [{
-              fee_type: feeDetails.fee_type || 'Fee',
-              month: feeDetails.month,
-              year: academic_year,
-              amount: parseFloat(amount_paid) - parseFloat(late_fee_charged || 0),
-              late_fee: parseFloat(late_fee_charged || 0)
-            }],
+            fee_breakdown: breakdown,
             months_paid: 1
           };
         }

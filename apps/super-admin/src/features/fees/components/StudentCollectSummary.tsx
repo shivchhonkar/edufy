@@ -5,6 +5,14 @@ import Link from 'next/link';
 import { FiCreditCard, FiFileText } from 'react-icons/fi';
 import { useSettings } from '@/shared/SettingsContext';
 import { formatFeeCurrency } from '@/features/fees/utils/fees-format';
+import {
+  aggregateFeeRows,
+  getFeeOutstanding,
+  getFeePrincipalBalance,
+  isTransportFee,
+  isTuitionFee,
+  type FeeBalanceRecord,
+} from '@/features/fees/utils/fee-balance';
 import type { FeeStudentRow } from '@/features/fees/components/VirtualizedFeesStudentsTable';
 
 interface StudentCollectSummaryProps {
@@ -13,43 +21,40 @@ interface StudentCollectSummaryProps {
   refreshKey?: number;
 }
 
-interface FeeRecord {
-  amount_due?: string | number;
-  amount_paid?: string | number;
-  month?: string | number;
-  fee_type?: string;
-  status?: string;
-  calculated_late_fee?: string | number;
-}
+function aggregateFeesForSummary(fees: FeeBalanceRecord[]): FeeBalanceRecord[] {
+  const groups = new Map<string, FeeBalanceRecord[]>();
 
-function getFeeBalance(fee: FeeRecord): number {
-  return Math.max(
-    0,
-    parseFloat(String(fee.amount_due || 0)) - parseFloat(String(fee.amount_paid || 0)),
-  );
-}
+  for (const fee of fees) {
+    const month = parseInt(String(fee.month), 10);
+    const typeKey = isTransportFee(fee)
+      ? 'transport'
+      : isTuitionFee(fee)
+        ? 'tuition'
+        : String(fee.fee_type || 'other').toLowerCase();
+    const key = `${month}:${typeKey}`;
+    const list = groups.get(key) ?? [];
+    list.push(fee);
+    groups.set(key, list);
+  }
 
-function getFeeLateFee(fee: FeeRecord): number {
-  return parseFloat(String(fee.calculated_late_fee || 0)) || 0;
-}
-
-function isTransportFee(fee: FeeRecord): boolean {
-  return String(fee.fee_type || '').toLowerCase().includes('transport');
+  return Array.from(groups.values())
+    .map((group) => aggregateFeeRows(group))
+    .filter((fee): fee is FeeBalanceRecord => fee != null);
 }
 
 function deriveProfileStatus(
-  fees: FeeRecord[],
+  fees: FeeBalanceRecord[],
   totalOutstanding: number,
 ): string {
   if (fees.length === 0) return 'Not Assigned';
   if (totalOutstanding <= 0) return 'Paid';
 
   const hasOverdue = fees.some(
-    (f) => f.status === 'overdue' && getFeeBalance(f) > 0,
+    (f) => f.status === 'overdue' && getFeePrincipalBalance(f) > 0,
   );
   if (hasOverdue) return 'Overdue';
 
-  const hasPartial = fees.some((f) => f.status === 'partial' && getFeeBalance(f) > 0);
+  const hasPartial = fees.some((f) => f.status === 'partial' && getFeePrincipalBalance(f) > 0);
   if (hasPartial) return 'Partial';
 
   return 'Pending';
@@ -83,15 +88,16 @@ export default function StudentCollectSummary({
       const feesData = await feesRes.json();
       const paymentsData = await paymentsRes.json();
 
-      const fees: FeeRecord[] = feesData.success ? feesData.data : [];
+      const fees: FeeBalanceRecord[] = feesData.success ? feesData.data : [];
+      const aggregatedFees = aggregateFeesForSummary(fees);
       const currentCalendarMonth = new Date().getMonth() + 1;
 
       let totalOutstanding = 0;
       let monthDue = 0;
       let transportOutstanding = 0;
 
-      for (const fee of fees) {
-        const balance = getFeeBalance(fee) + getFeeLateFee(fee);
+      for (const fee of aggregatedFees) {
+        const balance = getFeeOutstanding(fee);
         totalOutstanding += balance;
 
         if (isTransportFee(fee)) {
@@ -107,7 +113,7 @@ export default function StudentCollectSummary({
       setOutstanding(totalOutstanding);
       setCurrentMonthDue(monthDue);
       setTransportDue(transportOutstanding);
-      setProfileStatus(deriveProfileStatus(fees, totalOutstanding));
+      setProfileStatus(deriveProfileStatus(aggregatedFees, totalOutstanding));
       setRecentPayments(paymentsData.success ? paymentsData.data.slice(0, 3) : []);
     } catch {
       setOutstanding(student.pendingAmount || 0);

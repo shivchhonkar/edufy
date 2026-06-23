@@ -103,6 +103,31 @@ export default function FeesOperationsPanel() {
       },
     },
     {
+      id: 'repair',
+      title: 'Full Data Repair',
+      description: 'Clean orphans, reconcile payments, and recalculate fee statuses.',
+      icon: FiRefreshCw,
+      action: async () => {
+        const ok = await confirm('Run full fee data repair?', { title: 'Data Repair' });
+        if (!ok) return;
+        const res = await fetch('/api/fees/repair', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ academic_year: year }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const r = data.data;
+          await alert(
+            `Repair complete. Orphans removed: ${r.orphanedFeesRemoved + r.transportOrphansRemoved}. Statuses recalculated: ${r.statusesRecalculated}.`,
+            { title: 'Success', type: 'success' },
+          );
+        } else {
+          await alert(data.error || 'Repair failed', { title: 'Error', type: 'error' });
+        }
+      },
+    },
+    {
       id: 'reconcile',
       title: 'Fee Reconciliation',
       description: 'Reconcile payments with fee records across the school.',
@@ -131,10 +156,16 @@ export default function FeesOperationsPanel() {
       action: async () => {
         const ok = await confirm('Remove orphaned fee records?', { title: 'Cleanup', type: 'warning' });
         if (!ok) return;
-        const res = await fetch('/api/fees/auto-sync', {
+        const res = await fetch('/api/fees/repair', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'cleanup_orphaned', academicYear: year }),
+          body: JSON.stringify({
+            academic_year: year,
+            repair_orphans: true,
+            repair_transport_orphans: true,
+            reconcile_payments: false,
+            recalculate_statuses: false,
+          }),
         });
         const data = await res.json();
         if (data.success) {

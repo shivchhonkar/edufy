@@ -111,4 +111,7 @@ export async function ensureFeeSchema(db: RequestDb) {
       FOR EACH ROW
       EXECUTE FUNCTION prevent_duplicate_active_fee_structures();
   `);
+
+  const { ensureFeeExtensions } = await import('@/lib/fees/ensure-fee-extensions');
+  await ensureFeeExtensions(db);
 }

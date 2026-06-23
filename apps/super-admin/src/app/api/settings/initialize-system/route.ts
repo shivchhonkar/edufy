@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
+import { clientAsRequestDb } from '@/lib/fees/request-db-adapter';
 import type { PoolClient } from 'pg';
 
 async function resolveAcademicYear(client: PoolClient): Promise<string> {
@@ -150,64 +152,22 @@ async function initializeFees(client: PoolClient) {
     }
   }
 
-  const studentsWithoutFeesResult = await client.query<{
-    id: number;
-    class_id: number | null;
-  }>(
-    `SELECT s.id, s.class_id
-     FROM students s
-     WHERE s.status = 'active'
-     AND NOT EXISTS (
-       SELECT 1 FROM student_fees sf
-       WHERE sf.student_id = s.id
-       AND sf.academic_year = $1
-     )`,
-    [academicYear]
-  );
-
-  let feesAssigned = 0;
   const months = [currentMonth, currentMonth + 1, currentMonth + 2].filter((m) => m <= 12);
+  const db = clientAsRequestDb(client);
 
-  for (const student of studentsWithoutFeesResult.rows) {
-    const structures = await client.query<{ id: number; amount: string }>(
-      `SELECT * FROM fee_structures
-       WHERE (class_id = $1 OR class_id IS NULL)
-       AND frequency = 'monthly'
-       AND is_active = true
-       AND academic_year = $2`,
-      [student.class_id, academicYear]
-    );
-
-    for (const month of months) {
-      for (const feeStructure of structures.rows) {
-        const dueDate = new Date(new Date().getFullYear(), month - 1, 10);
-        await client.query(
-          `INSERT INTO student_fees (
-            student_id, fee_structure_id, academic_year, amount_due,
-            due_date, month, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-          ON CONFLICT (student_id, fee_structure_id, academic_year, month)
-          DO NOTHING`,
-          [
-            student.id,
-            feeStructure.id,
-            academicYear,
-            feeStructure.amount,
-            dueDate.toISOString().split('T')[0],
-            month,
-            'pending',
-          ]
-        );
-        feesAssigned += 1;
-      }
-    }
-  }
+  const assignResult = await FeeGenerationService.generateSchoolFees(db, {
+    academicYear,
+    months,
+    onlyStudentsWithoutFees: true,
+    monthlyOnly: true,
+    conflictStrategy: 'ignore',
+  });
 
   return {
     categoriesCreated: categoriesCount === 0,
     feeStructuresCreated: feeStructuresCount === 0,
-    studentsProcessed: studentsWithoutFeesResult.rows.length,
-    feesAssigned,
+    studentsProcessed: assignResult.studentsProcessed,
+    feesAssigned: assignResult.totalFeesAssigned,
     academic_year: academicYear,
   };
 }

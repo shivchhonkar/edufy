@@ -12,14 +12,30 @@ import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { useDialog } from '@/shared/context/DialogContext';
 import ReceiptModal from '@/features/fees/components/ReceiptModal';
 import { useSettings } from '@/shared/SettingsContext';
-import { 
-  getCurrentAcademicYear, 
-  getAcademicYearParts, 
-  getMonthName, 
+import {
+  calendarMonthToSequenceIndex,
+  calendarYearForMonth,
+  academicYearMatches,
+  getAcademicSequence,
+  getDefaultAcademicYearForDate,
+  normalizeAcademicYear,
+  parseAcademicYear,
+} from '@/lib/fees/AcademicYear';
+import {
   DEFAULT_CLASS_FEES,
   DEFAULT_TRANSPORT_FEE,
-  FEE_STATUS 
+  FEE_STATUS,
+  getMonthName,
 } from '@/shared/constants/constants';
+import {
+  aggregateFeeRows,
+  getFeeLateFeeOutstanding,
+  getFeeOutstanding,
+  getFeePrincipalBalance,
+  isFeeFullySettled,
+  isTransportFee,
+  isTuitionFee,
+} from '@/features/fees/utils/fee-balance';
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
@@ -39,7 +55,75 @@ interface MonthFee {
   status: 'pending' | 'advance' | 'paid' | 'exempted';
 }
 
-export default function RecordPaymentModal({ 
+function isMonthExempted(monthFee: MonthFee): boolean {
+  return (
+    monthFee.status === 'exempted' ||
+    (monthFee.tuitionFee && monthFee.tuitionFee.status === 'exempted')
+  );
+}
+
+function isMonthTransportPaid(monthFee: MonthFee): boolean {
+  if (!monthFee.transportFee) return false;
+  if (monthFee.transportFee.isPaid) return true;
+  const record = monthFee.transportFee.feeRecord;
+  return Boolean(record && isFeeFullySettled(record));
+}
+
+function hasTuitionOutstanding(monthFee: MonthFee): boolean {
+  if (isMonthExempted(monthFee)) return false;
+  if (!monthFee.tuitionFee) return true;
+  return getFeeOutstanding(monthFee.tuitionFee) > 0;
+}
+
+function hasTransportOutstanding(monthFee: MonthFee): boolean {
+  if (!monthFee.transportFee) return false;
+  return !isMonthTransportPaid(monthFee);
+}
+
+function getMonthTuitionCharge(
+  monthFee: MonthFee,
+  defaultTuition: number,
+  exemptLateFees: boolean,
+): number {
+  if (!monthFee.tuitionSelected || !hasTuitionOutstanding(monthFee)) return 0;
+  if (!monthFee.tuitionFee) return defaultTuition;
+  const principal = getFeePrincipalBalance(monthFee.tuitionFee);
+  const lateFee = exemptLateFees ? 0 : getFeeLateFeeOutstanding(monthFee.tuitionFee);
+  return principal + lateFee;
+}
+
+function getMonthTransportCharge(monthFee: MonthFee, transportMonthlyFee: number): number {
+  if (!monthFee.transportSelected || !hasTransportOutstanding(monthFee)) return 0;
+  const record = monthFee.transportFee?.feeRecord;
+  if (record) {
+    const outstanding = getFeeOutstanding(record);
+    if (outstanding > 0) return outstanding;
+  }
+  return transportMonthlyFee;
+}
+
+function countChargeableSelections(monthFees: MonthFee[]): number {
+  let count = 0;
+  monthFees.forEach((m) => {
+    if (m.tuitionSelected && hasTuitionOutstanding(m)) count++;
+    if (m.transportSelected && hasTransportOutstanding(m)) count++;
+  });
+  return count;
+}
+
+function areAllPayableFeesSelected(
+  monthFees: MonthFee[],
+  includeTransport: boolean,
+): boolean {
+  return monthFees.every((m) => {
+    const tuitionOk = !hasTuitionOutstanding(m) || m.tuitionSelected;
+    const transportOk =
+      !includeTransport || !hasTransportOutstanding(m) || m.transportSelected;
+    return tuitionOk && transportOk;
+  });
+}
+
+export default function RecordPaymentModal({
   isOpen, 
   onClose, 
   onSuccess,
@@ -83,6 +167,7 @@ export default function RecordPaymentModal({
   const [transportMonthlyFee, setTransportMonthlyFee] = useState(0);
   const [loadingFees, setLoadingFees] = useState(false);
   const [currentFeeStructures, setCurrentFeeStructures] = useState<any[]>([]);
+  const [exemptLateFees, setExemptLateFees] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -137,6 +222,7 @@ export default function RecordPaymentModal({
     setMonthFees([]);
     setStudentHasTransport(false);
     setTransportMonthlyFee(0);
+    setExemptLateFees(false);
   };
 
   const hasChanges = () => {
@@ -190,8 +276,12 @@ export default function RecordPaymentModal({
   const loadStudentMonthlyFees = async (studentId: number) => {
     setLoadingFees(true);
     try {
-      // Get existing student fees
-      const response = await fetch(`/api/fees/student-fees?student_id=${studentId}`);
+      const feeParams = new URLSearchParams({ student_id: String(studentId) });
+      if (settings.academic_year) {
+        feeParams.set('academic_year', settings.academic_year);
+      }
+
+      const response = await fetch(`/api/fees/student-fees?${feeParams}`);
       const data = await response.json();
       
       // Get payment history to check transport payments
@@ -215,66 +305,57 @@ export default function RecordPaymentModal({
 
       // Generate months based on academic year (April to March)
       const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1; // 1-12
-      const currentYear = currentDate.getFullYear();
-      
-      // Get current academic year from settings or fallback to constants
+      const currentMonth = currentDate.getMonth() + 1;
       const academicYearFromSettings = settings.academic_year;
-      let academicStartYear: number, academicEndYear: number;
-      
-      if (academicYearFromSettings) {
-        // Parse academic year from settings (e.g., "2024-2025" or "2025-26")
-        const parts = academicYearFromSettings.split('-');
-        academicStartYear = parseInt(parts[0]);
-        // Handle both full year (2025) and short year (26) formats
-        const endYearPart = parseInt(parts[1]);
-        academicEndYear = endYearPart < 100 ? 2000 + endYearPart : endYearPart;
-      } else {
-        // Fallback to constants
-        const { startYear, endYear } = getAcademicYearParts();
-        academicStartYear = startYear;
-        academicEndYear = endYear;
-      }
-      
-      const currentAcademicYear =
-        academicYearFromSettings ||
-        `${academicStartYear}-${String(academicEndYear).slice(-2)}`;
+      const parsedYear = parseAcademicYear(
+        academicYearFromSettings
+          ? normalizeAcademicYear(academicYearFromSettings)
+          : `${currentDate.getFullYear()}-${String((currentDate.getFullYear() + 1) % 100).padStart(2, '0')}`,
+      );
+      const currentAcademicYear = parsedYear.name;
+      const allStudentFees: Array<Record<string, unknown>> = data.success ? data.data : [];
 
       const generatedMonths: MonthFee[] = [];
-      
-      // Generate 12 months from April to March (current academic year)
-      for (let monthOffset = 0; monthOffset < 12; monthOffset++) {
-        const month = ((monthOffset + 4 - 1) % 12) + 1; // Start from April (4)
-        const year = month >= 4 ? academicStartYear : academicEndYear;
+      const currentSequenceIndex = calendarMonthToSequenceIndex(currentMonth);
+
+      for (let sequenceIndex = 1; sequenceIndex <= 12; sequenceIndex++) {
+        const month = getAcademicSequence()[sequenceIndex - 1];
+        const year = calendarYearForMonth(parsedYear, month);
+        const i = sequenceIndex - currentSequenceIndex;
+
+        const monthTuitionFees = allStudentFees.filter((f) => {
+          const feeMonth = parseInt(String(f.month), 10);
+          return feeMonth === month && isTuitionFee(f as { fee_type?: string });
+        });
+        const existingTuitionFee = aggregateFeeRows(
+          monthTuitionFees as Parameters<typeof aggregateFeeRows>[0],
+        );
+
+        const monthTransportFees = allStudentFees.filter((f) => {
+          const feeMonth = parseInt(String(f.month), 10);
+          return feeMonth === month && isTransportFee(f as { fee_type?: string });
+        });
+        const existingTransportFee = aggregateFeeRows(
+          monthTransportFees as Parameters<typeof aggregateFeeRows>[0],
+        );
         
-        // Calculate position relative to current month for status determination
-        const currentMonthIndex = currentMonth >= 4 ? currentMonth - 4 : currentMonth + 8;
-        const i = monthOffset - currentMonthIndex;
+        const transportPayment =
+          existingTransportFee && isFeeFullySettled(existingTransportFee);
         
-        // Find existing tuition fee for this month (prioritize tuition fees)
-        const existingTuitionFee = data.success ? data.data.find((f: any) => {
-          const feeMonth = parseInt(f.month);
-          const isTuitionFee = f.fee_type && f.fee_type.toLowerCase().includes('tuition');
-          return feeMonth === month && f.academic_year === currentAcademicYear && isTuitionFee;
-        }) : null;
-        
-        
-        // Check if transport fee is paid for this month
-        const existingTransportFee = data.success ? data.data.find((f: any) => {
-          const feeMonth = parseInt(f.month);
-          const isTransportFee = f.fee_type && f.fee_type.toLowerCase().includes('transport');
-          return feeMonth === month && f.academic_year === currentAcademicYear && isTransportFee;
-        }) : null;
-        
-        const transportPayment = existingTransportFee && existingTransportFee.status === 'paid';
-        
-        // Check if there's a tuition payment for this month
-        const tuitionPayment = paymentsData.success ? paymentsData.data.find((p: any) => {
-          const paymentMonth = parseInt(p.month);
-          const isTuitionPayment = !p.fee_type || !p.fee_type.toLowerCase().includes('transport');
-          const isCompleted = p.status === 'completed';
-          return paymentMonth === month && p.academic_year === currentAcademicYear && isTuitionPayment && isCompleted;
-        }) : null;
+        const tuitionPayment = paymentsData.success
+          ? paymentsData.data.find((p: Record<string, unknown>) => {
+              const paymentMonth = parseInt(String(p.month), 10);
+              const feeType = String(p.fee_type || '');
+              const isTuitionPayment = !feeType || !feeType.toLowerCase().includes('transport');
+              const isCompleted = p.status === 'completed';
+              return (
+                paymentMonth === month &&
+                academicYearMatches(String(p.academic_year || ''), currentAcademicYear) &&
+                isTuitionPayment &&
+                isCompleted
+              );
+            })
+          : null;
         
         
         // Determine status based on existing fee OR payment history
@@ -289,13 +370,8 @@ export default function RecordPaymentModal({
         else if (i > 0) {
           // Future month - always ADVANCE (available for advance payment)
           status = 'advance';
-        } else if (existingTuitionFee) {
-          // Current or past month with fee record - check payment status
-          const amountDue = parseFloat(existingTuitionFee.amount_due || 0);
-          const amountPaid = parseFloat(existingTuitionFee.amount_paid || 0);
-          const isFullyPaid = amountDue > 0 && amountPaid >= amountDue;
-          
-          if (isFullyPaid || existingTuitionFee.status === 'paid') {
+        }         else if (existingTuitionFee) {
+          if (isFeeFullySettled(existingTuitionFee)) {
             status = 'paid';
           } else {
             status = 'pending';
@@ -407,7 +483,7 @@ export default function RecordPaymentModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           student_id: selectedStudentData.id,
-          academic_year: settings.academic_year || getCurrentAcademicYear(),
+          academic_year: settings.academic_year || getDefaultAcademicYearForDate().name,
           exemption_reason: 'All fees exempted by admin',
         }),
       });
@@ -428,49 +504,23 @@ export default function RecordPaymentModal({
   const calculateTotal = () => {
     let total = 0;
     let lateFeeTotal = 0;
+    const payingStudent =
+      students.find((s) => s.id.toString() === formData.student_id) || selectedStudent;
+    const defaultTuition = getDefaultTuitionFee(payingStudent?.class_id);
 
-    monthFees.forEach((m, index) => {
-      let monthTotal = 0;
-      
-      // Calculate tuition fee amount - ONLY if selected
-      if (m.tuitionSelected) {
-        if (m.tuitionFee) {
-          // Existing fee record - calculate amount due minus already paid
-          const due = parseFloat(m.tuitionFee.amount_due || 0);
-          const paid = parseFloat(m.tuitionFee.amount_paid || 0);
-          const lateFee = parseFloat(m.tuitionFee.calculated_late_fee || 0);
-          const tuitionAmount = due - paid + lateFee;
-          total += tuitionAmount;
-          monthTotal += tuitionAmount;
-          lateFeeTotal += lateFee;
-        } else {
-          // No fee record (advance payment) - use default amount from class fee structure
-          const defaultAmount = getDefaultTuitionFee(selectedStudentData?.class_id);
-          total += defaultAmount;
-          monthTotal += defaultAmount;
-        }
-      }
-      
-      // Calculate transport fee amount - ONLY if selected
-      if (m.transportSelected) {
-        // Always use the transportMonthlyFee which comes from the transport assignment
-        const transportAmount = transportMonthlyFee;
-        total += transportAmount;
-        monthTotal += transportAmount;
+    monthFees.forEach((m) => {
+      total += getMonthTuitionCharge(m, defaultTuition, exemptLateFees);
+      total += getMonthTransportCharge(m, transportMonthlyFee);
+
+      if (m.tuitionSelected && hasTuitionOutstanding(m) && m.tuitionFee) {
+        lateFeeTotal += parseFloat(m.tuitionFee.calculated_late_fee || 0);
       }
     });
 
     return { total, lateFeeTotal };
   };
 
-  const getSelectedCount = () => {
-    let count = 0;
-    monthFees.forEach(m => {
-      if (m.tuitionSelected) count++;
-      if (m.transportSelected) count++;
-    });
-    return count;
-  };
+  const getSelectedCount = () => countChargeableSelections(monthFees);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -498,7 +548,7 @@ export default function RecordPaymentModal({
       const feeBreakdown: Array<{ fee_type: string; month: number; year: number; amount: number }> = [];
 
       monthFees.forEach(m => {
-        if (m.tuitionSelected) {
+        if (m.tuitionSelected && hasTuitionOutstanding(m)) {
           if (m.tuitionFee?.id) {
             selectedFeeIds.push(m.tuitionFee.id);
           } else {
@@ -511,7 +561,7 @@ export default function RecordPaymentModal({
           }
         }
 
-        if (m.transportSelected && !m.transportFee?.isPaid) {
+        if (m.transportSelected && hasTransportOutstanding(m)) {
           const transportRecord = m.transportFee?.feeRecord;
           if (transportRecord?.id) {
             selectedFeeIds.push(transportRecord.id);
@@ -526,6 +576,19 @@ export default function RecordPaymentModal({
         }
       });
 
+      const studentFeeLateFees: Record<number, number> = {};
+      if (!exemptLateFees) {
+        monthFees.forEach((m) => {
+          if (m.tuitionSelected && hasTuitionOutstanding(m) && m.tuitionFee?.id) {
+            const late = parseFloat(m.tuitionFee.calculated_late_fee || 0);
+            if (late > 0) {
+              studentFeeLateFees[m.tuitionFee.id] = late;
+            }
+          }
+        });
+      }
+
+      const baseRemarks = formData.remarks || `Payment for ${selectedCount} fee(s)`;
       const payload = {
         student_id: parseInt(formData.student_id),
         student_fee_ids: selectedFeeIds,
@@ -534,10 +597,12 @@ export default function RecordPaymentModal({
         payment_date: formData.payment_date,
         payment_method: formData.payment_method,
         transaction_id: formData.transaction_id || null,
-        remarks: formData.remarks || `Payment for ${selectedCount} fee(s)`,
+        remarks: exemptLateFees ? `${baseRemarks} (Late fees exempted by admin)` : baseRemarks,
         discount_applied: parseFloat(formData.discount_applied),
-        late_fee_charged: lateFeeTotal,
-        academic_year: settings.academic_year || getCurrentAcademicYear(),
+        late_fee_charged: exemptLateFees ? 0 : lateFeeTotal,
+        exempt_late_fees: exemptLateFees,
+        student_fee_late_fees: studentFeeLateFees,
+        academic_year: settings.academic_year || getDefaultAcademicYearForDate().name,
         created_by: 1,
       };
 
@@ -605,10 +670,17 @@ export default function RecordPaymentModal({
   const { total: calculatedTotal, lateFeeTotal: calculatedLateFeeTotal } = calculateTotal();
 
   const getMonthStatus = (monthFee: MonthFee) => {
-    const tuitionIsPaid = monthFee.status === 'paid' || (monthFee.tuitionFee && monthFee.tuitionFee.status === 'paid');
-    const isExempted = monthFee.status === 'exempted' || (monthFee.tuitionFee && monthFee.tuitionFee.status === 'exempted');
-    
+    const tuitionIsPaid =
+      monthFee.status === 'paid' ||
+      (monthFee.tuitionFee && isFeeFullySettled(monthFee.tuitionFee));
+    const isExempted =
+      monthFee.status === 'exempted' ||
+      (monthFee.tuitionFee && monthFee.tuitionFee.status === 'exempted');
+    const hasLateFeeDue =
+      monthFee.tuitionFee && getFeeLateFeeOutstanding(monthFee.tuitionFee) > 0;
+
     if (isExempted) return { color: 'text-purple-600', label: 'EXEMPTED' };
+    if (hasLateFeeDue) return { color: 'text-orange-600', label: 'LATE FEE' };
     if (tuitionIsPaid) return { color: 'text-green-600', label: 'PAID' };
     if (monthFee.status === 'pending') return { color: 'text-red-600', label: 'PENDING' };
     return { color: 'text-blue-600', label: 'ADVANCE' };
@@ -712,11 +784,9 @@ export default function RecordPaymentModal({
                       </span>
                     )}
                     {(() => {
-                      const pendingMonths = monthFees.filter(m => {
-                        const isPending = m.status === 'pending';
-                        const isNotPaid = !m.tuitionFee || m.tuitionFee.status !== 'paid';
-                        return isPending && isNotPaid;
-                      });
+                      const pendingMonths = monthFees.filter(
+                        (m) => m.status === 'pending' && hasTuitionOutstanding(m),
+                      );
                       
                       const hasAnyPayableMonths = monthFees.length > 0; // Any month can be paid
                       
@@ -727,8 +797,12 @@ export default function RecordPaymentModal({
                               type="button"
                               onClick={() => {
                                 // Check if pending months are already selected
-                                const allPendingSelected = pendingMonths.every(m => 
-                                  m.tuitionSelected && (!studentHasTransport || m.transportSelected)
+                                const allPendingSelected = pendingMonths.every(
+                                  (m) =>
+                                    m.tuitionSelected &&
+                                    (!studentHasTransport ||
+                                      !hasTransportOutstanding(m) ||
+                                      m.transportSelected),
                                 );
                                 
                                 if (allPendingSelected) {
@@ -741,19 +815,20 @@ export default function RecordPaymentModal({
                                   setMonthFees(newMonthFees);
                                 } else {
                                   // Select only pending months, deselect advance months
-                                  const newMonthFees = monthFees.map(m => {
-                                    console.log('month fee', m);
-                                    const tuitionIsPaid = m.tuitionFee && m.tuitionFee.status === 'paid';
-                                    if (m.status === 'pending' && !tuitionIsPaid) {
-                                      return { 
-                                        ...m, 
-                                        tuitionSelected: true, 
-                                        transportSelected: studentHasTransport && !m.transportFee?.isPaid 
+                                  const newMonthFees = monthFees.map((m) => {
+                                    if (m.status === 'pending' && hasTuitionOutstanding(m)) {
+                                      return {
+                                        ...m,
+                                        tuitionSelected: true,
+                                        transportSelected:
+                                          studentHasTransport && hasTransportOutstanding(m),
                                       };
-                                    } else {
-                                      // Deselect advance months
-                                      return { ...m, tuitionSelected: false, transportSelected: false };
                                     }
+                                    return {
+                                      ...m,
+                                      tuitionSelected: false,
+                                      transportSelected: false,
+                                    };
                                   });
                                   setMonthFees(newMonthFees);
                                 }
@@ -770,8 +845,9 @@ export default function RecordPaymentModal({
                               type="button"
                               onClick={() => {
                                 // Check if all months are already selected
-                                const allMonthsSelected = monthFees.every(m => 
-                                  m.tuitionSelected && (!studentHasTransport || m.transportSelected)
+                                const allMonthsSelected = areAllPayableFeesSelected(
+                                  monthFees,
+                                  studentHasTransport,
                                 );
                                 
                                 if (allMonthsSelected) {
@@ -784,10 +860,11 @@ export default function RecordPaymentModal({
                                   setMonthFees(newMonthFees);
                                 } else {
                                   // Select all 12 months (both pending and advance)
-                                  const newMonthFees = monthFees.map(m => ({
+                                  const newMonthFees = monthFees.map((m) => ({
                                     ...m,
-                                    tuitionSelected: true,
-                                    transportSelected: studentHasTransport
+                                    tuitionSelected: hasTuitionOutstanding(m),
+                                    transportSelected:
+                                      studentHasTransport && hasTransportOutstanding(m),
                                   }));
                                   setMonthFees(newMonthFees);
                                 }
@@ -823,24 +900,35 @@ export default function RecordPaymentModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[450px] overflow-y-auto pr-1">
                       {monthFees.map((monthFee, index) => {
                         const monthStatus = getMonthStatus(monthFee);
-                        const tuitionIsPaid = monthFee.status === 'paid' || (monthFee.tuitionFee && monthFee.tuitionFee.status === 'paid');
-                        const isExempted = monthFee.status === 'exempted' || (monthFee.tuitionFee && monthFee.tuitionFee.status === 'exempted');
-                        
-                        // Calculate amounts for display
-                        let tuitionAmount, tuitionLateFee;
+                        const tuitionLateFeeDue = monthFee.tuitionFee
+                          ? getFeeLateFeeOutstanding(monthFee.tuitionFee)
+                          : 0;
+                        const tuitionIsPaid =
+                          !tuitionLateFeeDue &&
+                          (monthFee.status === 'paid' ||
+                            (monthFee.tuitionFee && isFeeFullySettled(monthFee.tuitionFee)));
+                        const tuitionHasOutstanding =
+                          monthFee.tuitionFee && getFeeOutstanding(monthFee.tuitionFee) > 0;
+                        const isExempted =
+                          monthFee.status === 'exempted' ||
+                          (monthFee.tuitionFee && monthFee.tuitionFee.status === 'exempted');
+
+                        let tuitionAmount;
+                        let tuitionLateFee;
                         if (tuitionIsPaid && monthFee.tuitionFee) {
                           tuitionAmount = parseFloat(monthFee.tuitionFee.amount_paid || 0);
-                          tuitionLateFee = parseFloat(monthFee.tuitionFee.late_fee_amount || 0);
-                        } else if (isExempted) {
-                          tuitionAmount = 0; // Exempted fees show as ₹0
                           tuitionLateFee = 0;
+                        } else if (isExempted) {
+                          tuitionAmount = 0;
+                          tuitionLateFee = 0;
+                        } else if (monthFee.tuitionFee) {
+                          tuitionAmount = getFeePrincipalBalance(monthFee.tuitionFee);
+                          tuitionLateFee = tuitionLateFeeDue;
                         } else {
-                          tuitionAmount = monthFee.tuitionFee 
-                            ? parseFloat(monthFee.tuitionFee.amount_due || 0) - parseFloat(monthFee.tuitionFee.amount_paid || 0)
-                            : getDefaultTuitionFee(selectedStudentData?.class_id);
-                          tuitionLateFee = monthFee.tuitionFee ? parseFloat(monthFee.tuitionFee.calculated_late_fee || 0) : 0;
+                          tuitionAmount = getDefaultTuitionFee(selectedStudentData?.class_id);
+                          tuitionLateFee = 0;
                         }
-                        const transportIsPaid = monthFee.transportFee && monthFee.transportFee.isPaid;
+                        const transportIsPaid = isMonthTransportPaid(monthFee);
                         
                         return (
                           <div key={index} className={`border rounded-md p-2 ${
@@ -899,9 +987,17 @@ export default function RecordPaymentModal({
                             }`}>
                               <input
                                 type="checkbox"
-                                checked={tuitionIsPaid || isExempted || monthFee.tuitionSelected}
-                                onChange={() => !tuitionIsPaid && !isExempted && toggleMonthSelection(index, 'tuition')}
-                                disabled={tuitionIsPaid || isExempted}
+                                checked={
+                                  (tuitionIsPaid && !tuitionLateFeeDue) ||
+                                  isExempted ||
+                                  monthFee.tuitionSelected
+                                }
+                                onChange={() =>
+                                  tuitionHasOutstanding &&
+                                  !isExempted &&
+                                  toggleMonthSelection(index, 'tuition')
+                                }
+                                disabled={!tuitionHasOutstanding || isExempted}
                                 className="w-4 h-4 text-primary-600 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0">
@@ -918,9 +1014,9 @@ export default function RecordPaymentModal({
                                 }`}>
                                   ₹{tuitionAmount.toFixed(0)}
                                 </div>
-                                {tuitionLateFee > 0 && !tuitionIsPaid && !isExempted && (
+                                {tuitionLateFee > 0 && !isExempted && (
                                   <div className="text-xs text-red-600">
-                                    +₹{tuitionLateFee.toFixed(0)}
+                                    +₹{tuitionLateFee.toFixed(0)} late fee
                                   </div>
                                 )}
                               </div>
@@ -983,7 +1079,26 @@ export default function RecordPaymentModal({
                           {calculatedLateFeeTotal > 0 && (
                             <div className="bg-white px-3 py-2 rounded border flex-1">
                               <p className="text-xs text-gray-600">Late Fees</p>
-                              <p className="text-lg font-bold text-red-600">₹{calculatedLateFeeTotal.toFixed(0)}</p>
+                              <p
+                                className={`text-lg font-bold ${
+                                  exemptLateFees
+                                    ? 'text-gray-400 line-through'
+                                    : 'text-red-600'
+                                }`}
+                              >
+                                ₹{calculatedLateFeeTotal.toFixed(0)}
+                              </p>
+                              <label className="mt-2 flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={exemptLateFees}
+                                  onChange={(e) => setExemptLateFees(e.target.checked)}
+                                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                />
+                                <span className="text-xs font-medium text-gray-700">
+                                  Exempt late fees
+                                </span>
+                              </label>
                             </div>
                           )}
                         </div>

@@ -1,49 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import type { RequestDb } from '@/lib/request-db';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { ensureSystemSettings } from '@/lib/ensure-system-settings';
-import { cleanupOrphanedTransportFees } from '@/lib/transport-fee-sync';
-import { autoPaymentReconciliation, isReconciliationNeeded } from '@/features/fees/utils/paymentSync';
-
-async function autoCleanupOrphanedFees(academicYear: string, db: RequestDb) {
-  try {
-    const orphanedCount = await db.query(
-      `SELECT COUNT(*) as count FROM student_fees 
-       WHERE fee_structure_id IS NULL 
-       AND academic_year = $1`,
-      [academicYear]
-    );
-    
-    if (parseInt(orphanedCount.rows[0].count) > 0) {
-      console.log(`🧹 Auto-cleaning ${orphanedCount.rows[0].count} orphaned fee records...`);
-      
-      const deleteResult = await db.query(
-        `DELETE FROM student_fees 
-         WHERE fee_structure_id IS NULL 
-         AND academic_year = $1`,
-        [academicYear]
-      );
-      
-      console.log(`✅ Auto-cleaned ${deleteResult.rowCount} orphaned fee records`);
-      return deleteResult.rowCount;
-    }
-    
-    return 0;
-  } catch (error) {
-    console.error('❌ Error in auto-cleanup of orphaned fees:', error);
-    return 0;
-  }
-}
-
-async function autoCleanupOrphanedTransportFees(db: RequestDb, academicYear: string) {
-  try {
-    return await cleanupOrphanedTransportFees(db, academicYear);
-  } catch (error) {
-    console.error('❌ Error in auto-cleanup of orphaned transport fees:', error);
-    return 0;
-  }
-}
+import {
+  buildOverdueMonthSqlCondition,
+  calendarMonthToSequenceIndex,
+  getCurrentCalendarMonth,
+} from '@/lib/fees/AcademicYear';
 
 type RangeFilter = 'this_week' | 'this_month' | 'custom' | null;
 
@@ -108,32 +71,6 @@ export async function GET(request: NextRequest) {
 
     console.log('Fee Stats - Using Academic Year:', currentAcademicYear);
 
-    // Auto-fix payment discrepancies and orphaned records if needed (runs in background)
-    try {
-      // 1. Auto-cleanup orphaned fee records
-      const orphanedCleaned = await autoCleanupOrphanedFees(currentAcademicYear, db);
-      
-      const transportOrphanedCleaned = await autoCleanupOrphanedTransportFees(db, currentAcademicYear);
-      
-      // 3. Auto-fix payment discrepancies
-      const reconciliationCheck = await isReconciliationNeeded(currentAcademicYear);
-      if (reconciliationCheck.needed && reconciliationCheck.count > 0) {
-        console.log(`🔄 Auto-fixing ${reconciliationCheck.count} payment discrepancies...`);
-        // Run reconciliation in background (don't wait for it)
-        autoPaymentReconciliation(currentAcademicYear).catch(error => {
-          console.error('❌ Background reconciliation failed:', error);
-        });
-      }
-      
-      // Log auto-fix summary
-      if (orphanedCleaned > 0 || transportOrphanedCleaned > 0 || (reconciliationCheck.needed && reconciliationCheck.count > 0)) {
-        console.log(`🔧 Auto-fix summary: ${orphanedCleaned} orphaned records cleaned, ${transportOrphanedCleaned} transport orphaned records cleaned, ${reconciliationCheck.count || 0} payment discrepancies fixed`);
-      }
-    } catch (error) {
-      console.error('❌ Error in auto-fix operations:', error);
-      // Don't fail the stats request if auto-fix operations fail
-    }
-
     // Total collected - filter by academic year
     let collectedQuery = `
       SELECT COALESCE(SUM(amount_paid), 0) as total_collected
@@ -185,17 +122,9 @@ export async function GET(request: NextRequest) {
     // This month collection - filter by academic year
     // For academic year starting April, "this month" should be calculated based on academic year context
     const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
+    const currentMonth = getCurrentCalendarMonth(currentDate);
     const currentYear = currentDate.getFullYear();
-    
-    // Calculate academic month (April = 1, May = 2, ..., March = 12)
-    let academicMonth = currentMonth;
-    if (currentMonth >= 4) {
-      academicMonth = currentMonth - 3; // April (4) becomes 1, May (5) becomes 2, etc.
-    } else {
-      academicMonth = currentMonth + 9; // January (1) becomes 10, February (2) becomes 11, March (3) becomes 12
-    }
-    
+
     const thisMonthResult = await db.query(
       `SELECT COALESCE(SUM(amount_paid), 0) as this_month
        FROM fee_payments
@@ -210,16 +139,8 @@ export async function GET(request: NextRequest) {
     // For academic year starting April: overdue = all fees from April to current month
     // (currentDate and currentMonth already defined above)
     
-    // Calculate which months should be considered overdue based on academic year
-    let overdueCondition = '';
-    if (currentMonth >= 4) {
-      // We're in April or later of the same year
-      overdueCondition = `sf.month BETWEEN 4 AND ${currentMonth}`;
-    } else {
-      // We're in Jan-Mar of next year, so overdue includes Apr-Dec of previous year + Jan-current month
-      overdueCondition = `(sf.month BETWEEN 4 AND 12 OR sf.month BETWEEN 1 AND ${currentMonth})`;
-    }
-    
+    const overdueCondition = buildOverdueMonthSqlCondition('sf.month', currentDate);
+
     const overdueResult = await db.query(
       `SELECT COALESCE(SUM(
         CASE 
@@ -480,7 +401,7 @@ export async function GET(request: NextRequest) {
         pending: `₹${pendingResult.rows[0].total_pending} pending = total amount to be paid in complete academic session`,
         overdue: `₹${overdueResult.rows[0].total_overdue} overdue = total due amount from April to current month (${overdueCondition})`,
         currentMonth: currentMonth,
-        academicMonth: academicMonth
+        academicSequenceIndex: calendarMonthToSequenceIndex(currentMonth),
       },
       currentDate: currentDate.toISOString().split('T')[0]
     });

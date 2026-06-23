@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
+import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
 
 /** Bulk pending fee summary per student — used by /fees list page */
 export async function GET(request: NextRequest) {
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
       db,
       request.nextUrl.searchParams.get('academic_year')
     );
+    const yearFilter = academicYearFilterValues(academicYear);
 
     const result = await db.query<{
       student_id: number;
@@ -29,9 +31,9 @@ export async function GET(request: NextRequest) {
           AND (sf.amount_due - sf.amount_paid) > 0
         )::text AS pending_count
       FROM student_fees sf
-      WHERE sf.academic_year = $1
+      WHERE sf.academic_year = ANY($1::text[])
       GROUP BY sf.student_id`,
-      [academicYear]
+      [yearFilter]
     );
 
     const byStudent: Record<

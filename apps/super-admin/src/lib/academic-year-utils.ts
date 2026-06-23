@@ -1,3 +1,5 @@
+import { getDefaultAcademicYearForDate } from '@/lib/fees/AcademicYear';
+
 export interface AcademicYearConfig {
   name: string;
   start_date: string;
@@ -6,15 +8,11 @@ export interface AcademicYearConfig {
 
 /** Indian school session: April → March. Name format e.g. 2026-27 */
 export function getDefaultAcademicYearConfig(date = new Date()): AcademicYearConfig {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const startYear = month >= 4 ? year : year - 1;
-  const endYear = startYear + 1;
-
+  const parsed = getDefaultAcademicYearForDate(date);
   return {
-    name: `${startYear}-${String(endYear).slice(-2)}`,
-    start_date: `${startYear}-04-01`,
-    end_date: `${endYear}-03-31`,
+    name: parsed.name,
+    start_date: parsed.startDate,
+    end_date: parsed.endDate,
   };
 }
 

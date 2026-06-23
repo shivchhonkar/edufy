@@ -6,7 +6,13 @@ import { FiCreditCard, FiPrinter } from 'react-icons/fi';
 import ReceiptModal from '@/features/fees/components/ReceiptModal';
 import RecordPaymentModal from '@/features/fees/components/RecordPaymentModal';
 import FeesPageHeader from '@/features/fees/components/FeesPageHeader';
-import { ACADEMIC_MONTH_NAMES } from '@/shared/constants/constants';
+import { loadPaymentReceipt } from '@/features/fees/utils/load-payment-receipt';
+import { useDialog } from '@/shared/context/DialogContext';
+import { ACADEMIC_MONTH_NAMES, ACADEMIC_MONTHS } from '@/shared/constants/constants';
+import {
+  getCurrentCalendarMonth,
+  isCalendarMonthOnOrBefore,
+} from '@/lib/fees/AcademicYear';
 import { useSettings } from '@/shared/SettingsContext';
 import { formatFeeCurrency } from '@/features/fees/utils/fees-format';
 
@@ -16,13 +22,9 @@ interface StudentLedgerViewProps {
   studentId: number;
 }
 
-function getCurrentAcademicMonthIndex(): number {
-  const calMonth = new Date().getMonth() + 1;
-  return calMonth >= 4 ? calMonth - 3 : calMonth + 9;
-}
-
 export default function StudentLedgerView({ studentId }: StudentLedgerViewProps) {
   const { settings } = useSettings();
+  const { alert } = useDialog();
   const [student, setStudent] = useState<Record<string, unknown> | null>(null);
   const [fees, setFees] = useState<Array<Record<string, unknown>>>([]);
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
@@ -32,6 +34,8 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Record<string, unknown> | null>(null);
+  const [receiptStudent, setReceiptStudent] = useState<Record<string, unknown> | null>(null);
+  const [receiptLoadingId, setReceiptLoadingId] = useState<number | string | null>(null);
 
   const academicYear = settings.academic_year || '';
 
@@ -63,30 +67,53 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
     load();
   }, [load]);
 
+  const openReceipt = useCallback(
+    async (payment: Record<string, unknown>) => {
+      if (!payment.id) return;
+      setReceiptLoadingId(payment.id as number | string);
+      try {
+        const { payment: enrichedPayment, student: enrichedStudent } = await loadPaymentReceipt(
+          payment.id as number | string,
+        );
+        setSelectedPayment(enrichedPayment);
+        setReceiptStudent(enrichedStudent);
+        setShowReceipt(true);
+      } catch (error) {
+        await alert(
+          error instanceof Error ? error.message : 'Failed to load receipt',
+          { title: 'Error', type: 'error' },
+        );
+      } finally {
+        setReceiptLoadingId(null);
+      }
+    },
+    [alert],
+  );
+
   const getBalance = (fee: Record<string, unknown>) =>
     Math.max(0, parseFloat(String(fee.amount_due || 0)) - parseFloat(String(fee.amount_paid || 0)));
 
-  const currentAcademicMonth = getCurrentAcademicMonthIndex();
+  const currentCalendarMonth = getCurrentCalendarMonth();
 
   const monthlyRows = useMemo(() => {
     return ACADEMIC_MONTH_NAMES.map((monthName, idx) => {
-      const monthIndex = idx + 1;
-      const monthFees = fees.filter((f) => parseInt(String(f.month), 10) === monthIndex);
+      const calendarMonth = ACADEMIC_MONTHS[idx];
+      const monthFees = fees.filter((f) => parseInt(String(f.month), 10) === calendarMonth);
       const totalDue = monthFees.reduce((s, f) => s + parseFloat(String(f.amount_due || 0)), 0);
       const totalPaid = monthFees.reduce((s, f) => s + parseFloat(String(f.amount_paid || 0)), 0);
       const totalBalance = monthFees.reduce((s, f) => s + getBalance(f), 0);
       return {
-        monthIndex,
+        monthIndex: calendarMonth,
         monthName,
         monthFees,
         totalDue,
         totalPaid,
         totalBalance,
-        isPastOrCurrent: monthIndex <= currentAcademicMonth,
+        isPastOrCurrent: isCalendarMonthOnOrBefore(calendarMonth, currentCalendarMonth),
         hasFees: monthFees.length > 0,
       };
     });
-  }, [fees, currentAcademicMonth]);
+  }, [fees, currentCalendarMonth]);
 
   const totalDue = fees.reduce((s, f) => s + parseFloat(String(f.amount_due || 0)), 0);
   const totalPaidAmount = fees.reduce((s, f) => s + parseFloat(String(f.amount_paid || 0)), 0);
@@ -252,14 +279,12 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedPayment(p);
-                    setShowReceipt(true);
-                  }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                  disabled={receiptLoadingId === p.id}
+                  onClick={() => openReceipt(p)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50"
                 >
                   <FiPrinter size={14} />
-                  View
+                  {receiptLoadingId === p.id ? 'Loading...' : 'View'}
                 </button>
               </div>
             ))
@@ -283,14 +308,24 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
           onClose={() => {
             setShowReceipt(false);
             setSelectedPayment(null);
+            setReceiptStudent(null);
           }}
           payment={selectedPayment}
-          student={{
-            first_name: student.first_name,
-            last_name: student.last_name,
-            admission_number: student.admission_number,
-            class_name: student.class_name,
-          }}
+          student={
+            receiptStudent || {
+              first_name: student.first_name,
+              last_name: student.last_name,
+              admission_number: student.admission_number,
+              class_name: student.class_name,
+              section_name: student.section_name,
+              parent_name: student.parent_name,
+              parent_phone: student.parent_phone,
+              mother_name: student.mother_name,
+              address: student.address,
+              city: student.city,
+              state: student.state,
+            }
+          }
         />
       )}
     </div>

@@ -1,189 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import type { RequestDb } from '@/lib/request-db';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
+import { getActiveTransportAssignment } from '@/lib/transport-fee-sync';
 import {
-  getActiveTransportAssignment,
-  syncTransportFeesForStudent,
-  cleanupOrphanedTransportFees,
-} from '@/lib/transport-fee-sync';
-import { autoPaymentReconciliation, isReconciliationNeeded } from '@/features/fees/utils/paymentSync';
+  calculateLateFee,
+  loadLateFeePolicyForFeeRow,
+} from '@/lib/fees/LateFeePolicyEngine';
+import { ensureFeeExtensions } from '@/lib/fees/ensure-fee-extensions';
+import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
 
-function computeLateFee(row: {
-  amount_due: string | number;
-  amount_paid: string | number;
-  due_date: string;
-  late_fee_percentage?: string | number | null;
-  late_fee_days?: string | number | null;
-  late_fee_amount?: string | number | null;
-}): number {
-  const stored = parseFloat(String(row.late_fee_amount || 0));
-  if (stored > 0) return stored;
+async function computeLateFee(
+  db: Awaited<ReturnType<typeof getRequestDb>>['db'],
+  row: {
+    amount_due: string | number;
+    amount_paid: string | number;
+    due_date: string;
+    late_fee_percentage?: string | number | null;
+    late_fee_days?: string | number | null;
+    late_fee_amount?: string | number | null;
+    fee_structure_id?: number | null;
+    fee_type?: string | null;
+  }
+): Promise<number> {
+  const amountDue = parseFloat(String(row.amount_due || 0));
+  const amountPaid = parseFloat(String(row.amount_paid || 0));
+  const principalBalance = amountDue - amountPaid;
 
-  const balance = parseFloat(String(row.amount_due || 0)) - parseFloat(String(row.amount_paid || 0));
-  if (balance <= 0 || !row.due_date) return 0;
-
-  const pct = parseFloat(String(row.late_fee_percentage || 0));
-  const graceDays = parseInt(String(row.late_fee_days ?? 7), 10);
-  if (pct <= 0) return 0;
-
-  const dueDate = new Date(row.due_date);
-  const daysOverdue = Math.floor((Date.now() - dueDate.getTime()) / 86400000);
-  if (daysOverdue <= graceDays) return 0;
-
-  return Math.round((balance * pct) / 100 * 100) / 100;
-}
-
-async function autoCleanupOrphanedFees(db: RequestDb) {
-  try {
-    const orphanedCount = await db.query(
-      `SELECT COUNT(*) as count FROM student_fees 
-       WHERE fee_structure_id IS NULL 
-       AND academic_year = $1`,
-      ['2025-26']
-    );
-    
-    if (parseInt(orphanedCount.rows[0].count) > 0) {
-      console.log(`🧹 Auto-cleaning ${orphanedCount.rows[0].count} orphaned fee records...`);
-      
-      const deleteResult = await db.query(
-        `DELETE FROM student_fees 
-         WHERE fee_structure_id IS NULL 
-         AND academic_year = $1`,
-        ['2025-26']
-      );
-      
-      console.log(`✅ Auto-cleaned ${deleteResult.rowCount} orphaned fee records`);
-      return deleteResult.rowCount;
-    }
-    
-    return 0;
-  } catch (error) {
-    console.error('❌ Error in auto-cleanup of orphaned fees:', error);
+  // late_fee_amount stores collected late fees, not outstanding — never treat as due when principal is settled
+  if (principalBalance <= 0) {
     return 0;
   }
+
+  const policyFields = await loadLateFeePolicyForFeeRow(db, row);
+  const result = calculateLateFee({
+    amountDue,
+    amountPaid,
+    dueDate: row.due_date,
+    ...policyFields,
+  });
+  return result.lateFee;
 }
 
-async function autoCleanupOrphanedTransportFees(db: RequestDb, academicYear: string) {
-  try {
-    return await cleanupOrphanedTransportFees(db, academicYear);
-  } catch (error) {
-    console.error('❌ Error in auto-cleanup of orphaned transport fees:', error);
-    return 0;
-  }
-}
-
-// GET student fees
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureFeeSchema(db);
+    await ensureFeeExtensions(db);
+
     const searchParams = request.nextUrl.searchParams;
     const studentId = searchParams.get('student_id');
     const status = searchParams.get('status');
     const academicYear = await resolveAcademicYear(db, searchParams.get('academic_year'));
+    const yearFilter = academicYearFilterValues(academicYear);
     const month = searchParams.get('month');
 
-    if (studentId && academicYear) {
-      try {
-        await syncTransportFeesForStudent(db, parseInt(studentId, 10), academicYear);
-      } catch (error) {
-        console.error('Error syncing transport fees for student:', error);
-      }
-    }
-
-    // Auto-fix payment discrepancies and orphaned records if needed (runs in background)
-    try {
-      // 1. Auto-cleanup orphaned fee records
-      const orphanedCleaned = await autoCleanupOrphanedFees(db);
-      
-      const transportOrphanedCleaned = await autoCleanupOrphanedTransportFees(db, academicYear);
-      
-      // 3. Auto-fix payment discrepancies
-      const reconciliationCheck = await isReconciliationNeeded(academicYear);
-      if (reconciliationCheck.needed && reconciliationCheck.count > 0) {
-        console.log(`🔄 Auto-fixing ${reconciliationCheck.count} payment discrepancies...`);
-        // Run reconciliation in background (don't wait for it)
-        autoPaymentReconciliation(academicYear).catch(error => {
-          console.error('❌ Background reconciliation failed:', error);
-        });
-      }
-      
-      // Log auto-fix summary
-      if (orphanedCleaned > 0 || transportOrphanedCleaned > 0 || (reconciliationCheck.needed && reconciliationCheck.count > 0)) {
-        console.log(`🔧 Auto-fix summary: ${orphanedCleaned} orphaned records cleaned, ${transportOrphanedCleaned} transport orphaned records cleaned, ${reconciliationCheck.count || 0} payment discrepancies fixed`);
-      }
-    } catch (error) {
-      console.error('❌ Error in auto-fix operations:', error);
-      // Don't fail the request if auto-fix operations fail
-    }
-
     let queryText = `
-      SELECT sf.*, 
-             s.first_name, s.last_name, s.admission_number,
-             fs.fee_type, fs.frequency,
-             fs.late_fee_percentage, fs.late_fee_days,
-             fc.name as category_name,
-             c.name as class_name
+      SELECT sf.*, fs.fee_type, fs.frequency, fs.late_fee_percentage, fs.late_fee_days,
+             c.name as class_name, sec.name as section_name
       FROM student_fees sf
-      JOIN students s ON sf.student_id = s.id
       LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
-      LEFT JOIN fee_categories fc ON fs.category_id = fc.id
+      LEFT JOIN students s ON sf.student_id = s.id
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE 1=1
+      LEFT JOIN sections sec ON s.section_id = sec.id
+      WHERE sf.academic_year = ANY($1::text[])
     `;
-    let queryParams: any[] = [];
-    let paramCount = 0;
+    const queryParams: unknown[] = [yearFilter];
+    let paramIndex = 2;
 
     if (studentId) {
-      paramCount++;
-      queryText += ` AND sf.student_id = $${paramCount}`;
-      queryParams.push(studentId);
+      queryText += ` AND sf.student_id = $${paramIndex++}`;
+      queryParams.push(parseInt(studentId, 10));
     }
 
     if (status) {
-      paramCount++;
-      queryText += ` AND sf.status = $${paramCount}`;
+      queryText += ` AND sf.status = $${paramIndex++}`;
       queryParams.push(status);
     }
 
-    if (academicYear) {
-      paramCount++;
-      queryText += ` AND sf.academic_year = $${paramCount}`;
-      queryParams.push(academicYear);
-    }
-
     if (month) {
-      paramCount++;
-      queryText += ` AND sf.month = $${paramCount}`;
-      queryParams.push(month);
+      queryText += ` AND sf.month = $${paramIndex++}`;
+      queryParams.push(parseInt(month, 10));
     }
 
     queryText += ' ORDER BY sf.due_date DESC';
 
     const result = await db.query(queryText, queryParams);
 
-    const rowsWithLateFees = result.rows.map((row: Record<string, unknown>) => {
-      const balance = parseFloat(String(row.amount_due || 0)) - parseFloat(String(row.amount_paid || 0));
-      const shouldCalcLate =
-        balance > 0 &&
-        ['overdue', 'partial', 'pending'].includes(String(row.status || ''));
-      return {
-        ...row,
-        calculated_late_fee: shouldCalcLate ? computeLateFee(row as Parameters<typeof computeLateFee>[0]) : 0,
-      };
-    });
+    const feesWithLateFee = await Promise.all(
+      result.rows.map(async (row) => {
+        const calculated_late_fee = await computeLateFee(db, row);
+        return { ...row, calculated_late_fee };
+      })
+    );
 
-    let transport = null;
+    let transportInfo = null;
     if (studentId) {
-      transport = await getActiveTransportAssignment(db, parseInt(studentId, 10));
+      transportInfo = await getActiveTransportAssignment(db, parseInt(studentId, 10));
     }
 
     return NextResponse.json({
       success: true,
-      data: rowsWithLateFees,
-      transport,
+      data: feesWithLateFee,
+      transport_info: transportInfo,
+      academic_year: academicYear,
     });
   } catch (error) {
     console.error('Error fetching student fees:', error);
@@ -194,10 +114,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create student fee record
 export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureFeeSchema(db);
     const body = await request.json();
     const {
       student_id,
@@ -210,7 +130,6 @@ export async function POST(request: NextRequest) {
       remarks,
     } = body;
 
-    // Validation
     if (!student_id || !academic_year || !amount_due || !due_date) {
       return NextResponse.json(
         { success: false, error: 'Required fields are missing' },
@@ -225,16 +144,26 @@ export async function POST(request: NextRequest) {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
-        student_id, fee_structure_id, academic_year, amount_due,
-        discount_amount || 0, due_date, month, remarks, 'pending'
+        student_id,
+        fee_structure_id,
+        academic_year,
+        amount_due,
+        discount_amount || 0,
+        due_date,
+        month,
+        remarks,
+        'pending',
       ]
     );
 
-    return NextResponse.json({
-      success: true,
-      data: result.rows[0],
-      message: 'Student fee record created successfully',
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: result.rows[0],
+        message: 'Student fee record created successfully',
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating student fee:', error);
     return NextResponse.json(
@@ -244,7 +173,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT update student fee record
 export async function PUT(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
@@ -279,10 +207,7 @@ export async function PUT(request: NextRequest) {
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $8
       RETURNING *`,
-      [
-        amount_due, amount_paid, discount_amount,
-        late_fee_amount, due_date, status, remarks, id
-      ]
+      [amount_due, amount_paid, discount_amount, late_fee_amount, due_date, status, remarks, id]
     );
 
     if (result.rows.length === 0) {
@@ -305,4 +230,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

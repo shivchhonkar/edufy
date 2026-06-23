@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
-import { generateRandomString } from '@/lib/utils';
+import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
+import { ensureFeeExtensions } from '@/lib/fees/ensure-fee-extensions';
+import { generateNextReceiptNumber } from '@/lib/fees/ReceiptNumberService';
+import { buildBreakdownFromPaymentFees } from '@/lib/fees/payment-fee-breakdown';
+import { monthLongName, uniqueMonthsInAcademicOrder } from '@/lib/fees/fee-month-order';
 import type { RequestDb } from '@/lib/request-db';
 
 // Conditional import for payment receipts (optional feature)
@@ -146,6 +150,8 @@ async function applyStudentFeePayment(
 export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureFeeSchema(db);
+    await ensureFeeExtensions(db);
     const body = await request.json();
     const {
       student_id,
@@ -160,6 +166,8 @@ export async function POST(request: NextRequest) {
       late_fee_charged,
       academic_year,
       created_by,
+      exempt_late_fees,
+      student_fee_late_fees,
     } = body;
 
     // Validation - either student_fee_ids or fee_breakdown must be provided
@@ -178,7 +186,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate receipt number
-    const receipt_number = `RCP${new Date().getFullYear()}${generateRandomString(6)}`;
+    const receipt_number = await generateNextReceiptNumber(
+      db,
+      academic_year || new Date().getFullYear().toString()
+    );
 
     console.log('Bulk payment request received:', {
       student_id,
@@ -196,7 +207,10 @@ export async function POST(request: NextRequest) {
 
       if (student_fee_ids && student_fee_ids.length > 0) {
         const feesResult = await db.query(
-          `SELECT * FROM student_fees WHERE id = ANY($1)`,
+          `SELECT sf.*, fs.fee_type
+           FROM student_fees sf
+           LEFT JOIN fee_structures fs ON fs.id = sf.fee_structure_id
+           WHERE sf.id = ANY($1)`,
           [student_fee_ids]
         );
         selectedFees = feesResult.rows;
@@ -209,12 +223,8 @@ export async function POST(request: NextRequest) {
 
       // Create a combined description
       const allFees = [...selectedFees, ...feeBreakdown];
-      const monthNames = allFees.map(f => {
-        if (f.month) {
-          return new Date(2024, f.month - 1).toLocaleString('default', { month: 'short' });
-        }
-        return f.fee_type || 'Advance Payment';
-      }).join(', ');
+      const orderedMonthNumbers = uniqueMonthsInAcademicOrder(allFees);
+      const monthNames = orderedMonthNumbers.map(monthLongName).join(', ');
 
       const feeDescription = allFees.length > 1 
         ? `Multiple Fees Payment (${monthNames})`
@@ -237,21 +247,9 @@ export async function POST(request: NextRequest) {
       );
 
       // Store payment breakdown in a JSON field or separate table
-      const paymentBreakdown = allFees.map(f => ({
-        fee_type: f.fee_type || f.fee_type,
-        month: f.month,
-        year: f.year || academic_year,
-        amount: f.amount || (parseFloat(f.amount_due) - parseFloat(f.amount_paid)),
-        late_fee: parseFloat(f.calculated_late_fee || 0),
-        student_fee_id: f.id
-      }));
+      const paymentBreakdown = buildBreakdownFromPaymentFees(allFees, academic_year);
 
-      // Create detailed payment receipt record
-      const selectedMonths = allFees.map(f => {
-        const monthNumber = f.month;
-        const monthName = new Date(2024, monthNumber - 1).toLocaleString('default', { month: 'long' });
-        return monthName;
-      });
+      const selectedMonths = orderedMonthNumbers.map(monthLongName);
 
       // Calculate fee totals by type
       let totalTuitionPaid = 0;
@@ -312,22 +310,36 @@ export async function POST(request: NextRequest) {
 
       // Update existing student_fees records (by explicit IDs from client)
       const processedFeeIds = new Set<number>();
+      const lateFeesByStudentFeeId: Record<string, number> =
+        student_fee_late_fees && typeof student_fee_late_fees === 'object'
+          ? student_fee_late_fees
+          : {};
 
       for (const fee of selectedFees) {
         const feeAmount = parseFloat(fee.amount_due) - parseFloat(fee.amount_paid);
-        const feeLate = parseFloat(fee.calculated_late_fee || 0);
+        let feeLate = exempt_late_fees
+          ? 0
+          : parseFloat(
+              lateFeesByStudentFeeId[String(fee.id)] ??
+                fee.calculated_late_fee ??
+                fee.late_fee_amount ??
+                0,
+            );
         const paymentAmount = feeAmount + feeLate;
         const newAmountPaid = parseFloat(fee.amount_paid || 0) + paymentAmount;
         const newStatus = newAmountPaid >= parseFloat(fee.amount_due) ? 'paid' : 'partial';
+        const newLateFeeAmount = exempt_late_fees
+          ? 0
+          : parseFloat(fee.late_fee_amount || 0) + feeLate;
 
         await db.query(
           `UPDATE student_fees 
            SET amount_paid = $1,
-               late_fee_amount = COALESCE(late_fee_amount, 0) + $2,
+               late_fee_amount = $2,
                status = $3,
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $4`,
-          [newAmountPaid, feeLate, newStatus, fee.id]
+          [newAmountPaid, newLateFeeAmount, newStatus, fee.id]
         );
 
         processedFeeIds.add(fee.id);
@@ -363,17 +375,17 @@ export async function POST(request: NextRequest) {
         console.log(`Applied payment for ${fee.fee_type} month ${fee.month}: student_fee_id=${applied.id}`);
       }
 
+      await db.query(
+        `UPDATE fee_payments SET fee_breakdown = $1::jsonb WHERE id = $2`,
+        [JSON.stringify(paymentBreakdown), paymentResult.rows[0].id]
+      );
+
       await db.query('COMMIT');
 
       // Prepare response with fee breakdown
       const response = {
         ...paymentResult.rows[0],
-        fee_breakdown: allFees.map(f => ({
-          fee_type: f.fee_type || f.fee_type,
-          month: f.month,
-          amount: f.amount || (parseFloat(f.amount_due) - parseFloat(f.amount_paid)),
-          late_fee: parseFloat(f.calculated_late_fee || 0),
-        })),
+        fee_breakdown: paymentBreakdown,
         months_paid: allFees.length,
       };
 

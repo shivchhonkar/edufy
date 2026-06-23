@@ -69,8 +69,17 @@ function escapeHtml(value: unknown): string {
 }
 
 function getFeeTypeDisplay(feeType: string) {
+  const normalized = (feeType || '').trim().toLowerCase();
+
+  if (normalized.includes('transport')) {
+    return 'TRANSPORT FEE';
+  }
+  if (normalized.includes('tuition') || normalized.includes('tution')) {
+    return 'TUTION FEE';
+  }
+
   const map: Record<string, string> = {
-    'Tuition Fee': 'TUITION FEE',
+    'Tuition Fee': 'TUTION FEE',
     'Transport Fee': 'TRANSPORT FEE',
     'Library Fee': 'LIBRARY FEE',
     'Laboratory Fee': 'LABORATORY FEE',
@@ -81,7 +90,16 @@ function getFeeTypeDisplay(feeType: string) {
     'Other Charges': 'OTHER CHARGES',
     'Fee Payment': 'FEE PAYMENT',
   };
-  return (map[feeType] || feeType || 'FEE PAYMENT').toUpperCase();
+
+  if (map[feeType]) {
+    return map[feeType];
+  }
+
+  if (feeType) {
+    return feeType.toUpperCase();
+  }
+
+  return 'FEE PAYMENT';
 }
 
 function parseMonthNumber(month: string | number, year?: number): number {
@@ -92,16 +110,22 @@ function parseMonthNumber(month: string | number, year?: number): number {
   return d.getMonth() + 1;
 }
 
+import { normalizeAcademicYear, parseAcademicYear } from '@/lib/fees/AcademicYear';
+import {
+  resolveMonthCalendarYear,
+  sortMonthsInAcademicOrder,
+} from '@/lib/fees/fee-month-order';
+
 function parseYearNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const str = String(value ?? '').trim();
   if (!str) return null;
 
-  // Supports: "2026-27", "2026-2027", "2026"
-  const parts = str.split('-').map((p) => p.trim());
-  const start = parseInt(parts[0] || '', 10);
-  if (!Number.isFinite(start)) return null;
-  return start;
+  try {
+    return parseAcademicYear(str).startYear;
+  } catch {
+    return null;
+  }
 }
 
 function monthShort(month: number) {
@@ -123,15 +147,18 @@ function formatMonthSuffix(months: { m: number; y?: number }[], academicYear?: s
     return session ? ` (ANNUAL ${session})` : ' (ANNUAL)';
   }
 
-  const sorted = [...months].sort((a, b) => (a.y || 0) - (b.y || 0) || a.m - b.m);
+  const sorted = sortMonthsInAcademicOrder(
+    months.map(({ m, y }) => ({ month: m, year: y })),
+    academicYear,
+  );
   const duration = isFullAcademicYear(months) ? 'ANNUAL' : 'MONTHLY';
 
   if (sorted.length === 1) {
-    return ` (${duration} ${monthShort(sorted[0].m).toUpperCase()} ${session || ''})`.trim();
+    return ` (${duration} ${monthShort(sorted[0].month).toUpperCase()} ${session || ''})`.trim();
   }
 
   const monthList = sorted
-    .map((entry) => monthShort(entry.m).toUpperCase())
+    .map((entry) => monthShort(entry.month).toUpperCase())
     .filter((value, index, arr) => arr.indexOf(value) === index)
     .join(', ');
 
@@ -140,7 +167,7 @@ function formatMonthSuffix(months: { m: number; y?: number }[], academicYear?: s
 
 function getFeeTypePriority(label: string): number {
   const key = label.toLowerCase();
-  if (key.includes('tuition')) return 1;
+  if (key.includes('tuition') || key.includes('tution')) return 1;
   if (key.includes('transport')) return 2;
   if (key.includes('examination') || key.includes('activity')) return 3;
   if (key.includes('late')) return 99;
@@ -163,11 +190,13 @@ export function buildFeeReceiptLineItems(
       const entry = groups.get(type) || { due: 0, months: [] };
       entry.due += amount + late;
       if (fee.month) {
-        const y = parseYearNumber(fee.year) ?? parseYearNumber(yearLabel) ?? new Date().getFullYear();
-        entry.months.push({
-          m: parseMonthNumber(fee.month, y),
-          y,
-        });
+        const monthNum = parseMonthNumber(fee.month, undefined);
+        const y = resolveMonthCalendarYear(
+          monthNum,
+          yearLabel,
+          parseYearNumber(fee.year),
+        );
+        entry.months.push({ m: monthNum, y });
       }
       groups.set(type, entry);
     }
@@ -217,10 +246,11 @@ export function buildFeeReceiptLineItems(
 
 function formatAcademicYearShort(year: string) {
   if (!year) return '';
-  const parts = year.split('-');
-  if (parts.length < 2) return year;
-  const end = parts[1].length <= 2 ? parts[1] : parts[1].slice(-2);
-  return `${parts[0]}-${end}`;
+  try {
+    return normalizeAcademicYear(year);
+  } catch {
+    return year;
+  }
 }
 
 function formatAmount(amount: number, decimals = 0) {

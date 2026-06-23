@@ -2,6 +2,15 @@
  * Global Constants for Shribi Edufy School Management System
  */
 
+import {
+  ACADEMIC_MONTH_SEQUENCE,
+  ACADEMIC_MONTH_SEQUENCE_NAMES,
+  getCalendarMonthName,
+  getCalendarMonthShortName,
+  getDefaultAcademicYearForDate,
+  parseAcademicYear,
+} from '@/lib/fees/AcademicYear';
+
 // ==================== ACADEMIC YEAR ====================
 
 /**
@@ -10,69 +19,49 @@
  * @deprecated Use settings.academic_year from useSettings() hook instead
  */
 export function getCurrentAcademicYear(): string {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1; // JavaScript months are 0-indexed
-  
-  // Academic year starts in April (month 4)
-  if (month >= 4) {
-    return `${year}-${year + 1}`;
-  } else {
-    return `${year - 1}-${year}`;
-  }
+  const parsed = getDefaultAcademicYearForDate();
+  return `${parsed.startYear}-${parsed.endYear}`;
 }
 
 /**
  * Get academic year start and end years
  */
 export function getAcademicYearParts(): { startYear: number; endYear: number; academicYear: string } {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  
-  const startYear = month >= 4 ? year : year - 1;
-  const endYear = startYear + 1;
-  const academicYear = `${startYear}-${endYear}`;
-  
-  return { startYear, endYear, academicYear };
+  const parsed = getDefaultAcademicYearForDate();
+  return {
+    startYear: parsed.startYear,
+    endYear: parsed.endYear,
+    academicYear: `${parsed.startYear}-${parsed.endYear}`,
+  };
 }
 
 // ==================== ACADEMIC MONTHS ====================
 
 /**
- * Academic year months in order (April to March)
+ * Calendar months (1–12) in academic session order (April → March).
  */
-export const ACADEMIC_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
+export const ACADEMIC_MONTHS = ACADEMIC_MONTH_SEQUENCE;
 
 /**
- * Academic year month names in order
+ * Month names in academic session order (April → March).
  */
-export const ACADEMIC_MONTH_NAMES = [
-  'April', 'May', 'June', 'July', 'August', 'September',
-  'October', 'November', 'December', 'January', 'February', 'March'
-] as const;
+export const ACADEMIC_MONTH_NAMES = ACADEMIC_MONTH_SEQUENCE_NAMES;
 
 /**
- * Get month name from month number
+ * Get month name from calendar month number (January = 1 … December = 12).
  */
 export function getMonthName(month: number): string {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  return monthNames[month - 1] || 'Unknown';
+  return getCalendarMonthName(month);
 }
 
 /**
- * Get short month name from month number
+ * Get short month name from calendar month number (January = 1 … December = 12).
  */
 export function getShortMonthName(month: number): string {
-  const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return monthNames[month - 1] || 'Unknown';
+  return getCalendarMonthShortName(month);
 }
+
+export { parseAcademicYear };
 
 // ==================== FEE DEFAULTS ====================
 

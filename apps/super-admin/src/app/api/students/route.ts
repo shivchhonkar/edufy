@@ -5,105 +5,28 @@ import type { RequestDb } from '@/lib/request-db';
 import { Student } from '@/shared/types';
 import { generateAdmissionNumber, getPaginationParams } from '@/lib/utils';
 import { ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncStudentMedicalBloodGroup } from '@/lib/student-profile-api';
+import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
 
-// Helper function to assign default fees to a student (uses request-scoped db for multi-tenant)
 async function assignDefaultFeesToStudent(studentId: number, classId: number | null, db: RequestDb) {
   try {
     const settingsResult = await db.query('SELECT academic_year FROM system_settings ORDER BY id DESC LIMIT 1');
     let academicYear = new Date().getFullYear().toString();
-    
+
     if (settingsResult.rows.length > 0 && settingsResult.rows[0].academic_year) {
       academicYear = settingsResult.rows[0].academic_year;
     }
 
     console.log(`Auto assigning fees for new student ${studentId} in academic year ${academicYear}`);
-    
-    // Get fee structures for the student's class
-    const feeStructuresResult = await db.query(
-      `SELECT * FROM fee_structures 
-       WHERE (class_id = $1 OR class_id IS NULL)
-       AND is_active = true
-       AND (academic_year = $2 OR academic_year = $3 OR academic_year = $4)`,
-      [classId, academicYear, academicYear.replace('-', '-'), academicYear.split('-')[0]]
-    );
 
-    if (feeStructuresResult.rows.length === 0) {
-      console.log(`No active fee structures found for class ${classId} in academic year ${academicYear}`);
-      return { assigned: 0, total: 0 };
-    }
+    const result = await FeeGenerationService.generateStudentFees(db, {
+      academicYear,
+      studentId,
+      forceReassign: false,
+      conflictStrategy: 'ignore',
+    });
 
-    let feesAssigned = 0;
-    const currentDate = new Date();
-    
-    // Determine academic year start based on current academic year
-    let academicYearStart: Date;
-    if (currentDate.getMonth() >= 3) { // April or later
-      academicYearStart = new Date(currentDate.getFullYear(), 3, 1); // April 1st current year
-    } else { // January-March
-      academicYearStart = new Date(currentDate.getFullYear() - 1, 3, 1); // April 1st previous year
-    }
-
-    for (const feeStructure of feeStructuresResult.rows) {
-      // Calculate fee amount based on frequency
-      let feeAmount = parseFloat(feeStructure.amount);
-      let monthsToGenerate = 12;
-
-      switch (feeStructure.frequency) {
-        case 'monthly':
-          monthsToGenerate = 12;
-          break;
-        case 'quarterly':
-          monthsToGenerate = 4;
-          feeAmount = feeAmount / 4;
-          break;
-        case 'half_yearly':
-          monthsToGenerate = 2;
-          feeAmount = feeAmount / 2;
-          break;
-        case 'yearly':
-        case 'one_time':
-          monthsToGenerate = 1;
-          break;
-      }
-
-      // Generate fee records for the academic year
-      for (let i = 0; i < monthsToGenerate; i++) {
-        const dueDate = new Date(academicYearStart);
-        dueDate.setMonth(academicYearStart.getMonth() + i);
-        dueDate.setDate(10);
-
-        if (feeStructure.frequency === 'one_time' && i > 0) continue;
-
-        // For monthly fees, include ALL months from April onwards (don't skip past months)
-        // This ensures overdue calculation works correctly
-
-        try {
-          await db.query(
-            `INSERT INTO student_fees (
-              student_id, fee_structure_id, academic_year, amount_due,
-              due_date, month, status, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-            ON CONFLICT (student_id, fee_structure_id, academic_year, month) 
-            DO NOTHING`,
-            [
-              studentId,
-              feeStructure.id,
-              academicYear,
-              feeAmount,
-              dueDate.toISOString().split('T')[0],
-              i + 1,
-              'pending'
-            ]
-          );
-          feesAssigned++;
-        } catch (error) {
-          console.error(`Error assigning fee ${feeStructure.fee_type} to student ${studentId}:`, error);
-        }
-      }
-    }
-
-    console.log(`✅ Assigned ${feesAssigned} fee records to student ${studentId}`);
-    return { assigned: feesAssigned, total: feeStructuresResult.rows.length };
+    console.log(`✅ Assigned ${result.feesAssigned} fee records to student ${studentId}`);
+    return { assigned: result.feesAssigned, total: result.feesAssigned + result.feesSkipped };
   } catch (error) {
     console.error('Error in assignDefaultFeesToStudent:', error);
     return { assigned: 0, total: 0 };
