@@ -9,6 +9,8 @@ import {
 } from '@/lib/fees/LateFeePolicyEngine';
 import { ensureFeeExtensions } from '@/lib/fees/ensure-fee-extensions';
 import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
+import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
+import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
 
 async function computeLateFee(
   db: Awaited<ReturnType<typeof getRequestDb>>['db'],
@@ -55,6 +57,18 @@ export async function GET(request: NextRequest) {
     const yearFilter = academicYearFilterValues(academicYear);
     const month = searchParams.get('month');
 
+    if (studentId) {
+      try {
+        await FeeGenerationService.syncTransportFeesForStudent(
+          db,
+          parseInt(studentId, 10),
+          academicYear
+        );
+      } catch (syncError) {
+        console.error(`Transport fee sync failed for student ${studentId}:`, syncError);
+      }
+    }
+
     let queryText = `
       SELECT sf.*, fs.fee_type, fs.frequency, fs.late_fee_percentage, fs.late_fee_days,
              c.name as class_name, sec.name as section_name
@@ -82,6 +96,8 @@ export async function GET(request: NextRequest) {
       queryText += ` AND sf.month = $${paramIndex++}`;
       queryParams.push(parseInt(month, 10));
     }
+
+    queryText += ` ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`;
 
     queryText += ' ORDER BY sf.due_date DESC';
 

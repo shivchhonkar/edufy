@@ -28,7 +28,7 @@ export default function FeesOperationsPanel() {
     {
       id: 'generate',
       title: 'Generate Monthly Fees',
-      description: 'Assign fees for current and next 2 months to all active students.',
+      description: 'Assign monthly fees from active structures only (current + next 2 months).',
       icon: FiZap,
       action: async () => {
         const ok = await confirm(
@@ -58,7 +58,7 @@ export default function FeesOperationsPanel() {
     {
       id: 'auto-assign',
       title: 'Auto Assign Fees',
-      description: 'Run full auto-assignment based on class fee structures.',
+      description: 'Assign all active fee structures per class. Disabled fee types are skipped.',
       icon: FiUserCheck,
       action: async () => {
         const ok = await confirm('Run auto-assign for all students?', { title: 'Auto Assign' });
@@ -151,7 +151,7 @@ export default function FeesOperationsPanel() {
     {
       id: 'cleanup',
       title: 'Cleanup Orphan Records',
-      description: 'Remove fee records that no longer match active structures.',
+      description: 'Remove fee records for inactive or mismatched structures, then reconcile.',
       icon: FiTrash2,
       action: async () => {
         const ok = await confirm('Remove orphaned fee records?', { title: 'Cleanup', type: 'warning' });

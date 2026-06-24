@@ -34,6 +34,7 @@ export interface CollectibleFeeItem {
   outstanding: number;
   calculated_late_fee?: number;
   selected: boolean;
+  isPaid?: boolean;
   status?: string;
   subtitle?: string;
 }
@@ -60,6 +61,24 @@ function sortCollectibleItems(items: CollectibleFeeItem[]): CollectibleFeeItem[]
   });
 }
 
+function feeTypeKey(feeType: string): string {
+  return feeType.toLowerCase().trim();
+}
+
+function studentHasOtherFeeAssignment(
+  studentFees: Array<FeeBalanceRecord & { frequency?: string; id?: number }>,
+  feeType: string,
+  month: number,
+  category: OtherFeeCategory,
+): boolean {
+  return studentFees.some((fee) => {
+    if (isCoreMonthlyFee(fee)) return false;
+    if (feeTypeKey(String(fee.fee_type || '')) !== feeTypeKey(feeType)) return false;
+    if (category === 'monthly') return parseMonth(fee.month) === month;
+    return true;
+  });
+}
+
 export function buildCollectibleOtherFees(params: {
   studentFees: Array<FeeBalanceRecord & { frequency?: string; id?: number }>;
   feeStructures?: FeeStructureRow[];
@@ -72,14 +91,15 @@ export function buildCollectibleOtherFees(params: {
 
   for (const fee of studentFees) {
     if (isCoreMonthlyFee(fee)) continue;
-    if (isFeeFullySettled(fee)) continue;
-
-    const outstanding = getFeeOutstanding(fee);
-    if (outstanding <= 0) continue;
-
     const feeStructureId = (fee as { fee_structure_id?: number }).fee_structure_id;
     if (feeStructureId) assignedStructureIds.add(feeStructureId);
+  }
 
+  for (const fee of studentFees) {
+    if (isCoreMonthlyFee(fee)) continue;
+
+    const isPaid = isFeeFullySettled(fee);
+    const outstanding = isPaid ? 0 : getFeeOutstanding(fee);
     const month = parseMonth(fee.month ?? defaultMonth);
     const category = getOtherFeeCategory(fee);
 
@@ -94,8 +114,11 @@ export function buildCollectibleOtherFees(params: {
       amount_due: parseFloat(String(fee.amount_due || 0)),
       amount_paid: parseFloat(String(fee.amount_paid || 0)),
       outstanding,
-      calculated_late_fee: parseFloat(String(fee.calculated_late_fee || 0)) || 0,
+      calculated_late_fee: isPaid
+        ? 0
+        : parseFloat(String(fee.calculated_late_fee || 0)) || 0,
       selected: false,
+      isPaid,
       status: String(fee.status || ''),
       subtitle:
         category === 'monthly'
@@ -123,13 +146,11 @@ export function buildCollectibleOtherFees(params: {
 
     if (category === 'monthly') {
       for (const month of months) {
-        const alreadyAssigned = studentFees.some(
-          (fee) =>
-            !isCoreMonthlyFee(fee) &&
-            String(fee.fee_type || '').toLowerCase() === structure.fee_type.toLowerCase() &&
-            parseMonth(fee.month) === month,
-        );
-        if (alreadyAssigned) continue;
+        if (
+          studentHasOtherFeeAssignment(studentFees, structure.fee_type, month, category)
+        ) {
+          continue;
+        }
 
         items.push({
           key: `fs-${structure.id}-${month}`,
@@ -141,6 +162,7 @@ export function buildCollectibleOtherFees(params: {
           amount_paid: 0,
           outstanding: amount,
           selected: false,
+          isPaid: false,
           subtitle: getCalendarMonthShortName(month),
         });
       }
@@ -148,6 +170,10 @@ export function buildCollectibleOtherFees(params: {
     }
 
     const month = months[0] ?? defaultMonth;
+    if (studentHasOtherFeeAssignment(studentFees, structure.fee_type, month, category)) {
+      continue;
+    }
+
     items.push({
       key: `fs-${structure.id}`,
       fee_type: structure.fee_type,
@@ -158,6 +184,7 @@ export function buildCollectibleOtherFees(params: {
       amount_paid: 0,
       outstanding: amount,
       selected: false,
+      isPaid: false,
       subtitle: category === 'registration' ? 'Registration' : 'Annual',
     });
   }
@@ -169,7 +196,7 @@ export function getCollectibleOtherFeeCharge(
   item: CollectibleFeeItem,
   exemptLateFees: boolean,
 ): number {
-  if (!item.selected) return 0;
+  if (!item.selected || item.isPaid || item.outstanding <= 0) return 0;
   const late =
     exemptLateFees || item.calculated_late_fee == null
       ? 0
@@ -179,9 +206,9 @@ export function getCollectibleOtherFeeCharge(
 }
 
 export function countSelectedOtherFees(items: CollectibleFeeItem[]): number {
-  return items.filter((item) => item.selected && item.outstanding > 0).length;
+  return items.filter((item) => item.selected && !item.isPaid && item.outstanding > 0).length;
 }
 
 export function hasOtherFeeOutstanding(item: CollectibleFeeItem): boolean {
-  return item.outstanding > 0;
+  return !item.isPaid && item.outstanding > 0;
 }

@@ -7,6 +7,7 @@ import {
   calendarMonthToSequenceIndex,
   getCurrentCalendarMonth,
 } from '@/lib/fees/AcademicYear';
+import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 type RangeFilter = 'this_week' | 'this_month' | 'custom' | null;
 
@@ -113,9 +114,11 @@ export async function GET(request: NextRequest) {
       ), 0) as total_pending
       FROM student_fees sf
       JOIN students s ON sf.student_id = s.id
+      LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
       WHERE s.status = 'active'
       AND sf.academic_year = $1
-      AND sf.amount_due > sf.amount_paid`,
+      AND sf.amount_due > sf.amount_paid
+      ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`,
       [currentAcademicYear]
     );
 
@@ -151,10 +154,12 @@ export async function GET(request: NextRequest) {
       ), 0) as total_overdue
       FROM student_fees sf
       JOIN students s ON sf.student_id = s.id
+      LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
       WHERE s.status = 'active'
       AND sf.academic_year = $1
       AND sf.amount_due > sf.amount_paid
-      AND (${overdueCondition})`,
+      AND (${overdueCondition})
+      ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`,
       [currentAcademicYear]
     );
 
@@ -194,9 +199,11 @@ export async function GET(request: NextRequest) {
       `SELECT COUNT(DISTINCT sf.student_id) as count
        FROM student_fees sf
        JOIN students s ON sf.student_id = s.id
+       LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
        WHERE s.status = 'active'
        AND sf.academic_year = $1
-       AND sf.amount_due > sf.amount_paid`,
+       AND sf.amount_due > sf.amount_paid
+       ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`,
       [currentAcademicYear]
     );
 

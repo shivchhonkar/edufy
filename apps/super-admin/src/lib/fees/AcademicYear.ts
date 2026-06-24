@@ -10,6 +10,42 @@ import { calculateDueDate } from '@/lib/fees/FeeDateService';
 export const CALENDAR_MONTH_MIN = 1;
 export const CALENDAR_MONTH_MAX = 12;
 
+/** Calendar months when transport fee applies from assignment start through session end (or end date). */
+export function getTransportEligibleMonths(
+  academicYear: string,
+  startDate: string | Date,
+  endDate?: string | Date | null,
+): number[] {
+  const assignStart = parseAssignmentDate(startDate);
+  const assignEnd = endDate ? parseAssignmentDate(endDate) : null;
+
+  return getPeriodCalendarMonths('monthly').filter((month) => {
+    const { start: monthStart, end: monthEnd } = sessionMonthDateRange(academicYear, month);
+    if (assignStart > monthEnd) return false;
+    if (assignEnd && assignEnd < monthStart) return false;
+    return true;
+  });
+}
+
+function sessionMonthDateRange(
+  academicYear: string,
+  calendarMonth: number,
+): { start: Date; end: Date } {
+  const parsed = parseAcademicYear(academicYear);
+  const year = calendarYearForMonth(parsed, calendarMonth);
+  return {
+    start: new Date(year, calendarMonth - 1, 1),
+    end: new Date(year, calendarMonth, 0),
+  };
+}
+
+function parseAssignmentDate(value: string | Date): Date {
+  if (value instanceof Date) return value;
+  const trimmed = value.trim();
+  if (trimmed.includes('T')) return new Date(trimmed);
+  return new Date(`${trimmed}T12:00:00`);
+}
+
 /** Calendar months in Indian school session order (April → March). */
 export const ACADEMIC_MONTH_SEQUENCE: readonly number[] = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 

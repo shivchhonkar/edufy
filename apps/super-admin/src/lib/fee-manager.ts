@@ -303,6 +303,7 @@ export async function getStudentFeeAmount(
       JOIN fee_structures fs ON sf.fee_structure_id = fs.id
       WHERE sf.student_id = $1
       AND fs.fee_type ILIKE $2
+      AND fs.is_active = true
       AND sf.academic_year = $3
     `;
     const params: any[] = [studentId, `%${feeType}%`, targetAcademicYear];

@@ -3,17 +3,15 @@
 import { useState } from 'react';
 import ClassFeeSetupPanel from '@/features/fees/components/ClassFeeSetupPanel';
 import FeesPageHeader from '@/features/fees/components/FeesPageHeader';
-import { useSettings } from '@/shared/SettingsContext';
 
 export default function FeeSetupPage() {
-  const { settings } = useSettings();
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   return (
     <div className="space-y-4">
       <FeesPageHeader
         title="Fee Setup"
-        description={`Configure tuition and fees per class for ${settings.academic_year || 'the current academic year'}.`}
+        description="Set up tuition, registration, and optional fees for each class in a few quick steps."
       />
 
       {message && (

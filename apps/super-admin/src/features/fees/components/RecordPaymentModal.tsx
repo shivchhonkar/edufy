@@ -18,6 +18,7 @@ import {
   academicYearMatches,
   getAcademicSequence,
   getDefaultAcademicYearForDate,
+  getTransportEligibleMonths,
   normalizeAcademicYear,
   parseAcademicYear,
 } from '@/lib/fees/AcademicYear';
@@ -32,6 +33,7 @@ import {
   buildCollectibleOtherFees,
   countSelectedOtherFees,
   getCollectibleOtherFeeCharge,
+  hasOtherFeeOutstanding,
   type CollectibleFeeItem,
 } from '@/features/fees/utils/build-collectible-other-fees';
 import {
@@ -312,10 +314,16 @@ export default function RecordPaymentModal({
       const structuresData = await structuresResponse.json();
       
       const hasTransport = transportData.success && transportData.data && transportData.data.length > 0;
+      const transportAssignment = hasTransport ? transportData.data[0] : null;
       setStudentHasTransport(hasTransport);
-      
-      if (hasTransport) {
-        const transportFee = parseFloat(transportData.data[0]?.transport_fee || transportData.data[0]?.pickup_fee || DEFAULT_TRANSPORT_FEE);
+
+      let transportFee = DEFAULT_TRANSPORT_FEE;
+      if (transportAssignment) {
+        transportFee = parseFloat(
+          transportAssignment.transport_fee ||
+            transportAssignment.pickup_fee ||
+            DEFAULT_TRANSPORT_FEE,
+        );
         setTransportMonthlyFee(transportFee);
       }
 
@@ -329,6 +337,15 @@ export default function RecordPaymentModal({
           : `${currentDate.getFullYear()}-${String((currentDate.getFullYear() + 1) % 100).padStart(2, '0')}`,
       );
       const currentAcademicYear = parsedYear.name;
+      const transportEligibleMonths = new Set(
+        transportAssignment
+          ? getTransportEligibleMonths(
+              currentAcademicYear,
+              transportAssignment.start_date,
+              transportAssignment.end_date ?? null,
+            )
+          : [],
+      );
       const allStudentFees: Array<Record<string, unknown>> = data.success ? data.data : [];
 
       const generatedMonths: MonthFee[] = [];
@@ -415,13 +432,16 @@ export default function RecordPaymentModal({
             amount_paid: tuitionPayment.amount_paid,
             calculated_late_fee: 0
           } : null),
-          transportFee: hasTransport ? { 
-            amount: transportMonthlyFee, 
-            month, 
-            year,
-            isPaid: !!transportPayment,
-            feeRecord: existingTransportFee
-          } : null,
+          transportFee:
+            hasTransport && transportEligibleMonths.has(month)
+              ? {
+                  amount: transportFee,
+                  month,
+                  year,
+                  isPaid: !!transportPayment,
+                  feeRecord: existingTransportFee,
+                }
+              : null,
           tuitionSelected: false,
           transportSelected: false,
           status,
@@ -625,7 +645,7 @@ export default function RecordPaymentModal({
       const studentFeeLateFees: Record<number, number> = {};
 
       otherFeeItems.forEach((item) => {
-        if (!item.selected || item.outstanding <= 0) return;
+        if (!item.selected || item.isPaid || item.outstanding <= 0) return;
 
         if (item.id) {
           selectedFeeIds.push(item.id);
@@ -937,7 +957,7 @@ export default function RecordPaymentModal({
                                   setOtherFeeItems((items) =>
                                     items.map((item) => ({
                                       ...item,
-                                      selected: item.outstanding > 0,
+                                      selected: hasOtherFeeOutstanding(item),
                                     })),
                                   );
                                 }
@@ -1095,8 +1115,8 @@ export default function RecordPaymentModal({
                               </div>
                             </div>
                             
-                            {/* Transport Fee - Compact */}
-                            {studentHasTransport && (
+                            {/* Transport Fee - only from assignment start month */}
+                            {monthFee.transportFee && (
                               <div className={`flex items-center gap-2 p-2 rounded border mt-1 ${
                                 transportIsPaid 
                                   ? 'bg-white/50 border-green-200'

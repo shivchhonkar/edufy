@@ -3,6 +3,7 @@ import { getRequestDb } from '@/lib/request-db';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
 import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
+import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 /** Bulk pending fee summary per student — used by /fees list page */
 export async function GET(request: NextRequest) {
@@ -31,7 +32,9 @@ export async function GET(request: NextRequest) {
           AND (sf.amount_due - sf.amount_paid) > 0
         )::text AS pending_count
       FROM student_fees sf
+      LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
       WHERE sf.academic_year = ANY($1::text[])
+      ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}
       GROUP BY sf.student_id`,
       [yearFilter]
     );

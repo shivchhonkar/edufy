@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { requireAuth, HR_ADMIN_ROLES } from '@/lib/api-auth';
 import { hasRole } from '@/lib/auth';
+import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 // GET student's own fees (admin/staff only — student portal uses parent app)
 export async function GET(request: NextRequest) {
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
        LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
        LEFT JOIN fee_categories fc ON fs.category_id = fc.id
        WHERE sf.student_id = $1 AND sf.academic_year = $2
+       ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}
        ORDER BY sf.due_date DESC`,
       [studentId, academicYear]
     );

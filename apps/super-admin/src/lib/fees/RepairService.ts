@@ -14,6 +14,8 @@ export type RepairOptions = {
 export type RepairResult = {
   orphanedFeesRemoved: number;
   transportOrphansRemoved: number;
+  transportFeesCreated: number;
+  transportFeesUpdated: number;
   reconciliation?: Awaited<ReturnType<typeof PaymentReconciliationService.reconcileAll>>;
   statusesRecalculated: number;
 };
@@ -35,6 +37,8 @@ export const RepairService = {
 
     let orphanedFeesRemoved = 0;
     let transportOrphansRemoved = 0;
+    let transportFeesCreated = 0;
+    let transportFeesUpdated = 0;
     let statusesRecalculated = 0;
     let reconciliation: RepairResult['reconciliation'];
 
@@ -47,6 +51,12 @@ export const RepairService = {
         db,
         academicYear
       );
+      const transportSync = await FeeGenerationService.generateTransportFees(db, {
+        academicYear,
+        studentId,
+      });
+      transportFeesCreated = transportSync.created;
+      transportFeesUpdated = transportSync.updated;
     }
 
     if (reconcilePayments) {
@@ -73,6 +83,8 @@ export const RepairService = {
     return {
       orphanedFeesRemoved,
       transportOrphansRemoved,
+      transportFeesCreated,
+      transportFeesUpdated,
       reconciliation,
       statusesRecalculated,
     };

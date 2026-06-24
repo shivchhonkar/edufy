@@ -125,7 +125,7 @@ async function initializeFees(client: PoolClient) {
             break;
           case 'Registration Fee':
             amount = 500;
-            frequency = 'yearly';
+            frequency = 'one_time';
             break;
           case 'Activity Fee':
             amount = 150;

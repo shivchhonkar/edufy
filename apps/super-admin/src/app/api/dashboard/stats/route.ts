@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
 import type { DashboardOverview } from '@/shared/types';
+import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -123,7 +124,9 @@ export async function GET(request: NextRequest) {
         ), 0) as total_pending
         FROM student_fees sf
         JOIN students s ON sf.student_id = s.id
-        WHERE s.status = 'active' AND sf.academic_year = $1 AND sf.amount_due > sf.amount_paid`,
+        LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
+        WHERE s.status = 'active' AND sf.academic_year = $1 AND sf.amount_due > sf.amount_paid
+        ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`,
         [academicYear]
       );
       return parseFloat(result.rows[0].total_pending);

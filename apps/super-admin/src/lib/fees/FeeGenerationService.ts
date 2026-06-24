@@ -1,13 +1,20 @@
 import type { RequestDb } from '@/lib/request-db';
 import {
   academicYearVariants,
+  academicYearFilterValues,
   getPeriodCalendarMonths,
+  getTransportEligibleMonths,
+  normalizeAcademicYear,
 } from '@/lib/fees/AcademicYear';
 import { calculateDueDate } from '@/lib/fees/FeeDateService';
 import { ensureFeeExtensions } from '@/lib/fees/ensure-fee-extensions';
 import { FeeStructureVersionService } from '@/lib/fees/FeeStructureVersionService';
 import { INSTALLMENT_ELIGIBLE_FEE_TYPES } from '@/lib/fees/constants';
 import { InstallmentService } from '@/lib/fees/InstallmentService';
+import {
+  dedupeStructuresForStudent,
+  structurePreferenceOrderSql,
+} from '@/lib/fees/fee-structure-dedup';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,6 +110,7 @@ export type GenerateSchoolFeesResult = {
   studentsProcessed: number;
   totalFeesAssigned: number;
   feesSkipped: number;
+  staleFeesRemoved?: number;
   errors: GenerationError[];
   months?: number[];
   academicYear: string;
@@ -113,6 +121,8 @@ export type TransportAssignmentInfo = {
   route_number: string | null;
   stop_name: string | null;
   transport_fee: number;
+  start_date: string;
+  end_date: string | null;
 };
 
 export type GenerateTransportFeesOptions = {
@@ -218,6 +228,7 @@ async function fetchFeeStructures(
     feeStructureIds?: number[];
     monthlyOnly?: boolean;
     classId?: number | null;
+    excludeTransport?: boolean;
   }
 ): Promise<FeeStructureRow[]> {
   const variants = academicYearVariants(options.academicYear);
@@ -229,6 +240,10 @@ async function fetchFeeStructures(
   `;
   const params: unknown[] = [...variants];
   let paramIndex = 4;
+
+  if (options.excludeTransport !== false) {
+    query += ` AND fs.fee_type NOT ILIKE '%transport%'`;
+  }
 
   if (options.monthlyOnly) {
     query += ` AND fs.frequency = 'monthly'`;
@@ -248,11 +263,163 @@ async function fetchFeeStructures(
   return result.rows;
 }
 
+/**
+ * Remove pending/partial student fee rows that no longer match active class fee structures
+ * (inactive structures, wrong class, or deleted structures).
+ */
+async function deactivateFeeTypes(
+  db: RequestDb,
+  options: { academicYear: string; feeTypes: string[] }
+): Promise<{ structuresDeactivated: number; studentFeesRemoved: number }> {
+  if (options.feeTypes.length === 0) {
+    return { structuresDeactivated: 0, studentFeesRemoved: 0 };
+  }
+
+  const variants = academicYearVariants(options.academicYear);
+
+  const deactivateResult = await db.query(
+    `UPDATE fee_structures
+     SET is_active = false, updated_at = NOW()
+     WHERE is_active = true
+     AND fee_type = ANY($1::text[])
+     AND (academic_year = $2 OR academic_year = $3 OR academic_year = $4)`,
+    [options.feeTypes, ...variants]
+  );
+
+  const deleteResult = await db.query(
+    `DELETE FROM student_fees sf
+     USING fee_structures fs
+     WHERE sf.fee_structure_id = fs.id
+     AND fs.is_active = false
+     AND fs.fee_type = ANY($1::text[])
+     AND (fs.academic_year = $2 OR fs.academic_year = $3 OR fs.academic_year = $4)
+     AND sf.status IN ('pending', 'partial')`,
+    [options.feeTypes, ...variants]
+  );
+
+  return {
+    structuresDeactivated: deactivateResult.rowCount || 0,
+    studentFeesRemoved: deleteResult.rowCount || 0,
+  };
+}
+
+async function cleanupStaleFeeRecords(db: RequestDb, academicYear: string): Promise<number> {
+  const variants = academicYearVariants(academicYear);
+  const deleteResult = await db.query(
+    `DELETE FROM student_fees sf
+     WHERE sf.academic_year = $1
+     AND sf.status IN ('pending', 'partial')
+     AND (
+       NOT EXISTS (
+         SELECT 1 FROM fee_structures fs
+         WHERE fs.id = sf.fee_structure_id
+         AND fs.is_active = true
+         AND (fs.academic_year = $2 OR fs.academic_year = $3 OR fs.academic_year = $4)
+       )
+       OR EXISTS (
+         SELECT 1
+         FROM fee_structures fs
+         INNER JOIN students s ON s.id = sf.student_id
+         WHERE fs.id = sf.fee_structure_id
+         AND fs.class_id IS NOT NULL
+         AND s.class_id IS DISTINCT FROM fs.class_id
+       )
+     )`,
+    [academicYear, ...variants]
+  );
+  return deleteResult.rowCount || 0;
+}
+
 function structuresForStudent(
   structures: FeeStructureRow[],
   classId: number | null
 ): FeeStructureRow[] {
-  return structures.filter((fs) => fs.class_id === classId || fs.class_id === null);
+  return dedupeStructuresForStudent(structures, classId);
+}
+
+async function deactivateDuplicateFeeStructures(
+  db: RequestDb,
+  academicYear: string
+): Promise<number> {
+  const variants = academicYearVariants(academicYear);
+  const deactivateResult = await db.query(
+    `WITH ranked AS (
+       SELECT
+         fs.id,
+         ROW_NUMBER() OVER (
+           PARTITION BY LOWER(TRIM(fs.fee_type)), COALESCE(fs.class_id, 0)
+           ORDER BY
+             CASE fs.frequency
+               WHEN 'one_time' THEN 5
+               WHEN 'yearly' THEN 4
+               WHEN 'half_yearly' THEN 3
+               WHEN 'quarterly' THEN 2
+               WHEN 'monthly' THEN 1
+               ELSE 0
+             END DESC,
+             fs.id DESC
+         ) AS rn
+       FROM fee_structures fs
+       WHERE fs.is_active = true
+       AND fs.fee_type NOT ILIKE '%transport%'
+       AND (fs.academic_year = $1 OR fs.academic_year = $2 OR fs.academic_year = $3)
+     )
+     UPDATE fee_structures fs
+     SET is_active = false, updated_at = NOW()
+     FROM ranked r
+     WHERE fs.id = r.id AND r.rn > 1`,
+    variants
+  );
+
+  if ((deactivateResult.rowCount ?? 0) > 0) {
+    await db.query(
+      `DELETE FROM student_fees sf
+       USING fee_structures fs
+       WHERE sf.fee_structure_id = fs.id
+       AND fs.is_active = false
+       AND (fs.academic_year = $1 OR fs.academic_year = $2 OR fs.academic_year = $3)
+       AND sf.status IN ('pending', 'partial')`,
+      variants
+    );
+  }
+
+  return deactivateResult.rowCount || 0;
+}
+
+async function cleanupDuplicateStudentFeeRecords(
+  db: RequestDb,
+  academicYear: string
+): Promise<number> {
+  const deleteResult = await db.query(
+    `WITH fee_rows AS (
+       SELECT
+         sf.id,
+         ROW_NUMBER() OVER (
+           PARTITION BY sf.student_id, sf.academic_year, sf.month, LOWER(TRIM(fs.fee_type))
+           ORDER BY ${structurePreferenceOrderSql('fs', 's')}
+         ) AS rn
+       FROM student_fees sf
+       JOIN fee_structures fs ON fs.id = sf.fee_structure_id
+       JOIN students s ON s.id = sf.student_id
+       WHERE sf.academic_year = $1
+       AND sf.status IN ('pending', 'partial')
+       AND fs.is_active = true
+     )
+     DELETE FROM student_fees sf
+     WHERE sf.id IN (SELECT id FROM fee_rows WHERE rn > 1)`,
+    [academicYear]
+  );
+  return deleteResult.rowCount || 0;
+}
+
+async function runFeeRecordMaintenance(
+  db: RequestDb,
+  academicYear: string
+): Promise<{ staleRemoved: number; duplicatesRemoved: number; structuresDeactivated: number }> {
+  const structuresDeactivated = await deactivateDuplicateFeeStructures(db, academicYear);
+  const staleRemoved = await cleanupStaleFeeRecords(db, academicYear);
+  const duplicatesRemoved = await cleanupDuplicateStudentFeeRecords(db, academicYear);
+  return { staleRemoved, duplicatesRemoved, structuresDeactivated };
 }
 
 async function hasExistingFeeForStructure(
@@ -390,14 +557,18 @@ async function getOrCreateTransportFeeStructure(
   db: RequestDb,
   academicYear: string
 ): Promise<number> {
+  const normalizedYear = normalizeAcademicYear(academicYear);
+  const yearFilter = academicYearFilterValues(normalizedYear);
+
   const existing = await db.query<{ id: number }>(
     `SELECT id FROM fee_structures
      WHERE fee_type ILIKE '%transport%'
-     AND academic_year = $1
+     AND academic_year = ANY($1::text[])
      AND frequency = 'monthly'
      AND is_active = true
+     ORDER BY id DESC
      LIMIT 1`,
-    [academicYear]
+    [yearFilter]
   );
 
   if (existing.rows.length > 0) {
@@ -414,7 +585,7 @@ async function getOrCreateTransportFeeStructure(
       'Transport Fee',
       0,
       'monthly',
-      academicYear,
+      normalizedYear,
       'Monthly transport fee (varies by route/stop)',
       true,
       0,
@@ -431,15 +602,19 @@ export async function getActiveTransportAssignment(
 ): Promise<TransportAssignmentInfo | null> {
   const result = await db.query<{
     transport_fee: string | number;
+    start_date: string;
+    end_date: string | null;
     route_name: string;
     route_number: string | null;
     stop_name: string | null;
   }>(
-    `SELECT st.transport_fee, r.route_name, r.route_number, rs.stop_name
+    `SELECT st.transport_fee, st.start_date, st.end_date,
+            r.route_name, r.route_number, rs.stop_name
      FROM student_transport st
      JOIN routes r ON st.route_id = r.id
      LEFT JOIN route_stops rs ON st.stop_id = rs.id
      WHERE st.student_id = $1 AND st.status = 'active'
+     ORDER BY st.start_date DESC, st.id DESC
      LIMIT 1`,
     [studentId]
   );
@@ -455,21 +630,25 @@ export async function getActiveTransportAssignment(
     route_number: row.route_number,
     stop_name: row.stop_name,
     transport_fee: fee,
+    start_date: row.start_date,
+    end_date: row.end_date,
   };
 }
 
 async function cleanupOrphanedTransportFees(db: RequestDb, academicYear: string): Promise<number> {
-  const feeStructureId = await getOrCreateTransportFeeStructure(db, academicYear);
+  const normalizedYear = normalizeAcademicYear(academicYear);
+  const yearFilter = academicYearFilterValues(normalizedYear);
+  const feeStructureId = await getOrCreateTransportFeeStructure(db, normalizedYear);
   const orphanDel = await db.query(
     `DELETE FROM student_fees sf
      WHERE sf.fee_structure_id = $1
-     AND sf.academic_year = $2
+     AND sf.academic_year = ANY($2::text[])
      AND sf.status IN ('pending', 'partial')
      AND NOT EXISTS (
        SELECT 1 FROM student_transport st
        WHERE st.student_id = sf.student_id AND st.status = 'active'
      )`,
-    [feeStructureId, academicYear]
+    [feeStructureId, yearFilter]
   );
   return orphanDel.rowCount || 0;
 }
@@ -479,28 +658,47 @@ async function syncTransportFeesForStudent(
   studentId: number,
   academicYear: string
 ): Promise<SyncTransportStudentResult> {
-  const feeStructureId = await getOrCreateTransportFeeStructure(db, academicYear);
+  const normalizedYear = normalizeAcademicYear(academicYear);
+  const yearFilter = academicYearFilterValues(normalizedYear);
+  const feeStructureId = await getOrCreateTransportFeeStructure(db, normalizedYear);
   const assignment = await getActiveTransportAssignment(db, studentId);
 
   if (!assignment) {
     const del = await db.query(
       `DELETE FROM student_fees
-       WHERE student_id = $1 AND fee_structure_id = $2 AND academic_year = $3
+       WHERE student_id = $1 AND fee_structure_id = $2 AND academic_year = ANY($3::text[])
        AND status IN ('pending', 'partial')`,
-      [studentId, feeStructureId, academicYear]
+      [studentId, feeStructureId, yearFilter]
     );
     return { created: 0, updated: 0, removed: del.rowCount || 0 };
   }
 
+  const eligibleMonths = getTransportEligibleMonths(
+    normalizedYear,
+    assignment.start_date,
+    assignment.end_date
+  );
+
   let created = 0;
   let updated = 0;
+  let removed = 0;
 
-  for (const calendarMonth of getPeriodCalendarMonths('monthly')) {
-    const dueDate = calculateDueDate({ academicYear, calendarMonth });
+  const ineligibleDelete = await db.query(
+    `DELETE FROM student_fees
+     WHERE student_id = $1 AND fee_structure_id = $2 AND academic_year = ANY($3::text[])
+     AND status IN ('pending', 'partial')
+     AND NOT (month = ANY($4::int[]))`,
+    [studentId, feeStructureId, yearFilter, eligibleMonths]
+  );
+  removed += ineligibleDelete.rowCount || 0;
+
+  for (const calendarMonth of eligibleMonths) {
+    const dueDate = calculateDueDate({ academicYear: normalizedYear, calendarMonth });
     const existing = await db.query<{ id: number; amount_due: string; status: string }>(
       `SELECT id, amount_due, status FROM student_fees
-       WHERE student_id = $1 AND fee_structure_id = $2 AND academic_year = $3 AND month = $4`,
-      [studentId, feeStructureId, academicYear, calendarMonth]
+       WHERE student_id = $1 AND fee_structure_id = $2
+       AND academic_year = ANY($3::text[]) AND month = $4`,
+      [studentId, feeStructureId, yearFilter, calendarMonth]
     );
 
     if (existing.rows.length > 0) {
@@ -523,13 +721,20 @@ async function syncTransportFeesForStudent(
         ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW(), NOW())
         ON CONFLICT (student_id, fee_structure_id, academic_year, month) DO NOTHING
         RETURNING id`,
-        [studentId, feeStructureId, academicYear, assignment.transport_fee, dueDate, calendarMonth]
+        [
+          studentId,
+          feeStructureId,
+          normalizedYear,
+          assignment.transport_fee,
+          dueDate,
+          calendarMonth,
+        ]
       );
       if (ins.rows.length > 0) created++;
     }
   }
 
-  return { created, updated, removed: 0 };
+  return { created, updated, removed };
 }
 
 // ---------------------------------------------------------------------------
@@ -556,6 +761,8 @@ export const FeeGenerationService = {
       conflictStrategy = 'ignore',
     } = options;
 
+    await runFeeRecordMaintenance(db, academicYear);
+
     const students = await fetchActiveStudents(db, { studentIds, classId });
 
     if (students.length === 0) {
@@ -573,6 +780,7 @@ export const FeeGenerationService = {
       academicYear,
       feeStructureIds,
       monthlyOnly,
+      excludeTransport: true,
     });
 
     let totalAssigned = 0;
@@ -644,7 +852,12 @@ export const FeeGenerationService = {
     }
 
     const student = studentResult.rows[0];
-    const allStructures = await fetchFeeStructures(db, { academicYear, feeStructureIds });
+    await runFeeRecordMaintenance(db, academicYear);
+    const allStructures = await fetchFeeStructures(db, {
+      academicYear,
+      feeStructureIds,
+      excludeTransport: true,
+    });
     const applicable = structuresForStudent(allStructures, student.class_id);
 
     let feesAssigned = 0;
@@ -672,7 +885,12 @@ export const FeeGenerationService = {
     const { academicYear, classId, studentIds, feeStructureIds, forceReassign = false } = options;
 
     const students = await fetchActiveStudents(db, { classId, studentIds });
-    const allStructures = await fetchFeeStructures(db, { academicYear, feeStructureIds });
+    await runFeeRecordMaintenance(db, academicYear);
+    const allStructures = await fetchFeeStructures(db, {
+      academicYear,
+      feeStructureIds,
+      excludeTransport: true,
+    });
 
     let totalFeesAssigned = 0;
     let feesSkipped = 0;
@@ -728,6 +946,10 @@ export const FeeGenerationService = {
       fullYearConflictStrategy = 'update_amount',
     } = options;
 
+    const maintenance = await runFeeRecordMaintenance(db, academicYear);
+    const staleFeesRemoved =
+      maintenance.staleRemoved + maintenance.duplicatesRemoved + maintenance.structuresDeactivated;
+
     if (months?.length) {
       let targetStudentIds = studentIds;
 
@@ -762,12 +984,19 @@ export const FeeGenerationService = {
         conflictStrategy,
       });
 
+      const transportResult = await FeeGenerationService.generateTransportFees(db, {
+        academicYear,
+      });
+
       return {
         studentsProcessed: onlyStudentsWithoutFees
           ? (targetStudentIds?.length ?? 0)
           : monthResult.studentsProcessed,
-        totalFeesAssigned: monthResult.feesAssigned,
+        totalFeesAssigned: monthResult.feesAssigned + transportResult.created,
         feesSkipped: 0,
+        staleFeesRemoved,
+        transportFeesCreated: transportResult.created,
+        transportFeesUpdated: transportResult.updated,
         errors: monthResult.errors,
         months,
         academicYear,
@@ -785,12 +1014,17 @@ export const FeeGenerationService = {
         studentsProcessed: 0,
         totalFeesAssigned: 0,
         feesSkipped: 0,
+        staleFeesRemoved,
         errors: [],
         academicYear,
       };
     }
 
-    const allStructures = await fetchFeeStructures(db, { academicYear, feeStructureIds });
+    const allStructures = await fetchFeeStructures(db, {
+      academicYear,
+      feeStructureIds,
+      excludeTransport: true,
+    });
 
     if (allStructures.length === 0) {
       throw new Error('No active fee structures found for the academic year');
@@ -820,10 +1054,17 @@ export const FeeGenerationService = {
       }
     }
 
+    const transportResult = await FeeGenerationService.generateTransportFees(db, {
+      academicYear,
+    });
+
     return {
       studentsProcessed: students.length,
-      totalFeesAssigned,
+      totalFeesAssigned: totalFeesAssigned + transportResult.created,
       feesSkipped,
+      staleFeesRemoved,
+      transportFeesCreated: transportResult.created,
+      transportFeesUpdated: transportResult.updated,
       errors,
       academicYear,
     };
@@ -878,7 +1119,8 @@ export const FeeGenerationService = {
     db: RequestDb,
     options: GenerateTransportFeesOptions
   ): Promise<GenerateTransportFeesResult> {
-    const { academicYear, studentId } = options;
+    const normalizedYear = normalizeAcademicYear(options.academicYear);
+    const { studentId } = options;
 
     let studentIds: number[];
 
@@ -897,13 +1139,13 @@ export const FeeGenerationService = {
     let removed = 0;
 
     for (const sid of studentIds) {
-      const result = await syncTransportFeesForStudent(db, sid, academicYear);
+      const result = await syncTransportFeesForStudent(db, sid, normalizedYear);
       created += result.created;
       updated += result.updated;
       removed += result.removed;
     }
 
-    removed += await cleanupOrphanedTransportFees(db, academicYear);
+    removed += await cleanupOrphanedTransportFees(db, normalizedYear);
 
     return {
       students_processed: studentIds.length,
@@ -919,21 +1161,21 @@ export const FeeGenerationService = {
   /** Remove transport fees for students without active transport. */
   cleanupOrphanedTransportFees,
 
-  /** Remove student_fees rows with no matching fee_structure. */
+  /** Remove stale/duplicate student_fees and deactivate duplicate fee structures. */
   async cleanupOrphanedFeeRecords(db: RequestDb, academicYear: string): Promise<number> {
-    const deleteResult = await db.query(
-      `DELETE FROM student_fees
-       WHERE id IN (
-         SELECT sf.id
-         FROM student_fees sf
-         LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
-         WHERE fs.id IS NULL
-         AND sf.academic_year = $1
-       )`,
-      [academicYear]
-    );
-    return deleteResult.rowCount || 0;
+    const result = await runFeeRecordMaintenance(db, academicYear);
+    return result.staleRemoved + result.duplicatesRemoved;
   },
+
+  /** Full maintenance: dedupe structures, remove stale and duplicate student fees. */
+  runFeeRecordMaintenance,
+
+  async cleanupStaleFeeRecords(db: RequestDb, academicYear: string): Promise<number> {
+    const result = await runFeeRecordMaintenance(db, academicYear);
+    return result.staleRemoved + result.duplicatesRemoved;
+  },
+
+  deactivateFeeTypes,
 
   getOrCreateTransportFeeStructure,
 

@@ -332,6 +332,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await FeeGenerationService.runFeeRecordMaintenance(db, baseParams.academic_year);
+
     const message = created.length > 1
       ? `Created ${created.length} fee structures${skipped.length ? ` (${skipped.length} skipped as duplicates)` : ''}`
       : `Fee structure created successfully${is_active !== false ? ' and assigned to existing students' : ''}`;
@@ -383,7 +385,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the old fee structure to check if amount changed
     const oldStructureResult = await db.query(
-      `SELECT amount, frequency, late_fee_percentage, late_fee_days FROM fee_structures WHERE id = $1`,
+      `SELECT * FROM fee_structures WHERE id = $1`,
       [id]
     );
 
@@ -395,8 +397,23 @@ export async function PUT(request: NextRequest) {
     }
 
     const oldRow = oldStructureResult.rows[0];
-    const oldAmount = parseFloat(oldRow.amount);
-    const newAmount = parseFloat(amount);
+    const merged = {
+      class_id: class_id !== undefined ? class_id : oldRow.class_id,
+      category_id: category_id !== undefined ? category_id : oldRow.category_id,
+      fee_type: fee_type !== undefined ? String(fee_type).trim() : oldRow.fee_type,
+      amount:
+        amount !== undefined ? parseFloat(String(amount)) : parseFloat(String(oldRow.amount)),
+      frequency: frequency !== undefined ? frequency : oldRow.frequency,
+      academic_year: academic_year !== undefined ? academic_year : oldRow.academic_year,
+      description: description !== undefined ? description : oldRow.description,
+      late_fee_percentage:
+        late_fee_percentage !== undefined ? late_fee_percentage : oldRow.late_fee_percentage,
+      late_fee_days: late_fee_days !== undefined ? late_fee_days : oldRow.late_fee_days,
+      is_active: is_active !== undefined ? is_active !== false : oldRow.is_active !== false,
+    };
+
+    const oldAmount = parseFloat(String(oldRow.amount));
+    const newAmount = merged.amount;
 
     // Update the fee structure
     const result = await db.query(
@@ -410,29 +427,47 @@ export async function PUT(request: NextRequest) {
         description = $7,
         late_fee_percentage = $8,
         late_fee_days = $9,
-        is_active = $10
+        is_active = $10,
+        updated_at = NOW()
       WHERE id = $11
       RETURNING *`,
       [
-        class_id, category_id, fee_type, amount, frequency,
-        academic_year, description, late_fee_percentage,
-        late_fee_days, is_active, id
+        merged.class_id,
+        merged.category_id,
+        merged.fee_type,
+        merged.amount,
+        merged.frequency,
+        merged.academic_year,
+        merged.description,
+        merged.late_fee_percentage,
+        merged.late_fee_days,
+        merged.is_active,
+        id,
       ]
     );
 
+    if (merged.is_active === false && oldRow.is_active !== false) {
+      await db.query(
+        `DELETE FROM student_fees
+         WHERE fee_structure_id = $1 AND status IN ('pending', 'partial')`,
+        [id]
+      );
+    }
+
     const materialChange =
       oldAmount !== newAmount ||
-      oldRow.frequency !== frequency ||
-      parseFloat(oldRow.late_fee_percentage ?? '0') !== parseFloat(late_fee_percentage ?? '0') ||
-      (oldRow.late_fee_days ?? 0) !== (late_fee_days ?? 0);
+      oldRow.frequency !== merged.frequency ||
+      parseFloat(String(oldRow.late_fee_percentage ?? '0')) !==
+        parseFloat(String(merged.late_fee_percentage ?? '0')) ||
+      (oldRow.late_fee_days ?? 0) !== (merged.late_fee_days ?? 0);
 
     if (materialChange) {
       await FeeStructureVersionService.createVersion(db, {
         feeStructureId: id,
         amount: newAmount,
-        frequency,
-        lateFeePercentage: parseFloat(late_fee_percentage ?? '0'),
-        lateFeeDays: late_fee_days ?? 0,
+        frequency: merged.frequency,
+        lateFeePercentage: parseFloat(String(merged.late_fee_percentage ?? '0')),
+        lateFeeDays: merged.late_fee_days ?? 0,
       });
     }
 
@@ -453,10 +488,10 @@ export async function PUT(request: NextRequest) {
       try {
         // Use the unified bulk update function
         const updateResult = await bulkUpdateFees({
-          feeType: fee_type,
-          classId: class_id,
+          feeType: merged.fee_type,
+          classId: merged.class_id,
           newAmount,
-          academicYear: academic_year,
+          academicYear: merged.academic_year,
           updateExistingFees: true
         });
 
@@ -480,6 +515,8 @@ export async function PUT(request: NextRequest) {
         // Continue with fee structure update even if student fee update fails
       }
     }
+
+    await FeeGenerationService.runFeeRecordMaintenance(db, merged.academic_year);
 
     return NextResponse.json({
       success: true,

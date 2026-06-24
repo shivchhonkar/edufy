@@ -64,6 +64,7 @@ async function findExistingStudentFee(
      FROM student_fees sf
      LEFT JOIN fee_structures fs ON fs.id = sf.fee_structure_id
      WHERE sf.student_id = $1 AND sf.academic_year = $2 AND sf.month = $3
+       AND (fs.id IS NULL OR fs.is_active = true)
        AND (
          ($4 ILIKE '%transport%' AND fs.fee_type ILIKE '%transport%')
          OR ($4 ILIKE '%tuition%' AND fs.fee_type ILIKE '%tuition%')
