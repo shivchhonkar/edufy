@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const routeId = searchParams.get('route_id');
     const classId = searchParams.get('class_id');
+    const sectionId = searchParams.get('section_id');
 
     if (studentId) {
       const result = await db.query(
@@ -59,6 +60,11 @@ export async function GET(request: NextRequest) {
       paramCount++;
       queryText += ` AND s.class_id = $${paramCount}`;
       queryParams.push(classId);
+    }
+    if (sectionId) {
+      paramCount++;
+      queryText += ` AND s.section_id = $${paramCount}`;
+      queryParams.push(sectionId);
     }
     if (search) {
       paramCount++;

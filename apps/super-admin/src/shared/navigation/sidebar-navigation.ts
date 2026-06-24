@@ -31,6 +31,7 @@ import {
   FiList,
   FiLock,
   FiMail,
+  FiMap,
   FiMessageCircle,
   FiMessageSquare,
   FiMonitor,
@@ -229,7 +230,12 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Transport',
     icon: FiTruck,
     items: [
-      { name: 'Transport', path: '/transport', icon: FiTruck },
+      { name: 'Dashboard', path: '/transport/dashboard', icon: FiTruck },      
+      { name: 'Vehicles', path: '/transport/vehicles', icon: FiTruck },      
+      { name: 'Drivers', path: '/transport/driver-management', icon: FiUser },
+      { name: 'Routes & Stops', path: '/transport/routes', icon: FiMap },
+      { name: 'Student Allocation', path: '/transport/route-assignments', icon: FiTruck },
+      { name: 'Route Assignments', path: '/transport/current-assignments', icon: FiTruck },
     ],
   },
   {
@@ -450,3 +456,4 @@ export function getInitialExpandedGroups(pathname: string): Record<string, boole
   }
   return expanded;
 }
+
