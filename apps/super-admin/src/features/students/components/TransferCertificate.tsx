@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
+import DocumentWatermark from '@/shared/components/common/DocumentWatermark';
 import type { Student } from '@/shared/types';
 import { formatStudentDate, studentFullName } from '@/features/students/utils/student-profile';
 import { splitAddressIntoTwoLines } from '@/features/students/utils/school-document-utils';

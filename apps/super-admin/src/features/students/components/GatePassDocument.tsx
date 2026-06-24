@@ -1,7 +1,7 @@
 'use client';
 
 import { FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
-import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
+import DocumentWatermark from '@/shared/components/common/DocumentWatermark';
 import { GATE_PASS_APPROVAL_LABELS } from '@/lib/gate-pass-utils';
 import type { GatePassGuardianPhoto } from '@/lib/gate-pass-utils';
 

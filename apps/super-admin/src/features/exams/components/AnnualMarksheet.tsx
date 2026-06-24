@@ -9,7 +9,7 @@ import {
 } from '@/lib/report-settings';
 import { buildMarksheetQrPayload } from '@/lib/marksheet-qr';
 import ReportQrCode from '@/features/exams/components/ReportQrCode';
-import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
+import DocumentWatermark from '@/shared/components/common/DocumentWatermark';
 
 export type MarksheetSubject = {
   subject_name: string;

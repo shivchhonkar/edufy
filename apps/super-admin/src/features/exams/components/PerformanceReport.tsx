@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { CBSE_GRADE_SCALE } from '@/lib/exam-grades';
 import { DEFAULT_REPORT_SETTINGS, type ReportSettings } from '@/lib/report-settings';
 import type { PerformanceReportData } from '@/services/exams/performance-report-builder';
-import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
+import DocumentWatermark from '@/shared/components/common/DocumentWatermark';
 
 type SchoolInfo = {
   school_name?: string;
