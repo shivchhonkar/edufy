@@ -9,18 +9,35 @@ import GuardiansTab from '@/features/students/components/profile/GuardiansTab'
 import DocumentsTab from '@/features/students/components/profile/DocumentsTab'
 import MedicalTab from '@/features/students/components/profile/MedicalTab'
 import EnrollmentsTab from '@/features/students/components/profile/EnrollmentsTab'
+import FeesTab from '@/features/students/components/profile/FeesTab'
+import AttendanceTab from '@/features/students/components/profile/AttendanceTab'
+import SiblingsTab from '@/features/students/components/profile/SiblingsTab'
+import MessagesTab from '@/features/students/components/profile/MessagesTab'
 import { Student } from '@/shared/types'
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile'
 import { FiArrowLeft, FiEdit2 } from 'react-icons/fi'
 
-type ProfileTabId = 'profile' | 'guardians' | 'documents' | 'medical' | 'history'
+type ProfileTabId =
+  | 'profile'
+  | 'guardians'
+  | 'siblings'
+  | 'documents'
+  | 'medical'
+  | 'history'
+  | 'fees'
+  | 'attendance'
+  | 'messages'
 
 const TABS: { id: ProfileTabId; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'guardians', label: 'Guardians' },
+  { id: 'siblings', label: 'Siblings' },
   { id: 'documents', label: 'Documents' },
   { id: 'medical', label: 'Medical' },
   { id: 'history', label: 'Academic History' },
+  { id: 'fees', label: 'Fees' },
+  { id: 'attendance', label: 'Attendance' },
+  { id: 'messages', label: 'Messages' },
 ]
 
 export default function StudentDetailPage() {
@@ -147,9 +164,18 @@ export default function StudentDetailPage() {
             <div className="p-4 sm:p-6">
               {activeTab === 'profile' && <ProfileTab student={student} />}
               {activeTab === 'guardians' && <GuardiansTab studentId={student.id} />}
+              {activeTab === 'siblings' && (
+                <SiblingsTab
+                  studentId={student.id}
+                  onViewSibling={(sibling) => router.push(`/students/${sibling.id}`)}
+                />
+              )}
               {activeTab === 'documents' && <DocumentsTab studentId={student.id} />}
               {activeTab === 'medical' && <MedicalTab studentId={student.id} />}
               {activeTab === 'history' && <EnrollmentsTab studentId={student.id} />}
+              {activeTab === 'fees' && <FeesTab studentId={student.id} />}
+              {activeTab === 'attendance' && <AttendanceTab studentId={student.id} />}
+              {activeTab === 'messages' && <MessagesTab studentId={student.id} />}
             </div>
           </div>
         )}

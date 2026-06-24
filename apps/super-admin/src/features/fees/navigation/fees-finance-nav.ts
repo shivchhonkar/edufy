@@ -22,6 +22,8 @@ export interface FeesNavItem {
   /** Keyboard shortcut hint shown in UI */
   shortcut?: string;
   matchPrefix?: string;
+  /** When true, only the exact path matches (not child routes) */
+  exact?: boolean;
 }
 
 export interface FeesSubNavGroup {
@@ -33,10 +35,11 @@ export interface FeesSubNavGroup {
 
 export const FEES_MAIN_NAV: FeesNavItem[] = [
   { name: 'Dashboard', path: '/fees/dashboard', icon: FiGrid, matchPrefix: '/fees/dashboard' },
+  { name: 'Fee Setup', path: '/fees/setup', icon: FiSettings, matchPrefix: '/fees/setup', exact: true },
   { name: 'Collect Fee', path: '/fees/collect', icon: FiCreditCard, shortcut: 'C', matchPrefix: '/fees/collect' },
   { name: 'Student Ledger', path: '/fees/ledger', icon: FiUsers, matchPrefix: '/fees/ledger' },
   { name: 'Receipts', path: '/fees/receipts', icon: FiPrinter, matchPrefix: '/fees/receipts' },
-  { name: 'Setup', path: '/fees/setup/structures', icon: FiLayers, matchPrefix: '/fees/setup' },
+  { name: 'Fee Structures', path: '/fees/setup/structures', icon: FiLayers, matchPrefix: '/fees/setup/structures' },
   { name: 'Operations', path: '/fees/operations', icon: FiTool, matchPrefix: '/fees/operations' },
   { name: 'Send Reminders', path: '/fees/reminders', icon: FiSend, matchPrefix: '/fees/reminders' },
   { name: 'Reports', path: '/fees/reports', icon: FiBarChart2, matchPrefix: '/fees/reports' },
@@ -44,6 +47,7 @@ export const FEES_MAIN_NAV: FeesNavItem[] = [
 ];
 
 export const FEES_SETUP_NAV: FeesNavItem[] = [
+  { name: 'Per Class Setup', path: '/fees/setup', icon: FiSettings, exact: true },
   { name: 'Fee Structures', path: '/fees/setup/structures', icon: FiLayers },
   { name: 'Fee Categories', path: '/fees/setup/categories', icon: FiList },
 ];
@@ -59,5 +63,6 @@ export const FEES_REPORTS_NAV: FeesNavItem[] = [
 export function isFeesNavActive(pathname: string, item: FeesNavItem): boolean {
   const prefix = item.matchPrefix ?? item.path.split('?')[0];
   if (prefix === '/accounting') return pathname.startsWith('/accounting');
+  if (item.exact) return pathname === prefix;
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }

@@ -25,7 +25,9 @@ function SubNav({
         const [basePath, query = ''] = item.path.split('?');
         const itemType = new URLSearchParams(query).get('type');
         const currentType = searchParams.get('type') || 'collection';
-        const isActive = pathname === basePath && (itemType ? itemType === currentType : !itemType);
+        const isActive = item.exact
+          ? pathname === basePath
+          : pathname === basePath && (itemType ? itemType === currentType : !itemType);
 
         return (
           <Link

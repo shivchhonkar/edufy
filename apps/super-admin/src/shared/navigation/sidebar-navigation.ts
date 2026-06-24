@@ -46,6 +46,7 @@ import {
   FiTruck,
   FiUser,
   FiUserCheck,
+  FiUserMinus,
   FiUserPlus,
   FiUsers,
 } from 'react-icons/fi';
@@ -116,19 +117,15 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: 'academics',
-    title: 'Academics',
-    icon: FiBook,
+    id: 'staff-management',
+    title: 'Staff',
+    icon: FiBriefcase,
     items: [
-      { name: 'Classes', path: '/academics/classes', icon: FiLayers },
-      { name: 'Sections', path: '/academics/classes?tab=sections', icon: FiGrid },
-      { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
-      { name: 'Subjects', path: '/academics/subjects', icon: FiBookOpen },
-      { name: 'Timetable', path: '/academics/timetable', icon: FiCalendar },
-      // { name: 'Homework', path: '/academics/homework', icon: FiClipboard },
-      // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
-      { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
-      { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
+      { name: 'Staff', path: '/staff', icon: FiUsers },
+      { name: 'Staff Attendance', path: '/attendance/staff', icon: FiUserCheck },
+      { name: 'Staff ID Cards', path: '/staff/id-cards', icon: FiCreditCard },
+      { name: 'Staff Documents', path: '/staff/documents', icon: FiFolder },
+      { name: 'Staff Reports', path: '/staff/reports', icon: FiBarChart2 },
     ],
   },
   {
@@ -150,12 +147,30 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'academics',
+    title: 'Academics',
+    icon: FiBook,
+    items: [
+      { name: 'Classes & Sections', path: '/academics/classes', icon: FiLayers },
+      // { name: 'Sections', path: '/academics/classes?tab=sections', icon: FiGrid },
+      { name: 'Subjects', path: '/academics/subjects', icon: FiBookOpen },
+      { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
+      { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
+      
+      { name: 'Timetable', path: '/academics/timetable', icon: FiCalendar },
+      { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+      // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+      { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
+      { name: 'Academic Calendar', path: '/academics/academic-calendar', icon: FiCalendar },
+    ],
+  },
+  
+  {
     id: 'homework',
-    title: 'Homework & Plans',
+    title: 'Homework',
     icon: FiBookOpen,
     items: [
-      { name: 'Homework', path: '/homework', icon: FiBookOpen },
-      { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+      { name: 'Homework', path: '/homework', icon: FiClipboard },      
     ],
   },
   
@@ -184,6 +199,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     icon: RupeeIcon,
     items: [
       { name: 'Dashboard', path: '/fees/dashboard', icon: FiGrid },
+      { name: 'Fee Setup', path: '/fees/setup', icon: FiSettings },
       { name: 'Collect Fee', path: '/fees/collect', icon: FiCreditCard },
       { name: 'Student Ledger', path: '/fees/ledger', icon: FiUsers },
       { name: 'Receipts', path: '/fees/receipts', icon: FiPrinter },
@@ -192,30 +208,6 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Send Reminders', path: '/fees/reminders', icon: FiSend },
       { name: 'Reports', path: '/fees/reports', icon: FiBarChart2 },
       { name: 'Accounting', path: '/accounting', icon: FiBook },
-    ],
-  },
-  {
-    id: 'transport',
-    title: 'Transport',
-    icon: FiTruck,
-    items: [
-      { name: 'Transport', path: '/transport', icon: FiTruck },
-    ],
-  },
-  {
-    id: 'staff-hr',
-    title: 'HR & Payroll',
-    icon: FiBriefcase,
-    items: [
-      { name: 'Dashboard', path: '/teachers', icon: FiGrid },
-      { name: 'Staff', path: '/staff', icon: FiUsers },
-      { name: 'Departments', path: '/hr/departments', icon: FiBriefcase },
-      { name: 'Leave Management', path: '/hr/leave-management', icon: FiCalendar },
-      { name: 'Payroll', path: '/payroll', icon: RupeeIcon },
-      { name: 'ESS', path: '/ess', icon: FiMonitor },
-      { name: 'Performance Tracking', path: '/teachers/performance', icon: FiTarget },
-      { name: 'Teacher Ranking', path: '/teachers/ranking', icon: FiAward },
-      { name: 'Daily Activities', path: '/teachers/daily-activities', icon: FiClock },
     ],
   },
   {
@@ -233,14 +225,39 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: 'inventory',
-    title: 'Inventory',
-    icon: FiPackage,
+    id: 'transport',
+    title: 'Transport',
+    icon: FiTruck,
     items: [
-      { name: 'Inventory', path: '/inventory', icon: FiPackage },
-      // { name: 'Library', path: '/inventory', icon: FiBook },
-      // { name: 'Hostel', path: '/coming-soon?feature=hostel', icon: FiHome, comingSoon: true },
-      // { name: 'Assets', path: '/inventory', icon: FiBox },
+      { name: 'Transport', path: '/transport', icon: FiTruck },
+    ],
+  },
+  {
+    id: 'staff-hr',
+    title: 'HR & Payroll',
+    icon: FiBriefcase,
+    items: [
+      { name: 'Dashboard', path: '/hr/dashboard', icon: FiGrid },
+      { name: 'Departments', path: '/hr/departments', icon: FiBriefcase },
+      { name: 'Designations', path: '/hr/designations', icon: FiBriefcase },
+      { name: 'Shifts', path: '/hr/shifts', icon: FiClock },
+
+      { name: 'Leave Management', path: '/hr/leave-management', icon: FiCalendar },
+      { name: 'Daily Activities', path: '/teachers/daily-activities', icon: FiClock },
+      { name: 'Performance Tracking', path: '/teachers/performance', icon: FiTarget },
+
+      { name: 'Promotions', path: '/hr/promotions', icon: FiArrowUpCircle },
+      { name: 'Increments', path: '/hr/increments', icon: FiArrowUpCircle },
+      { name: 'Resignations', path: '/hr/resignations', icon: FiUserMinus },
+
+      { name: 'Salary Structures', path: '/hr/salary-structures', icon: FiLayers },      
+      { name: 'Payroll', path: '/payroll', icon: RupeeIcon },
+
+      // { name: 'ESS', path: '/ess', icon: FiMonitor },      
+      // { name: 'Teacher Ranking', path: '/teachers/ranking', icon: FiAward },
+     
+      { name: 'Reports', path: '/hr/reports', icon: FiBarChart2 },
+
     ],
   },
   {
@@ -251,6 +268,18 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Library', path: '/library', icon: FiBook },
     ],
   },
+  {
+    id: 'inventory',
+    title: 'Inventory',
+    icon: FiPackage,
+    items: [
+      { name: 'Inventory', path: '/inventory', icon: FiPackage },
+      // { name: 'Library', path: '/inventory', icon: FiBook },
+      // { name: 'Hostel', path: '/coming-soon?feature=hostel', icon: FiHome, comingSoon: true },
+      // { name: 'Assets', path: '/inventory', icon: FiBox },
+    ],
+  },
+  
   // {
   //   id: 'operations',
   //   title: 'Operations',
@@ -271,11 +300,66 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     icon: FiSettings,
     items: [
       { name: 'School Setup', path: '/settings/setup', icon: FiTool },
-      { name: 'System Settings', path: '/settings', icon: FiSettings },
+
+//       School Profile
+// Logo
+// Academic Session
+// School Contact Details
+// School Address
+// School Timing
+// School Documents
+
       { name: 'User Access', path: '/settings/user-access', icon: FiUsers },
+
+//       Roles
+// Permissions
+// User Groups
+// Admin Access
+
       { name: 'Staff Access', path: '/settings/staff-access', icon: FiUserCheck },
+
+//       Teacher Login
+// Employee Portal Access
+// ESS Access
+// Password Reset
+
+{ name: 'Notification Settings', path: '/settings/notifications', icon: FiBell },
+// SMS Templates
+// WhatsApp Templates
+// Email Templates
+// Birthday Automation
+// Fee Reminder Automation
+// Attendance Alerts
+
+
       { name: 'Report Settings', path: '/settings/reports', icon: FiFileText },
+
+//       Report Header
+// School Logo
+// Signatures
+// Watermarks
+// Certificate Templates
+// Report Card Templates
+
       { name: 'Theme', path: '/settings/theme', icon: FiMonitor },
+
+//       Color Scheme
+// Sidebar Layout
+// Dashboard Layout
+
+      { name: 'System Settings', path: '/settings', icon: FiSettings },
+
+//       SMS Settings
+// WhatsApp Settings
+// Email Settings
+// Backup Settings
+// API Settings
+// Integrations
+// Audit Logs
+// Database Settings
+
+
+
     ],
   },
   
@@ -326,10 +410,13 @@ const EXACT_MATCH_PATHS = new Set([
   '/dashboard',
   '/settings',
   '/hr',
+  '/hr/dashboard',
   '/teachers',
   '/fees',
+  '/fees/setup',
   '/academics/classes',
   '/students',
+  '/staff',
   '/exams',
   '/accounting',
   '/communications',

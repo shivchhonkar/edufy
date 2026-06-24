@@ -275,7 +275,7 @@ export default function DashboardPage() {
             subtitle="Assigned staff"
             icon={FiUser}
             color="purple"
-            onClick={() => router.push('/teachers')}
+            onClick={() => router.push('/hr/dashboard')}
           />
           <KpiCard
             title="Attendance"

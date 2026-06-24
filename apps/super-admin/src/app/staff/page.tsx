@@ -14,8 +14,19 @@ import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import { useDialog } from '@/shared/context/DialogContext';
 import { useSettings } from '@/shared/SettingsContext';
 import { Staff } from '@/shared/types';
+import {
+  resolveAssetUrl,
+  resolveDocumentWatermarkUrl,
+  resolveSchoolLogoUrl,
+} from '@/features/students/utils/school-document-utils';
 
-type StaffViewTab = 'profile' | 'teaching' | 'attendance' | 'documents';
+type StaffViewTab =
+  | 'profile'
+  | 'teaching'
+  | 'attendance'
+  | 'documents'
+  | 'salary'
+  | 'messages';
 
 const STAFF_FETCH_LIMIT = 5000;
 
@@ -37,6 +48,9 @@ export default function StaffPage() {
     counsellor_name?: string;
     counsellor_signature_url?: string;
     website?: string;
+    logo_url?: string;
+    show_watermark?: boolean;
+    watermark_url?: string;
   }>({});
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -66,7 +80,7 @@ export default function StaffPage() {
   const staffIdCardSchoolInfo = useMemo(
     () => ({
       name: settings.school_name || 'School',
-      logoUrl: settings.logo_url || undefined,
+      logoUrl: resolveSchoolLogoUrl(settings, reportSettings),
       phone: settings.school_phone || undefined,
       address: settings.school_address || undefined,
       website: reportSettings.website || undefined,
@@ -74,7 +88,9 @@ export default function StaffPage() {
         ? `Academic Year ${settings.academic_year}`
         : undefined,
       principalName: reportSettings.counsellor_name || undefined,
-      signatureUrl: reportSettings.counsellor_signature_url || undefined,
+      signatureUrl: resolveAssetUrl(reportSettings.counsellor_signature_url),
+      showWatermark: reportSettings.show_watermark !== false,
+      stampUrl: resolveDocumentWatermarkUrl(reportSettings),
     }),
     [settings, reportSettings],
   );

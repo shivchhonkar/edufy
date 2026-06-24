@@ -1,6 +1,7 @@
 'use client';
 
 import { FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
+import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
 import { GATE_PASS_APPROVAL_LABELS } from '@/lib/gate-pass-utils';
 import type { GatePassGuardianPhoto } from '@/lib/gate-pass-utils';
 
@@ -11,6 +12,10 @@ export interface GatePassSchoolInfo {
   phone?: string;
   email?: string;
   academicYear?: string;
+  showWatermark?: boolean;
+  watermarkUrl?: string;
+  watermarkText?: string;
+  watermarkColor?: string;
 }
 
 export interface GatePassDocumentData {
@@ -146,8 +151,16 @@ export default function GatePassDocument({
   return (
     <article
       id={id}
-      className={`gate-pass-document w-full overflow-hidden rounded-xl border-2 border-slate-200 bg-white shadow-sm ${className}`}
+      className={`gate-pass-document relative w-full overflow-hidden rounded-xl border-2 border-slate-200 bg-white shadow-sm ${className}`}
     >
+      <DocumentWatermark
+        show={school.showWatermark !== false}
+        imageUrl={school.watermarkUrl}
+        text={school.watermarkText}
+        schoolName={school.name}
+        color={school.watermarkColor}
+      />
+      <div className="relative z-10">
       {/* School header */}
       <header className="border-b-4 border-primary-600 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
         <div className="flex items-start gap-4">
@@ -356,6 +369,7 @@ export default function GatePassDocument({
           </p>
         )}
       </footer>
+      </div>
     </article>
   );
 }

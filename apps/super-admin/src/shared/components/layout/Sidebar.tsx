@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AppLogo from '@/shared/components/common/AppLogo';
+import CollapsedNavGroupFlyout from '@/shared/components/layout/CollapsedNavGroupFlyout';
 import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/constants/sidebar';
 import { useSettings } from '@/shared/SettingsContext';
 import {
@@ -170,47 +171,13 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
             }
 
             return (
-              <div key={group.id} className="relative group">
-                <button
-                  type="button"
-                  className={`sidebar-nav-link flex items-center justify-center w-full px-3 py-2.5 transition-colors ${
-                    active
-                      ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                  title={group.title}
-                >
-                  <Icon className="sidebar-nav-icon w-5 h-5 flex-shrink-0" />
-                </button>
-                <div className="absolute left-full top-0 ml-2 py-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50 min-w-[200px] max-h-[70vh] overflow-y-auto">
-                  <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
-                    {group.title}
-                  </p>
-                  {group.items.map((item) => {
-                    const ItemIcon = item.icon;
-                    return (
-                      <Link
-                        key={`${group.id}-${item.path}`}
-                        href={item.path}
-                        onClick={() => onMobileClose?.()}
-                        className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
-                          isNavLinkActive(pathname, item.path)
-                            ? 'bg-primary-50 text-primary-700 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                      >
-                        <ItemIcon className="w-4 h-4 shrink-0 opacity-80" />
-                        <span className="flex-1 min-w-0">{item.name}</span>
-                        {item.comingSoon && (
-                          <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
-                            Soon
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+              <CollapsedNavGroupFlyout
+                key={group.id}
+                group={group}
+                active={active}
+                pathname={pathname}
+                onNavigate={() => onMobileClose?.()}
+              />
             );
           }
 
@@ -267,9 +234,6 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
 
               {expanded && (
                 <div className="pb-2">
-                  <p className="px-4 pl-10 pr-3 text-[11px] text-gray-400 leading-snug mb-1">
-                    {group.description}
-                  </p>
                   {group.items.map((item) => {
                     const itemActive = isNavLinkActive(pathname, item.path);
                     const ItemIcon = item.icon;

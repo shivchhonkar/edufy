@@ -6,9 +6,8 @@ import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
 import { usePreselectStudentIdsFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
-import StudentIdCard, {
-  type StudentIdCardSchoolInfo,
-} from '@/features/students/components/StudentIdCard';
+import StudentIdCard from '@/features/students/components/StudentIdCard';
+import { buildStudentIdCardSchoolInfo } from '@/features/students/utils/student-id-card-school-info';
 import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
 import type { Student } from '@/shared/types';
@@ -79,19 +78,9 @@ function StudentIdCardsPageContent() {
       .catch(console.error);
   }, []);
 
-  const schoolInfo: StudentIdCardSchoolInfo = useMemo(
-    () => ({
-      name: settings.school_name || 'School',
-      logoUrl: settings.logo_url || undefined,
-      phone: settings.school_phone || undefined,
-      address: settings.school_address || undefined,
-      academicYear: settings.academic_year
-        ? `Academic Year ${settings.academic_year}`
-        : undefined,
-      principalName: reportSettings.counsellor_name || undefined,
-      signatureUrl: reportSettings.counsellor_signature_url || undefined,
-    }),
-    [settings, reportSettings]
+  const schoolInfo = useMemo(
+    () => buildStudentIdCardSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
   );
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import {
   getHolidayDayNumbers,
   getMonthLabel,
   getRegisterCellStyle,
+  getRegisterWeekdayLabel,
   getSundayDayNumbers,
   REGISTER_LEGEND,
   REGISTER_NON_WORKING_COLUMN_CLASS,
@@ -94,6 +95,28 @@ export default function MonthlyAttendanceRegister({
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse text-xs">
             <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 print:hidden">
+                <th
+                  className="sticky left-0 z-10 bg-gray-50 border-r border-gray-200 px-3 py-1 min-w-[140px]"
+                  aria-hidden="true"
+                />
+                {Array.from({ length: daysInMonth }, (_, index) => {
+                  const day = index + 1
+                  const nonWorking = isNonWorkingDay(day)
+                  return (
+                    <th
+                      key={`weekday-${day}`}
+                      className={`px-1 py-1 text-center text-[10px] font-normal uppercase tracking-wide min-w-[28px] ${
+                        nonWorking
+                          ? REGISTER_NON_WORKING_HEADER_CLASS
+                          : 'bg-gray-50 text-gray-400'
+                      }`}
+                    >
+                      {getRegisterWeekdayLabel(day, month, year)}
+                    </th>
+                  )
+                })}
+              </tr>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="sticky left-0 z-10 bg-gray-50 border-r border-gray-200 px-3 py-2 text-left font-semibold text-gray-700 min-w-[140px]">
                   {entityLabel}

@@ -7,8 +7,9 @@ const ACADEMIC_ROUTE_REDIRECTS: [string, string][] = [
   ['/classes', '/academics/classes'],
   ['/subjects', '/academics/subjects'],
   ['/timetable', '/academics/timetable'],
-  ['/homework', '/academics/homework'],
+  ['/academics/homework', '/homework'],
   ['/teachers/syllabus', '/academics/syllabus'],
+  ['/teachers', '/hr/dashboard'],
   ['/hr/teacher-assignments', '/academics/teacher-assignments'],
 ];
 

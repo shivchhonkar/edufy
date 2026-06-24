@@ -18,6 +18,8 @@ export interface ReportSettings {
   show_qr_code: boolean;
   show_grading_scale: boolean;
   show_watermark: boolean;
+  watermark_url: string;
+  watermark_text: string;
   show_signature: boolean;
   primary_color: string;
   footer_note: string;
@@ -43,6 +45,8 @@ export const DEFAULT_REPORT_SETTINGS: ReportSettings = {
   show_qr_code: true,
   show_grading_scale: true,
   show_watermark: true,
+  watermark_url: '',
+  watermark_text: '',
   show_signature: true,
   primary_color: '#1e40af',
   footer_note: '',

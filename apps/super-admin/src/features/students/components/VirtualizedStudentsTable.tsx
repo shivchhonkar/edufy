@@ -22,6 +22,9 @@ interface VirtualizedStudentsTableProps {
   onView: (student: Student) => void;
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
+  onGenerateTc?: (student: Student) => void;
+  onGatePass?: (student: Student) => void;
+  onIdCard?: (student: Student) => void;
   selectedIds?: Set<number>;
   onToggleSelect?: (studentId: number) => void;
   onToggleSelectAll?: (studentIds: number[], select: boolean) => void;
@@ -32,6 +35,9 @@ export default function VirtualizedStudentsTable({
   onView,
   onEdit,
   onDelete,
+  onGenerateTc,
+  onGatePass,
+  onIdCard,
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
@@ -117,7 +123,7 @@ export default function VirtualizedStudentsTable({
           </button>
         )}
         <HeaderCell>Admission No.</HeaderCell>
-        <HeaderCell>Name</HeaderCell>
+        <HeaderCell>Student Name</HeaderCell>
         <HeaderCell>Class</HeaderCell>
         <HeaderCell>Gender</HeaderCell>
         <HeaderCell>Contact</HeaderCell>
@@ -147,6 +153,9 @@ export default function VirtualizedStudentsTable({
                 onView={onView}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onGenerateTc={onGenerateTc}
+                onGatePass={onGatePass}
+                onIdCard={onIdCard}
                 selected={selectionEnabled ? selectedIds!.has(student.id) : false}
                 onToggleSelect={onToggleSelect}
                 gridColumns={gridColumns}
@@ -187,6 +196,9 @@ interface StudentRowProps {
   onView: (student: Student) => void;
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
+  onGenerateTc?: (student: Student) => void;
+  onGatePass?: (student: Student) => void;
+  onIdCard?: (student: Student) => void;
   selected?: boolean;
   onToggleSelect?: (studentId: number) => void;
   gridColumns: string;
@@ -198,6 +210,9 @@ function StudentRow({
   onView,
   onEdit,
   onDelete,
+  onGenerateTc,
+  onGatePass,
+  onIdCard,
   selected = false,
   onToggleSelect,
   gridColumns,
@@ -230,6 +245,7 @@ function StudentRow({
       )}
       <div className="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
         {student.admission_number}
+        <p className="text-xs text-gray-500">Roll No.: {student.roll_number || 'N/A'}</p>
       </div>
 
       <div className="px-6 py-4 whitespace-nowrap">
@@ -299,7 +315,12 @@ function StudentRow({
         >
           <FiTrash size={18} />
         </button>
-        <StudentRowMoreActions student={student} />
+        <StudentRowMoreActions
+          student={student}
+          onGenerateTc={onGenerateTc}
+          onGatePass={onGatePass}
+          onIdCard={onIdCard}
+        />
       </div>
     </div>
   );

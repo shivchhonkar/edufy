@@ -7,6 +7,8 @@ import DashboardLayout from '@/shared/components/layout/DashboardLayout'
 import StaffDocumentsTab from '@/features/staff/components/StaffDocumentsTab'
 import StaffAttendanceHistoryTab from '@/features/staff/components/StaffAttendanceHistoryTab'
 import StaffTeachingTab from '@/features/staff/components/StaffTeachingTab'
+import StaffSalaryHistoryTab from '@/features/staff/components/StaffSalaryHistoryTab'
+import StaffMessagesTab from '@/features/staff/components/StaffMessagesTab'
 import { Staff } from '@/shared/types'
 import {
   FiArrowLeft,
@@ -18,13 +20,21 @@ import {
   FiUser,
 } from 'react-icons/fi'
 
-type StaffProfileTab = 'profile' | 'teaching' | 'attendance' | 'documents'
+type StaffProfileTab =
+  | 'profile'
+  | 'teaching'
+  | 'attendance'
+  | 'documents'
+  | 'salary'
+  | 'messages'
 
 const TABS: { id: StaffProfileTab; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'teaching', label: 'Class & Activity' },
   { id: 'attendance', label: 'Attendance History' },
+  { id: 'salary', label: 'Salary History' },
   { id: 'documents', label: 'Documents' },
+  { id: 'messages', label: 'Messages' },
 ]
 
 function formatDate(date: Date | string | null | undefined): string {
@@ -173,6 +183,10 @@ export default function StaffDetailPage() {
             <div className="p-4 sm:p-6 space-y-4">
               {activeTab === 'attendance' && (
                 <StaffAttendanceHistoryTab staffId={staff.id} />
+              )}
+              {activeTab === 'salary' && <StaffSalaryHistoryTab staffId={staff.id} />}
+              {activeTab === 'messages' && (
+                <StaffMessagesTab staffId={staff.id} staffPhone={staff.phone} />
               )}
               {activeTab === 'teaching' && <StaffTeachingTab staffId={staff.id} />}
               {activeTab === 'documents' && <StaffDocumentsTab staffId={staff.id} />}

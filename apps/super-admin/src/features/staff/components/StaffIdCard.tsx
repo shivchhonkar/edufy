@@ -14,6 +14,8 @@ export interface StaffIdCardSchoolInfo {
   academicYear?: string;
   principalName?: string;
   signatureUrl?: string;
+  showWatermark?: boolean;
+  stampUrl?: string;
 }
 
 interface StaffIdCardProps {
@@ -129,8 +131,8 @@ function FieldRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function CardBackgroundStamp({ logoUrl }: { logoUrl?: string }) {
-  const src = logoUrl?.trim();
+function CardBackgroundStamp({ stampUrl }: { stampUrl?: string }) {
+  const src = stampUrl?.trim();
   if (!src) return null;
 
   return (
@@ -145,7 +147,7 @@ function CardBackgroundStamp({ logoUrl }: { logoUrl?: string }) {
         width: '30mm',
         height: '30mm',
         transform: 'translateY(-50%)',
-        opacity: 0.07,
+        opacity: 0.12,
       }}
     />
   );
@@ -266,7 +268,9 @@ export default function StaffIdCard({ staff, school }: StaffIdCardProps) {
             padding: `3mm ${CONTENT_RIGHT_PAD} 2.5mm 3mm`,
           }}
         >
-          <CardBackgroundStamp logoUrl={school.logoUrl} />
+          {school.showWatermark !== false && school.stampUrl && (
+            <CardBackgroundStamp stampUrl={school.stampUrl} />
+          )}
 
           {/* Main details row */}
           <div className="relative z-10 flex min-h-0 flex-1 gap-[4mm]">

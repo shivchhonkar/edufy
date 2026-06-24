@@ -1,6 +1,15 @@
 import type { Student } from '@/shared/types';
-import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
-import { formatAcademicYearLabel } from '@/features/students/utils/school-document-utils';
+import type {
+  TransferCertificateOptions,
+  TransferCertificateSchoolInfo,
+} from '@/features/students/components/TransferCertificate';
+import {
+  formatAcademicYearLabel,
+  resolveAssetUrl,
+  resolveDocumentWatermarkUrl,
+  resolveSchoolLogoUrl,
+  type SchoolDocumentReportSettings,
+} from '@/features/students/utils/school-document-utils';
 import { studentFullName } from '@/features/students/utils/student-profile';
 
 export interface TransferCertificateStudentSnapshot {
@@ -92,18 +101,18 @@ export function snapshotToStudent(snapshot: TransferCertificateStudentSnapshot):
 }
 
 export function parseSchoolSnapshot(
-  snapshot: Record<string, unknown> | TransferCertificateSchoolInfo
+  snapshot: Record<string, unknown> | TransferCertificateSchoolInfo,
 ): TransferCertificateSchoolInfo {
   const s = snapshot as TransferCertificateSchoolInfo;
   return {
     name: s.name || 'School',
     address: s.address,
-    logoUrl: s.logoUrl,
+    logoUrl: resolveAssetUrl(s.logoUrl),
     academicYear: s.academicYear,
     phone: s.phone,
     email: s.email,
     principalName: s.principalName,
-    signatureUrl: s.signatureUrl,
+    signatureUrl: resolveAssetUrl(s.signatureUrl),
   };
 }
 
@@ -120,17 +129,37 @@ export function buildTransferCertificateSchoolInfo(
     counsellor_name?: string;
     counsellor_signature_url?: string;
     logo_url?: string;
+    show_watermark?: boolean;
+    watermark_url?: string;
+    watermark_text?: string;
+    primary_color?: string;
   },
 ): TransferCertificateSchoolInfo {
+  const mergedReportSettings: SchoolDocumentReportSettings | undefined = reportSettings
+    ? {
+        logo_url: reportSettings.logo_url,
+        counsellor_name: reportSettings.counsellor_name,
+        counsellor_signature_url: reportSettings.counsellor_signature_url,
+        show_watermark: reportSettings.show_watermark,
+        watermark_url: reportSettings.watermark_url,
+        watermark_text: reportSettings.watermark_text,
+        primary_color: reportSettings.primary_color,
+      }
+    : undefined;
+
   return {
     name: settings.school_name?.trim() || 'School',
     address: settings.school_address?.trim() || undefined,
-    logoUrl: reportSettings?.logo_url || settings.logo_url || undefined,
+    logoUrl: resolveSchoolLogoUrl(settings, mergedReportSettings),
     academicYear: formatAcademicYearLabel(settings.academic_year),
     phone: settings.school_phone?.trim() || undefined,
     email: settings.school_email?.trim() || undefined,
     principalName: reportSettings?.counsellor_name?.trim() || undefined,
-    signatureUrl: reportSettings?.counsellor_signature_url?.trim() || undefined,
+    signatureUrl: resolveAssetUrl(reportSettings?.counsellor_signature_url),
+    showWatermark: reportSettings?.show_watermark !== false,
+    watermarkUrl: resolveDocumentWatermarkUrl(mergedReportSettings),
+    watermarkText: reportSettings?.watermark_text?.trim() || undefined,
+    watermarkColor: reportSettings?.primary_color?.trim() || undefined,
   };
 }
 
@@ -143,12 +172,16 @@ export function enrichSchoolSnapshot(
   return {
     name: fallback.name || snapshot.name?.trim() || 'School',
     address: fallback.address || snapshot.address?.trim() || undefined,
-    logoUrl: fallback.logoUrl || snapshot.logoUrl,
+    logoUrl: resolveAssetUrl(fallback.logoUrl || snapshot.logoUrl),
     academicYear: fallback.academicYear || snapshot.academicYear,
     phone: fallback.phone || snapshot.phone,
     email: fallback.email || snapshot.email,
     principalName: fallback.principalName || snapshot.principalName,
-    signatureUrl: fallback.signatureUrl || snapshot.signatureUrl,
+    signatureUrl: resolveAssetUrl(fallback.signatureUrl || snapshot.signatureUrl),
+    showWatermark: fallback.showWatermark ?? snapshot.showWatermark,
+    watermarkUrl: resolveAssetUrl(fallback.watermarkUrl || snapshot.watermarkUrl),
+    watermarkText: fallback.watermarkText || snapshot.watermarkText,
+    watermarkColor: fallback.watermarkColor || snapshot.watermarkColor,
   };
 }
 

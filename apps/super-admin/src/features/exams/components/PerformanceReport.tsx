@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import { CBSE_GRADE_SCALE } from '@/lib/exam-grades';
 import { DEFAULT_REPORT_SETTINGS, type ReportSettings } from '@/lib/report-settings';
 import type { PerformanceReportData } from '@/services/exams/performance-report-builder';
+import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
 
 type SchoolInfo = {
   school_name?: string;
@@ -66,7 +67,6 @@ export default function PerformanceReport({
   const schoolName = (school.school_name || 'School').toUpperCase();
   const affiliation = rs.affiliation_number || school.affiliation_number || '';
   const candidateName = `${student.first_name} ${student.last_name}`.trim().toUpperCase();
-  const watermarkText = schoolName.split(' ').map((w) => w[0]).join('').slice(0, 4) || 'SCH';
 
   const renderTermTable = () => (
     <table className="w-full border-collapse border border-black text-[9px]">
@@ -227,13 +227,14 @@ export default function PerformanceReport({
         style={{ '--report-color': color } as CSSProperties}
       >
         {rs.show_watermark && (
-          <div className="pointer-events-none absolute inset-0 flex flex-wrap items-center justify-center gap-8 overflow-hidden opacity-[0.04]">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <span key={i} className="text-4xl font-black uppercase rotate-[-25deg]" style={{ color }}>
-                {watermarkText}
-              </span>
-            ))}
-          </div>
+          <DocumentWatermark
+            show
+            imageUrl={rs.watermark_url}
+            text={rs.watermark_text}
+            schoolName={schoolName}
+            color={color}
+            variant="tile"
+          />
         )}
 
         <div className="relative z-10">

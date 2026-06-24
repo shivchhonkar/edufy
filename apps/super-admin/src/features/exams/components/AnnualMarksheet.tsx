@@ -9,6 +9,7 @@ import {
 } from '@/lib/report-settings';
 import { buildMarksheetQrPayload } from '@/lib/marksheet-qr';
 import ReportQrCode from '@/features/exams/components/ReportQrCode';
+import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
 
 export type MarksheetSubject = {
   subject_name: string;
@@ -225,15 +226,13 @@ export default function AnnualMarksheet({
         style={{ '--marksheet-color': color } as CSSProperties}
       >
         {rs.show_watermark && !isSimple && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-            <div className="opacity-[0.04] scale-[3]">
-              {rs.logo_url ? (
-                <img src={rs.logo_url} alt="" className="w-32 h-32 object-contain" />
-              ) : (
-                <CbseLogo color={color} />
-              )}
-            </div>
-          </div>
+          <DocumentWatermark
+            show
+            imageUrl={rs.watermark_url}
+            text={rs.watermark_text}
+            schoolName={school.school_name}
+            color={color}
+          />
         )}
 
         <div className="relative z-10 px-3 py-4 print:px-2 print:py-3">

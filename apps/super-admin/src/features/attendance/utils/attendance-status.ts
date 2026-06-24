@@ -74,6 +74,12 @@ export function getMonthLabel(month: number) {
   return new Date(2000, month - 1).toLocaleString('default', { month: 'long' })
 }
 
+const REGISTER_WEEKDAY_LABELS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+
+export function getRegisterWeekdayLabel(day: number, month: number, year: number) {
+  return REGISTER_WEEKDAY_LABELS[new Date(year, month - 1, day).getDay()]
+}
+
 export function getSundayDayNumbers(month: number, year: number, daysInMonth: number) {
   const sundays = new Set<number>()
   for (let day = 1; day <= daysInMonth; day += 1) {

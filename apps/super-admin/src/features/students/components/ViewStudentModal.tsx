@@ -10,22 +10,40 @@ import GuardiansTab from '@/features/students/components/profile/GuardiansTab';
 import DocumentsTab from '@/features/students/components/profile/DocumentsTab';
 import MedicalTab from '@/features/students/components/profile/MedicalTab';
 import EnrollmentsTab from '@/features/students/components/profile/EnrollmentsTab';
+import FeesTab from '@/features/students/components/profile/FeesTab';
+import AttendanceTab from '@/features/students/components/profile/AttendanceTab';
+import SiblingsTab from '@/features/students/components/profile/SiblingsTab';
+import MessagesTab from '@/features/students/components/profile/MessagesTab';
 
 interface ViewStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   student: (Student & { class_name?: string; section_name?: string }) | null;
   onEdit?: () => void;
+  onViewSibling?: (student: Student & { class_name?: string; section_name?: string }) => void;
 }
 
-type ProfileTabId = 'profile' | 'guardians' | 'documents' | 'medical' | 'history';
+type ProfileTabId =
+  | 'profile'
+  | 'guardians'
+  | 'siblings'
+  | 'documents'
+  | 'medical'
+  | 'history'
+  | 'fees'
+  | 'attendance'
+  | 'messages';
 
 const TABS: { id: ProfileTabId; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'guardians', label: 'Guardians' },
+  { id: 'siblings', label: 'Siblings' },
   { id: 'documents', label: 'Documents' },
   { id: 'medical', label: 'Medical' },
   { id: 'history', label: 'Academic History' },
+  { id: 'fees', label: 'Fees' },
+  { id: 'attendance', label: 'Attendance' },
+  { id: 'messages', label: 'Messages' },
 ];
 
 export default function ViewStudentModal({
@@ -33,6 +51,7 @@ export default function ViewStudentModal({
   onClose,
   student,
   onEdit,
+  onViewSibling,
 }: ViewStudentModalProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabId>('profile');
   const [studentData, setStudentData] = useState<
@@ -61,6 +80,14 @@ export default function ViewStudentModal({
       refreshStudent(student.id);
     }
   }, [isOpen, student?.id]);
+
+  const handleViewSibling = (
+    sibling: Student & { class_name?: string; section_name?: string },
+  ) => {
+    setStudentData(sibling);
+    setActiveTab('profile');
+    onViewSibling?.(sibling);
+  };
 
   if (!student || !studentData) return null;
 
@@ -150,6 +177,9 @@ export default function ViewStudentModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {activeTab === 'profile' && <ProfileTab student={studentData} />}
           {activeTab === 'guardians' && <GuardiansTab studentId={studentData.id} />}
+          {activeTab === 'siblings' && (
+            <SiblingsTab studentId={studentData.id} onViewSibling={handleViewSibling} />
+          )}
           {activeTab === 'documents' && <DocumentsTab studentId={studentData.id} />}
           {activeTab === 'medical' && (
             <MedicalTab
@@ -158,6 +188,9 @@ export default function ViewStudentModal({
             />
           )}
           {activeTab === 'history' && <EnrollmentsTab studentId={studentData.id} />}
+          {activeTab === 'fees' && <FeesTab studentId={studentData.id} />}
+          {activeTab === 'attendance' && <AttendanceTab studentId={studentData.id} />}
+          {activeTab === 'messages' && <MessagesTab studentId={studentData.id} />}
         </div>
 
         <div className="px-4 py-3 bg-white border-t flex justify-end flex-shrink-0 sticky bottom-0 z-10 shrink-0 bg-white">

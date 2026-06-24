@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import AddStudentModal from '@/features/students/components/AddStudentModal';
@@ -22,6 +22,15 @@ import {
 } from 'react-icons/fi';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import VirtualizedStudentsTable from '@/features/students/components/VirtualizedStudentsTable';
+import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
+import StudentIdCardModal from '@/features/students/components/StudentIdCardModal';
+import GatePassIssueModal from '@/features/students/components/GatePassIssueModal';
+import type { StudentIdCardSchoolInfo } from '@/features/students/components/StudentIdCard';
+import type { TransferCertificateSchoolInfo } from '@/features/students/components/TransferCertificate';
+import { buildTransferCertificateSchoolInfo } from '@/features/students/utils/transfer-certificate-record';
+import { buildStudentIdCardSchoolInfo } from '@/features/students/utils/student-id-card-school-info';
+import { buildGatePassSchoolInfo } from '@/features/students/utils/gate-pass-school-info';
+import { useSettings } from '@/shared/SettingsContext';
 
 const STUDENTS_FETCH_LIMIT = 50000;
 const UNASSIGNED_CLASS_FILTER = 'unassigned';
@@ -40,6 +49,7 @@ interface Section {
 
 function StudentsPageContent() {
   const { alert, confirm } = useDialog();
+  const { settings } = useSettings();
   const searchParams = useSearchParams();
   const pageHint = searchParams.get('hint');
   const [students, setStudents] = useState<Student[]>([]);
@@ -58,10 +68,40 @@ function StudentsPageContent() {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [deletingUnassigned, setDeletingUnassigned] = useState(false);
   const [hasUnassignedStudents, setHasUnassignedStudents] = useState(false);
+  const [tcStudent, setTcStudent] = useState<Student | null>(null);
+  const [gatePassStudent, setGatePassStudent] = useState<Student | null>(null);
+  const [idCardStudent, setIdCardStudent] = useState<Student | null>(null);
+  const [reportSettings, setReportSettings] = useState<{
+    counsellor_name?: string;
+    counsellor_signature_url?: string;
+    logo_url?: string;
+    primary_color?: string;
+  }>({});
+
+  const tcSchoolInfo: TransferCertificateSchoolInfo = useMemo(
+    () => buildTransferCertificateSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
+  );
+
+  const idCardSchoolInfo: StudentIdCardSchoolInfo = useMemo(
+    () => buildStudentIdCardSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
+  );
+
+  const gatePassSchoolInfo = useMemo(
+    () => buildGatePassSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
+  );
 
   useEffect(() => {
     fetchClasses();
     fetchUnassignedCount();
+    fetch('/api/settings/reports')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setReportSettings(d.data);
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -460,6 +500,9 @@ function StudentsPageContent() {
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
+              onGenerateTc={setTcStudent}
+              onGatePass={setGatePassStudent}
+              onIdCard={setIdCardStudent}
             />
           )}
         </div>
@@ -500,6 +543,7 @@ function StudentsPageContent() {
           isOpen={!!viewingStudent}
           onClose={() => setViewingStudent(null)}
           student={viewingStudent}
+          onViewSibling={setViewingStudent}
           onEdit={() => {
             if (viewingStudent) {
               setEditingStudent(viewingStudent);
@@ -528,6 +572,27 @@ function StudentsPageContent() {
           title="Bulk Import Students"
           templateType="students"
           importUrl="/api/import/students"
+        />
+
+        <TransferCertificateModal
+          isOpen={!!tcStudent}
+          onClose={() => setTcStudent(null)}
+          students={tcStudent ? [tcStudent] : []}
+          school={tcSchoolInfo}
+        />
+
+        <StudentIdCardModal
+          isOpen={!!idCardStudent}
+          onClose={() => setIdCardStudent(null)}
+          student={idCardStudent}
+          school={idCardSchoolInfo}
+        />
+
+        <GatePassIssueModal
+          isOpen={!!gatePassStudent}
+          onClose={() => setGatePassStudent(null)}
+          student={gatePassStudent}
+          school={gatePassSchoolInfo}
         />
       </div>
     </DashboardLayout>

@@ -7,8 +7,17 @@ import { Staff } from '@/shared/types';
 import StaffDocumentsTab from '@/features/staff/components/StaffDocumentsTab';
 import StaffAttendanceHistoryTab from '@/features/staff/components/StaffAttendanceHistoryTab';
 import StaffTeachingTab from '@/features/staff/components/StaffTeachingTab';
+import StaffSalaryHistoryTab from '@/features/staff/components/StaffSalaryHistoryTab';
+import StaffMessagesTab from '@/features/staff/components/StaffMessagesTab';
+import StaffProfileOverviewHeader from '@/features/staff/components/StaffProfileOverviewHeader';
 
-type StaffProfileTab = 'profile' | 'teaching' | 'attendance' | 'documents';
+type StaffProfileTab =
+  | 'profile'
+  | 'teaching'
+  | 'attendance'
+  | 'documents'
+  | 'salary'
+  | 'messages';
 
 interface ViewStaffModalProps {
   isOpen: boolean;
@@ -22,7 +31,9 @@ const TABS: { id: StaffProfileTab; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'teaching', label: 'Class & Activity' },
   { id: 'attendance', label: 'Attendance History' },
+  { id: 'salary', label: 'Salary History' },
   { id: 'documents', label: 'Documents' },
+  { id: 'messages', label: 'Messages' },
 ];
 
 export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'profile', onEdit }: ViewStaffModalProps) {
@@ -106,10 +117,24 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <StaffProfileOverviewHeader staff={staff} />
+
           {activeTab === 'attendance' && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <StaffAttendanceHistoryTab staffId={staff.id} />
+            </div>
+          )}
+
+          {activeTab === 'salary' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <StaffSalaryHistoryTab staffId={staff.id} />
+            </div>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <StaffMessagesTab staffId={staff.id} staffPhone={staff.phone} />
             </div>
           )}
 
@@ -127,51 +152,6 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
 
           {activeTab === 'profile' && (
             <>
-          {/* Profile Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {staff.photo_url ? (
-                  <img
-                    src={staff.photo_url}
-                    alt={`${staff.first_name} ${staff.last_name}`}
-                    className="h-20 w-20 rounded-full object-cover border-2 border-gray-200"
-                  />
-                ) : (
-                  <div className="h-20 w-20 rounded-full bg-primary-600 flex items-center justify-center border-2 border-gray-200">
-                    <span className="text-xl text-white">
-                      {staff.first_name.charAt(0)}{staff.last_name.charAt(0)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl text-gray-900">
-                  {staff.first_name} {staff.last_name}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {staff.designation || 'Staff Member'} {staff.department && `• ${staff.department}`}
-                </p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className={`px-2 py-1 inline-flex text-xs font-semibold rounded-full ${
-                    staff.status === 'active' 
-                      ? 'bg-green-100 text-green-800'
-                      : staff.status === 'inactive'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : staff.status === 'resigned'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {staff.status?.toUpperCase()}
-                  </span>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">
-                    {staff.employee_id}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Personal Information */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">

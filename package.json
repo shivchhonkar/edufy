@@ -1,7 +1,7 @@
 {
   "name": "edulakhya-monorepo",
-  "version": "1.0.0",
-  "description": "EduLakhya School Management System - Monorepo Architecture",
+  "version": "2.0.0",
+  "description": "Shribi School ERP System",
   "private": true,
   "workspaces": [
     "apps/*",

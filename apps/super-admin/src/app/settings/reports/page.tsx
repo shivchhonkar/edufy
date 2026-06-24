@@ -74,7 +74,7 @@ export default function ReportSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [uploading, setUploading] = useState<'logo' | 'signature' | null>(null);
+  const [uploading, setUploading] = useState<'logo' | 'signature' | 'watermark' | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,13 +114,21 @@ export default function ReportSettingsPage() {
     setSaving(false);
   };
 
-  const handleUpload = async (file: File | undefined, type: 'logo' | 'signature') => {
+  const handleUpload = async (file: File | undefined, type: 'logo' | 'signature' | 'watermark') => {
     if (!file) return;
     setUploading(type);
     const url = await uploadFile(file, 'reports');
     if (url) {
-      update(type === 'logo' ? 'logo_url' : 'counsellor_signature_url', url);
-      setMessage({ type: 'success', text: `${type === 'logo' ? 'Logo' : 'Signature'} uploaded.` });
+      if (type === 'logo') update('logo_url', url);
+      else if (type === 'signature') update('counsellor_signature_url', url);
+      else update('watermark_url', url);
+
+      const labels = {
+        logo: 'Logo',
+        signature: 'Signature',
+        watermark: 'Watermark',
+      };
+      setMessage({ type: 'success', text: `${labels[type]} uploaded.` });
     } else {
       setMessage({ type: 'error', text: 'Upload failed. Use PNG or JPG under 50MB.' });
     }
@@ -167,7 +175,7 @@ export default function ReportSettingsPage() {
           <div>
             <h1 className="text-xl text-gray-900">Report Settings</h1>
             <p className="text-sm text-gray-500 mt-1 mb-2">
-              Configure report card template, header design, and counsellor signature
+              Configure report card template, header design, logos, watermarks, and signatures
             </p>
           </div>
           <button
@@ -368,6 +376,75 @@ export default function ReportSettingsPage() {
               </div>
             </section>
 
+            {/* Watermark */}
+            <section className="bg-white border rounded-xl p-5 space-y-4">
+              <div>
+                <h2 className="font-semibold text-gray-900">Document Watermark</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Applied to report cards, marksheets, certificates, ID cards, gate passes, and other
+                  printed documents.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.show_watermark}
+                  onChange={(e) => update('show_watermark', e.target.checked)}
+                  className="rounded"
+                />
+                Show watermark on documents
+              </label>
+              <div className="flex items-center gap-4">
+                {settings.watermark_url ? (
+                  <img
+                    src={settings.watermark_url}
+                    alt="Watermark"
+                    className="w-20 h-20 object-contain border rounded bg-gray-50 p-1 opacity-60"
+                  />
+                ) : (
+                  <div className="w-20 h-20 border rounded flex items-center justify-center bg-gray-50">
+                    <FiImage className="text-gray-400" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer hover:bg-gray-50">
+                    <FiUpload size={14} />
+                    {uploading === 'watermark' ? 'Uploading...' : 'Upload Watermark'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading === 'watermark'}
+                      onChange={(e) => handleUpload(e.target.files?.[0], 'watermark')}
+                    />
+                  </label>
+                  {settings.watermark_url && (
+                    <button
+                      type="button"
+                      onClick={() => update('watermark_url', '')}
+                      className="block text-xs text-red-600 hover:underline"
+                    >
+                      Remove watermark image
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Watermark text (optional, used when no image is uploaded)
+                </label>
+                <input
+                  value={settings.watermark_text}
+                  onChange={(e) => update('watermark_text', e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="e.g. SCHOOL NAME or initials"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  If left blank, school initials are used automatically.
+                </p>
+              </div>
+            </section>
+
             {/* Counsellor signature */}
             <section className="bg-white border rounded-xl p-5 space-y-4">
               <h2 className="font-semibold text-gray-900">Counsellor / Controller Signature</h2>
@@ -433,7 +510,6 @@ export default function ReportSettingsPage() {
                 [
                   ['show_qr_code', 'Show QR code on report'],
                   ['show_grading_scale', 'Show grading scale table'],
-                  ['show_watermark', 'Show background watermark'],
                   ['show_signature', 'Show counsellor signature block'],
                 ] as const
               ).map(([key, label]) => (
@@ -481,7 +557,7 @@ export default function ReportSettingsPage() {
               </div>
               <div className="hidden print:block">{previewMarksheet}</div>
               <p className="text-xs text-gray-500 mt-2 print:hidden">
-                Print uses the current template, header, logo, and signature settings shown in the preview.
+                Print uses the current template, header, logo, watermark, and signature settings shown in the preview.
               </p>
             </div>
           </div>

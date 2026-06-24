@@ -24,3 +24,47 @@ export function formatAcademicYearLabel(academicYear?: string | null): string | 
   if (/^academic year/i.test(trimmed)) return trimmed;
   return `Academic Year ${trimmed}`;
 }
+
+export function resolveAssetUrl(url?: string | null): string | undefined {
+  const trimmed = url?.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  }
+  return trimmed;
+}
+
+export interface SchoolDocumentReportSettings {
+  logo_url?: string;
+  counsellor_name?: string;
+  counsellor_signature_url?: string;
+  primary_color?: string;
+  show_watermark?: boolean;
+  watermark_url?: string;
+  watermark_text?: string;
+}
+
+export interface SchoolDocumentSettings {
+  school_name?: string;
+  school_address?: string;
+  school_phone?: string;
+  school_email?: string;
+  academic_year?: string;
+  logo_url?: string;
+}
+
+export function resolveSchoolLogoUrl(
+  settings?: SchoolDocumentSettings,
+  reportSettings?: SchoolDocumentReportSettings,
+): string | undefined {
+  return resolveAssetUrl(reportSettings?.logo_url || settings?.logo_url);
+}
+
+export function resolveDocumentWatermarkUrl(
+  reportSettings?: SchoolDocumentReportSettings,
+): string | undefined {
+  if (reportSettings?.show_watermark === false) return undefined;
+  return resolveAssetUrl(reportSettings?.watermark_url);
+}
+

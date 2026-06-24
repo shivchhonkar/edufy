@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import DocumentWatermark from '@/shared/components/documents/DocumentWatermark';
 import type { Student } from '@/shared/types';
 import { formatStudentDate, studentFullName } from '@/features/students/utils/student-profile';
 import { splitAddressIntoTwoLines } from '@/features/students/utils/school-document-utils';
@@ -14,6 +15,10 @@ export interface TransferCertificateSchoolInfo {
   email?: string;
   principalName?: string;
   signatureUrl?: string;
+  showWatermark?: boolean;
+  watermarkUrl?: string;
+  watermarkText?: string;
+  watermarkColor?: string;
 }
 
 export interface TransferCertificateOptions {
@@ -87,6 +92,15 @@ export default function TransferCertificate({
   return (
     <div className="tc-sheet break-after-page bg-white text-gray-900">
       <div className="tc-page relative mx-auto min-h-[277mm] max-w-[210mm] border border-gray-300 px-10 py-12 print:border-0 print:px-[15mm] print:py-[12mm]">
+        <DocumentWatermark
+          show={school.showWatermark !== false}
+          imageUrl={school.watermarkUrl}
+          text={school.watermarkText}
+          schoolName={school.name}
+          color={school.watermarkColor}
+        />
+
+        <div className="relative z-10">
         {/* Header */}
         <div className="flex items-start gap-5 border-b-2 border-primary-700 pb-5">
           {school.logoUrl ? (
@@ -219,6 +233,7 @@ export default function TransferCertificate({
             <p className="mt-1 text-sm font-semibold text-gray-900">Principal</p>
             <p className="text-xs text-gray-500">{school.name}</p>
           </div>
+        </div>
         </div>
 
         {student.photo_url ? (

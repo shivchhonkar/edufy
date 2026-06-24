@@ -8,6 +8,7 @@ import VirtualizedStudentSelectTable from '@/features/students/components/Virtua
 import { usePreselectGatePassStudentFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
 import CollectorCameraModal from '@/features/students/components/CollectorCameraModal';
 import GatePassDocument from '@/features/students/components/GatePassDocument';
+import { buildGatePassSchoolInfo } from '@/features/students/utils/gate-pass-school-info';
 import { printGatePassViaIframe } from '@/features/students/utils/gate-pass-print';
 import { GATE_PASS_APPROVAL_LABELS, GATE_PASS_APPROVER_ROLES } from '@/lib/gate-pass-utils';
 import type { GatePassGuardianPhoto } from '@/lib/gate-pass-utils';
@@ -202,6 +203,7 @@ function GatePassPageContent() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [staffApproving, setStaffApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [reportSettings, setReportSettings] = useState<{ logo_url?: string }>({});
 
   // History
   const [history, setHistory] = useState<GatePassRecord[]>([]);
@@ -410,6 +412,15 @@ function GatePassPageContent() {
   }, []);
 
   useEffect(() => {
+    fetch('/api/settings/reports')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setReportSettings(d.data);
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
     fetch('/api/classes')
       .then((r) => r.json())
       .then((json) => {
@@ -528,15 +539,8 @@ function GatePassPageContent() {
   );
 
   const schoolInfo = useMemo(
-    () => ({
-      name: settings.school_name || 'School',
-      logoUrl: settings.logo_url || undefined,
-      address: settings.school_address || undefined,
-      phone: settings.school_phone || undefined,
-      email: settings.school_email || undefined,
-      academicYear: settings.academic_year || undefined,
-    }),
-    [settings]
+    () => buildGatePassSchoolInfo(settings, reportSettings),
+    [settings, reportSettings],
   );
 
   const handlePhotoUpload = async (file: File) => {

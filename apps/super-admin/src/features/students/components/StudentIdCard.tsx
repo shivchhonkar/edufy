@@ -5,6 +5,7 @@ import { FiMapPin } from 'react-icons/fi';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Student } from '@/shared/types';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
+import { darkenBrandColor, normalizeBrandColor } from '@/features/students/utils/student-id-card-school-info';
 
 export interface StudentIdCardSchoolInfo {
   name: string;
@@ -14,18 +15,17 @@ export interface StudentIdCardSchoolInfo {
   academicYear?: string;
   principalName?: string;
   signatureUrl?: string;
-  /** Optional stamp/watermark image; falls back to logo with opacity */
+  /** School brand color from setup branding (primary_color) */
+  brandColor?: string;
+  /** Optional watermark image (uploaded in Report Settings) */
   stampUrl?: string;
+  showWatermark?: boolean;
 }
 
 interface StudentIdCardProps {
   student: Student;
   school: StudentIdCardSchoolInfo;
 }
-
-/** Reference template brand blue */
-const CARD_BLUE = '#2563eb';
-const CARD_BLUE_DARK = '#1d4ed8';
 
 function buildQrPayload(student: Student): string {
   return JSON.stringify({
@@ -83,33 +83,14 @@ function studentCardId(student: Student): string {
   return `GPS${year}-${String(student.id).padStart(7, '0')}`;
 }
 
-function FieldRow({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div
-      className="grid items-start"
-      style={{
-        gridTemplateColumns: '20mm 1fr',
-        columnGap: '1.5mm',
-        fontSize: '5.5px',
-        lineHeight: '7px',
-      }}
-    >
-      <span className="font-semibold" style={{ color: CARD_BLUE }}>
-        {label} :
-      </span>
-      <span className="text-gray-900">{value?.trim() || ''}</span>
-    </div>
-  );
-}
-
-function FieldRowMultiline({
+function FieldRow({
   label,
-  line1,
-  line2,
+  value,
+  brandColor,
 }: {
   label: string;
-  line1: string;
-  line2: string;
+  value?: string | null;
+  brandColor: string;
 }) {
   return (
     <div
@@ -121,7 +102,36 @@ function FieldRowMultiline({
         lineHeight: '7px',
       }}
     >
-      <span className="font-semibold" style={{ color: CARD_BLUE }}>
+      <span className="font-semibold" style={{ color: brandColor }}>
+        {label} :
+      </span>
+      <span className="text-gray-900">{value?.trim() || ''}</span>
+    </div>
+  );
+}
+
+function FieldRowMultiline({
+  label,
+  line1,
+  line2,
+  brandColor,
+}: {
+  label: string;
+  line1: string;
+  line2: string;
+  brandColor: string;
+}) {
+  return (
+    <div
+      className="grid items-start"
+      style={{
+        gridTemplateColumns: '20mm 1fr',
+        columnGap: '1.5mm',
+        fontSize: '5.5px',
+        lineHeight: '7px',
+      }}
+    >
+      <span className="font-semibold" style={{ color: brandColor }}>
         {label} :
       </span>
       <span className="text-gray-900">
@@ -137,17 +147,9 @@ function FieldRowMultiline({
   );
 }
 
-function CardBackgroundStamp({
-  stampUrl,
-  logoUrl,
-}: {
-  stampUrl?: string;
-  logoUrl?: string;
-}) {
-  const src = stampUrl?.trim() || logoUrl?.trim();
+function CardBackgroundStamp({ stampUrl }: { stampUrl?: string }) {
+  const src = stampUrl?.trim();
   if (!src) return null;
-
-  const isStamp = Boolean(stampUrl?.trim());
 
   return (
     <img
@@ -158,16 +160,19 @@ function CardBackgroundStamp({
       style={{
         left: '34%',
         top: '50%',
-        width: isStamp ? '26mm' : '22mm',
-        height: isStamp ? '26mm' : '22mm',
+        width: '26mm',
+        height: '26mm',
         transform: 'translate(-50%, -50%)',
-        opacity: isStamp ? 0.12 : 0.07,
+        opacity: 0.12,
       }}
     />
   );
 }
 
 export default function StudentIdCard({ student, school }: StudentIdCardProps) {
+  const brandColor = normalizeBrandColor(school.brandColor);
+  const brandColorDark = darkenBrandColor(brandColor);
+
   const fullName = studentFullName(student);
   const qrValue = useMemo(() => buildQrPayload(student), [student.id, student.admission_number]);
   const validUpto = validUptoFromAcademicYear(school.academicYear);
@@ -176,11 +181,11 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
   const signatureUrl = school.signatureUrl?.trim() || '';
   const [schoolAddressLine1, schoolAddressLine2] = useMemo(
     () => splitIntoTwoLines(school.address),
-    [school.address]
+    [school.address],
   );
   const [studentAddressLine1, studentAddressLine2] = useMemo(
     () => splitIntoTwoLines(formatFullAddress(student)),
-    [student.address, student.city, student.pincode]
+    [student.address, student.city, student.pincode],
   );
 
   return (
@@ -191,7 +196,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
           width: '85.6mm',
           height: '53.98mm',
           borderRadius: '6px',
-          border: `2.5px solid ${CARD_BLUE}`,
+          border: `2.5px solid ${brandColor}`,
         }}
       >
         {/* Header */}
@@ -199,7 +204,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
           className="relative z-20"
           style={{
             height: '14.5mm',
-            backgroundColor: CARD_BLUE,
+            backgroundColor: brandColor,
             padding: '1.2mm 2mm 1mm',
           }}
         >
@@ -211,7 +216,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
               {school.logoUrl ? (
                 <img src={school.logoUrl} alt="" className="h-full w-full object-contain p-[0.5mm]" />
               ) : (
-                <span className="text-[5px] font-bold" style={{ color: CARD_BLUE }}>
+                <span className="text-[5px] font-bold" style={{ color: brandColor }}>
                   EDU
                 </span>
               )}
@@ -224,13 +229,13 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
                 {school.name}
               </p>
               <p
-                className="text-blue-100"
+                className="text-white/80"
                 style={{ fontSize: '5.5px', lineHeight: '7px', marginTop: '0.4mm' }}
               >
                 {school.academicYear || '\u00A0'}
               </p>
               <div
-                className="flex items-start gap-[0.8mm] text-blue-50"
+                className="flex items-start gap-[0.8mm] text-white/90"
                 style={{ marginTop: '0.6mm', fontSize: '4.8px', lineHeight: '6px' }}
               >
                 <FiMapPin
@@ -273,7 +278,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             ) : (
               <div
                 className="flex items-center justify-center font-bold text-white"
-                style={{ width: '15mm', height: '17mm', backgroundColor: CARD_BLUE, fontSize: '10px' }}
+                style={{ width: '15mm', height: '17mm', backgroundColor: brandColor, fontSize: '10px' }}
               >
                 {studentInitials(student)}
               </div>
@@ -282,7 +287,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
           <div
             className="w-full py-[0.4mm] text-center font-bold tracking-wider text-white"
             style={{
-              backgroundColor: CARD_BLUE,
+              backgroundColor: brandColor,
               borderRadius: '3px',
               fontSize: '5.5px',
               marginTop: '0.8mm',
@@ -291,7 +296,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             STUDENT
           </div>
           <div className="w-full text-center" style={{ marginTop: '0.6mm' }}>
-            <p className="font-semibold uppercase" style={{ color: CARD_BLUE, fontSize: '4.5px' }}>
+            <p className="font-semibold uppercase" style={{ color: brandColor, fontSize: '4.5px' }}>
               Valid Upto
             </p>
             <p className="font-bold leading-tight text-gray-900" style={{ fontSize: '6.5px' }}>
@@ -301,7 +306,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
           <div
             className="bg-white p-[0.4mm]"
             style={{
-              border: `1px solid ${CARD_BLUE}`,
+              border: `1px solid ${brandColor}`,
               borderRadius: '3px',
               marginTop: '0.6mm',
             }}
@@ -319,7 +324,9 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             paddingRight: '20.5mm',
           }}
         >
-          <CardBackgroundStamp stampUrl={school.stampUrl} logoUrl={school.logoUrl} />
+          {school.showWatermark !== false && school.stampUrl && (
+            <CardBackgroundStamp stampUrl={school.stampUrl} />
+          )}
           <p
             className="relative z-10 font-bold text-gray-900"
             style={{ fontSize: '9px', lineHeight: '10px', marginBottom: '0.8mm' }}
@@ -327,19 +334,20 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             {fullName}
           </p>
           <div className="relative z-10 flex flex-col" style={{ gap: '0.5mm' }}>
-            <FieldRow label="Class" value={student.class_name} />
-            <FieldRow label="Section" value={student.section_name} />
-            <FieldRow label="Admission No." value={student.admission_number} />
-            <FieldRow label="Date of Birth" value={formatDob(student.date_of_birth)} />
-            <FieldRow label="Blood Group" value={student.blood_group} />
-            <FieldRow label="Emergency Contact" value={student.emergency_contact} />
+            <FieldRow label="Class" value={student.class_name} brandColor={brandColor} />
+            <FieldRow label="Section" value={student.section_name} brandColor={brandColor} />
+            <FieldRow label="Admission No." value={student.admission_number} brandColor={brandColor} />
+            <FieldRow label="Date of Birth" value={formatDob(student.date_of_birth)} brandColor={brandColor} />
+            <FieldRow label="Blood Group" value={student.blood_group} brandColor={brandColor} />
+            <FieldRow label="Emergency Contact" value={student.emergency_contact} brandColor={brandColor} />
             <FieldRowMultiline
               label="Address"
               line1={studentAddressLine1}
               line2={studentAddressLine2}
+              brandColor={brandColor}
             />
-            <FieldRow label="Parent / Guardian" value={student.parent_name} />
-            <FieldRow label="Contact" value={student.parent_phone} />
+            <FieldRow label="Parent / Guardian" value={student.parent_name} brandColor={brandColor} />
+            <FieldRow label="Contact" value={student.parent_phone} brandColor={brandColor} />
           </div>
         </div>
 
@@ -353,7 +361,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             style={{
               minWidth: '23mm',
               fontSize: '5px',
-              backgroundColor: CARD_BLUE_DARK,
+              backgroundColor: brandColorDark,
               borderTopRightRadius: '5px',
               padding: '0 1.5mm',
             }}
@@ -376,7 +384,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
               <p
                 className="leading-none"
                 style={{
-                  color: CARD_BLUE,
+                  color: brandColor,
                   fontSize: '7.5px',
                   fontFamily: '"Segoe Script", "Brush Script MT", cursive',
                 }}
@@ -404,7 +412,7 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
             style={{
               width: '26mm',
               fontSize: '3.6px',
-              backgroundColor: CARD_BLUE_DARK,
+              backgroundColor: brandColorDark,
               borderTopLeftRadius: '5px',
               padding: '0 0.8mm',
             }}
