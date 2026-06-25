@@ -98,15 +98,15 @@ export default function SalaryStructuresPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="font-bold text-lg">Create Salary Structure</h2>
-              <input placeholder="Structure name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <select value={form.designation_id} onChange={(e) => setForm({ ...form, designation_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+      <div className={APP_MODAL_PANEL + " p-6 relative"} >
+              <h2 className="text-lg">Create Salary Structure</h2>
+              <input placeholder="Structure name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mt-2 mb-2" />
+              <select value={form.designation_id} onChange={(e) => setForm({ ...form, designation_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm  mt-2 mb-2">
                 <option value="">All designations</option>
                 {designations.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              <input type="date" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <input type="date" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm  mt-2 mb-2" />
+              <div className="space-y-2 max-h-60 overflow-y-auto  mt-2 mb-2 p-4 border rounded-lg">
                 {form.lines.map((line, idx) => {
                   const comp = components.find((c) => c.id === line.component_id);
                   return (
