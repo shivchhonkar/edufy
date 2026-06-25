@@ -125,14 +125,14 @@ export default function DepartmentsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} Department</h2>
+            <div className={APP_MODAL_PANEL+ " p-6"} >
+              <h2 className="text-lg mb-2">{editing ? 'Edit' : 'Add'} Department</h2>
               <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm" />
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-2 mb-2" />
               <input placeholder="Code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm" />
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
               <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" rows={2} />
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
                 Active

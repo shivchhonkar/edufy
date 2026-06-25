@@ -129,15 +129,15 @@ export default function DesignationsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} Designation</h2>
-              <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+            <div className={APP_MODAL_PANEL+ " p-6"} >
+              <h2 className="text-lg mb-2">{editing ? 'Edit' : 'Add'} Designation</h2>
+              <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">No department</option>
                 {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              <input type="number" placeholder="Grade" value={form.grade} onChange={(e) => setForm({ ...form, grade: parseInt(e.target.value, 10) || 1 })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <div className="grid grid-cols-2 gap-2">
+              <input type="number" placeholder="Grade" value={form.grade} onChange={(e) => setForm({ ...form, grade: parseInt(e.target.value, 10) || 1 })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <div className="grid grid-cols-2 gap-2 mt-2 mb-2">
                 <input placeholder="Min salary" value={form.min_salary} onChange={(e) => setForm({ ...form, min_salary: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" />
                 <input placeholder="Max salary" value={form.max_salary} onChange={(e) => setForm({ ...form, max_salary: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" />
               </div>
