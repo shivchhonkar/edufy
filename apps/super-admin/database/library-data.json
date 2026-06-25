@@ -1,0 +1,154 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Mathematics"
+    },
+    {
+      "id": 2,
+      "name": "Science"
+    },
+    {
+      "id": 3,
+      "name": "Languages"
+    },
+    {
+      "id": 4,
+      "name": "Religious"
+    }
+  ],
+  "authors": [],
+  "publishers": [],
+  "vendors": [],
+  "locations": [],
+  "books": [
+    {
+      "id": 1,
+      "title": "Mathematics — Class 7",
+      "category_id": 1,
+      "author": "Standard Authors",
+      "publisher": "EduPub",
+      "isbn": "978-0-0000-0000-1",
+      "total_copies": 5
+    },
+    {
+      "id": 2,
+      "title": "English Reader",
+      "category_id": 3,
+      "author": "Various",
+      "publisher": "ReaderPub",
+      "isbn": "978-0-0000-0000-2",
+      "total_copies": 3
+    },
+    {
+      "id": 3,
+      "title": "English Books",
+      "category_id": null,
+      "author": null,
+      "publisher": null,
+      "isbn": "ISBN0001",
+      "total_copies": 1
+    },
+    {
+      "id": 4,
+      "title": "Mathe Books 1",
+      "category_id": 1,
+      "author": null,
+      "publisher": null,
+      "isbn": "ISBN001",
+      "total_copies": 1
+    }
+  ],
+  "copies": [
+    {
+      "id": 1,
+      "book_id": 1,
+      "barcode": "B1-C1",
+      "status": "issued"
+    },
+    {
+      "id": 2,
+      "book_id": 1,
+      "barcode": "B1-C2",
+      "status": "issued"
+    },
+    {
+      "id": 3,
+      "book_id": 2,
+      "barcode": "B2-C1",
+      "status": "issued"
+    },
+    {
+      "id": 4,
+      "book_id": 3,
+      "barcode": "B3-C1",
+      "status": "issued"
+    },
+    {
+      "id": 5,
+      "book_id": 4,
+      "barcode": "B4-C1",
+      "status": "available"
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "name": "Asha Kumar",
+      "card_number": "M-001",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Rohit Singh",
+      "card_number": "M-002",
+      "active": true
+    }
+  ],
+  "issues": [
+    {
+      "id": 1,
+      "copy_id": 2,
+      "book_id": 1,
+      "member_id": 2,
+      "issued_at": "2026-06-20",
+      "due_at": "2026-07-04",
+      "returned_at": null,
+      "status": "issued"
+    },
+    {
+      "id": 2,
+      "copy_id": 1,
+      "book_id": 1,
+      "member_id": 1,
+      "issued_at": "2026-06-25",
+      "due_at": "2026-07-09",
+      "returned_at": null,
+      "status": "issued"
+    },
+    {
+      "id": 3,
+      "copy_id": 3,
+      "book_id": 2,
+      "member_id": 1,
+      "issued_at": "2026-06-25",
+      "due_at": "2026-07-09",
+      "returned_at": null,
+      "status": "issued"
+    },
+    {
+      "id": 4,
+      "copy_id": 4,
+      "book_id": 3,
+      "member_id": 1,
+      "issued_at": "2026-06-25",
+      "due_at": "2026-07-09",
+      "returned_at": null,
+      "status": "issued"
+    }
+  ],
+  "fines": [],
+  "acquisitions": [],
+  "ebooks": [],
+  "inventory": []
+}
