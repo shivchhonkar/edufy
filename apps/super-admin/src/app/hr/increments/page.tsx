@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiX } from 'react-icons/fi';
 
 export default function IncrementsPage() {
   const { alert } = useDialog();
@@ -85,23 +85,34 @@ export default function IncrementsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="font-bold">Record Increment</h2>
-              <select value={form.staff_id} onChange={(e) => setForm({ ...form, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+      <div className={APP_MODAL_PANEL + " p-6 relative"} >
+              <h2 className="text-lg">Record Increment</h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+              <div className="h-4" />
+
+
+              <select value={form.staff_id} onChange={(e) => setForm({ ...form, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">Select staff</option>
                 {staff.map((s) => <option key={String(s.id)} value={String(s.id)}>{String(s.first_name)} {String(s.last_name)} — ₹{String(s.salary || 0)}</option>)}
               </select>
-              <input type="number" placeholder="New salary *" value={form.new_salary} onChange={(e) => setForm({ ...form, new_salary: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <select value={form.increment_type} onChange={(e) => setForm({ ...form, increment_type: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <input type="number" placeholder="New salary *" value={form.new_salary} onChange={(e) => setForm({ ...form, new_salary: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <select value={form.increment_type} onChange={(e) => setForm({ ...form, increment_type: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="annual">Annual</option>
                 <option value="promotion">Promotion</option>
                 <option value="special">Special</option>
               </select>
-              <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
+              <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" rows={2} />
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-                <button type="button" onClick={submit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm mt-2">Cancel</button>
+                <button type="button" onClick={submit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm mt-2">Save</button>
               </div>
             </div>
           </AppModal>

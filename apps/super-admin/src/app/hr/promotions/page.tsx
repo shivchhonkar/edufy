@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiX } from 'react-icons/fi';
 
 export default function StaffPromotionsPage() {
   const { alert } = useDialog();
@@ -81,22 +81,30 @@ export default function StaffPromotionsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="font-bold">Record Promotion</h2>
-              <select value={form.staff_id} onChange={(e) => setForm({ ...form, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+      <div className={APP_MODAL_PANEL + " p-6 relative"} >
+              <h2 className="text-lg">Record Promotion</h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+              <select value={form.staff_id} onChange={(e) => setForm({ ...form, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">Select staff</option>
                 {staff.map((s) => <option key={String(s.id)} value={String(s.id)}>{String(s.first_name)} {String(s.last_name)}</option>)}
               </select>
-              <select value={form.to_designation_id} onChange={(e) => setForm({ ...form, to_designation_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select value={form.to_designation_id} onChange={(e) => setForm({ ...form, to_designation_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">New designation</option>
                 {designations.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              <input type="number" placeholder="New salary" value={form.to_salary} onChange={(e) => setForm({ ...form, to_salary: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
+              <input type="number" placeholder="New salary" value={form.to_salary} onChange={(e) => setForm({ ...form, to_salary: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" rows={2} />
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-                <button type="button" onClick={submit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm mt-2">Cancel</button>
+                <button type="button" onClick={submit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm mt-2">Save</button>
               </div>
             </div>
           </AppModal>

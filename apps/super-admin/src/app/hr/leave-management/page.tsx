@@ -323,14 +323,14 @@ export default function LeaveManagementPage() {
               <table className="w-full text-sm min-w-[980px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="text-left px-4 py-3">Employee</th>
-                    <th className="text-left px-4 py-3">Type</th>
-                    <th className="text-left px-4 py-3">Dates</th>
-                    <th className="text-left px-4 py-3">Days</th>
-                    <th className="text-left px-4 py-3">Reason</th>
-                    <th className="text-left px-4 py-3">Status</th>
-                    <th className="text-left px-4 py-3">Applied On</th>
-                    <th className="text-right px-4 py-3">Actions</th>
+                    <th className="text-left px-4 py-3 font-medium">Employee</th>
+                    <th className="text-left px-4 py-3 font-medium">Type</th>
+                    <th className="text-left px-4 py-3 font-medium">Dates</th>
+                    <th className="text-left px-4 py-3 font-medium">Days</th>
+                    <th className="text-left px-4 py-3 font-medium">Reason</th>
+                    <th className="text-left px-4 py-3 font-medium">Status</th>
+                    <th className="text-left px-4 py-3 font-medium">Applied On</th>
+                    <th className="text-right px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -552,7 +552,7 @@ function SummaryCard({
   return (
     <div className={`border rounded-xl p-4 ${tones[tone]}`}>
       <p className="text-xs font-medium opacity-80">{title}</p>
-      <p className="text-2xl font-semibold mt-1">{value}</p>
+      <p className="text-2xl mt-1">{value}</p>
     </div>
   )
 }

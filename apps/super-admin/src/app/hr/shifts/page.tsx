@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 
 interface Shift {
   id: number;
@@ -140,15 +140,25 @@ export default function ShiftsPage() {
         </div>
         {showShiftModal && (
           <AppModal open={showShiftModal} onClose={() => { setShowShiftModal(false); setEditingShift(null); }}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="font-bold">{editingShift ? 'Edit Shift' : 'Add Shift'}</h2>
-              <input placeholder="Name" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <div className="grid grid-cols-2 gap-2">
+      <div className={APP_MODAL_PANEL + " p-6 relative"}>
+              <h2 className="text-lg">{editingShift ? 'Edit Shift' : 'Add Shift'}</h2>
+              <button
+                type="button"
+                onClick={() => { setShowShiftModal(false); setEditingShift(null); }}  
+                className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+
+              <div className="mb-2 text-sm text-gray-600">Define the shift timings and break duration.</div>
+              <input placeholder="Name" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <div className="grid grid-cols-2 gap-2 mt-2 mb-2">
                 <input type="time" value={shiftForm.start_time} onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" />
                 <input type="time" value={shiftForm.end_time} onChange={(e) => setShiftForm({ ...shiftForm, end_time: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" />
               </div>
-              <input type="number" placeholder="Break minutes" value={shiftForm.break_minutes} onChange={(e) => setShiftForm({ ...shiftForm, break_minutes: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <div className="flex gap-2 justify-end">
+              <input type="number" placeholder="Break minutes" value={shiftForm.break_minutes} onChange={(e) => setShiftForm({ ...shiftForm, break_minutes: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
+              <div className="flex gap-2 justify-end mt-2">
                 <button type="button" onClick={() => { setShowShiftModal(false); setEditingShift(null); }} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
                 <button type="button" onClick={saveShift} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{editingShift ? 'Update' : 'Save'}</button>
               </div>
@@ -157,17 +167,29 @@ export default function ShiftsPage() {
         )}
         {showAssignModal && (
           <AppModal open={showAssignModal} onClose={() => setShowAssignModal(false)}>
-      <div className={APP_MODAL_PANEL}>
-              <h2 className="font-bold">Assign Shift</h2>
-              <select value={assignForm.staff_id} onChange={(e) => setAssignForm({ ...assignForm, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+            <div className={APP_MODAL_PANEL + " p-6 relative"}>
+              <h2 className="text-lg ">Assign Shift</h2>
+              
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(false)}
+                className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+
+              <div className="mb-2 text-sm text-gray-600">Select staff, shift and effective date to assign the shift.</div>
+
+              <select value={assignForm.staff_id} onChange={(e) => setAssignForm({ ...assignForm, staff_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">Select staff</option>
                 {staff.map((s) => <option key={String(s.id)} value={String(s.id)}>{String(s.first_name)} {String(s.last_name)}</option>)}
               </select>
-              <select value={assignForm.shift_id} onChange={(e) => setAssignForm({ ...assignForm, shift_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select value={assignForm.shift_id} onChange={(e) => setAssignForm({ ...assignForm, shift_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2">
                 <option value="">Select shift</option>
                 {shifts.map((s) => <option key={String(s.id)} value={String(s.id)}>{String(s.name)}</option>)}
               </select>
-              <input type="date" value={assignForm.effective_from} onChange={(e) => setAssignForm({ ...assignForm, effective_from: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <input type="date" value={assignForm.effective_from} onChange={(e) => setAssignForm({ ...assignForm, effective_from: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2" />
               <div className="flex gap-2 justify-end">
                 <button type="button" onClick={() => setShowAssignModal(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
                 <button type="button" onClick={assignShift} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Assign</button>

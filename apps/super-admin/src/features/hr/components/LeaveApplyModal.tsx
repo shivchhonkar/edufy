@@ -4,6 +4,7 @@ import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useEffect, useState } from 'react'
 import type { LeaveBalance, LeaveRecord, LeaveType } from '@/features/hr/types/leave'
 import { countWorkingDays } from '@/lib/leave-utils'
+import { FiX } from 'react-icons/fi';
 
 interface Props {
   open: boolean
@@ -88,19 +89,27 @@ export default function LeaveApplyModal({
 
   return (
     <AppModal open onClose={onClose}>
-      <div className={APP_MODAL_PANEL}>
+      <div className={APP_MODAL_PANEL + ' p-6 relative'}>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Apply Leave</h2>
+          <h2 className="text-lg text-gray-900">Apply Leave</h2>
           <p className="text-sm text-gray-500 mt-1">Submit a leave request on behalf of staff</p>
         </div>
-
+        <button
+          type="button"
+          onClick={onClose} 
+          className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+          aria-label="Close"
+        >
+          <FiX size={18} />
+        </button>
+        
         <div className="space-y-3">
-          <label className="block text-sm">
+          <label className="block text-sm mt-2">
             <span className="text-gray-700 font-medium">Staff *</span>
             <select
               value={form.staff_id}
               onChange={(e) => setForm({ ...form, staff_id: e.target.value })}
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white"
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2 mt-2"
             >
               <option value="">Select staff</option>
               {staff.map((s) => (
@@ -112,11 +121,11 @@ export default function LeaveApplyModal({
           </label>
 
           <label className="block text-sm">
-            <span className="text-gray-700 font-medium">Leave type *</span>
+            <span className="text-gray-700 font-medium mb-2">Leave type *</span>
             <select
               value={form.leave_type_id}
               onChange={(e) => setForm({ ...form, leave_type_id: e.target.value })}
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white"
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2 mt-2"
             >
               <option value="">Select leave type</option>
               {leaveTypes.map((t) => (
@@ -145,12 +154,12 @@ export default function LeaveApplyModal({
 
           <div className="grid grid-cols-2 gap-2">
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Start date *</span>
+              <span className="text-gray-700 font-medium mb-2">Start date *</span>
               <input
                 type="date"
                 value={form.start_date}
                 onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2"
               />
             </label>
             <label className="block text-sm">
@@ -160,13 +169,13 @@ export default function LeaveApplyModal({
                 value={form.end_date}
                 min={form.start_date || undefined}
                 onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm mb-2 mt-2"
               />
             </label>
           </div>
 
           {days > 0 && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 mt-1">
               Working days: <span className="font-medium">{days}</span>
               {remaining != null && (
                 <span className={days > remaining ? ' text-red-600 ml-2' : ' ml-2'}>
@@ -176,8 +185,8 @@ export default function LeaveApplyModal({
             </p>
           )}
 
-          <label className="block text-sm">
-            <span className="text-gray-700 font-medium">Reason</span>
+          <label className="block text-sm mt-2">
+            <span className="text-gray-700 font-medium mb-2">Reason</span>
             <textarea
               placeholder="Reason for leave"
               value={form.reason}
@@ -188,7 +197,7 @@ export default function LeaveApplyModal({
           </label>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-sm" disabled={submitting}>
