@@ -417,6 +417,27 @@ export default function ExamsPage() {
     });
   };
 
+  const toggleSelectAllSubjects = (selectAll: boolean) => {
+    setExamForm((prev) => {
+      if (!selectAll) {
+        return { ...prev, subject_ids: [], subject_marks: {} };
+      }
+
+      const subject_ids = subjects.map((subject) => subject.id.toString());
+      const subject_marks = { ...prev.subject_marks };
+      subject_ids.forEach((subjectId) => {
+        if (!subject_marks[subjectId]) {
+          subject_marks[subjectId] = {
+            total_marks: prev.total_marks,
+            passing_marks: prev.passing_marks,
+          };
+        }
+      });
+
+      return { ...prev, subject_ids, subject_marks };
+    });
+  };
+
   const updateDefaultMarks = (field: 'total_marks' | 'passing_marks', value: string) => {
     setExamForm((prev) => {
       const next = { ...prev, [field]: value };
@@ -1030,6 +1051,17 @@ export default function ExamsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Subjects * <span className="text-gray-400 font-normal">(select one or more)</span>
                   </label>
+                  <div className="flex flex-wrap items-center gap-4 mb-3">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={subjects.length > 0 && examForm.subject_ids.length === subjects.length}
+                        onChange={(e) => toggleSelectAllSubjects(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600"
+                      />
+                      Select all subjects
+                    </label>
+                  </div>
                   <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto grid grid-cols-2 gap-2">
                     {subjects.length === 0 ? (
                       <p className="text-sm text-gray-500 col-span-2">No subjects found. Add subjects first.</p>
