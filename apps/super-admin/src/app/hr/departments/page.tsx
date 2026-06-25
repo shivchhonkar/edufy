@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import HrNav from '@/features/hr/components/HrNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 
 interface Department {
   id: number;
@@ -125,7 +125,15 @@ export default function DepartmentsPage() {
         </div>
         {showModal && (
           <AppModal open={showModal} onClose={() => setShowModal(false)}>
-            <div className={APP_MODAL_PANEL+ " p-6"} >
+            <div className={APP_MODAL_PANEL+ " p-6 relative"} >
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="absolute right-6 top-6 text-gray-500 hover:text-gray-900 focus:outline-none"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
               <h2 className="text-lg mb-2">{editing ? 'Edit' : 'Add'} Department</h2>
               <input placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 text-sm mt-2 mb-2" />
