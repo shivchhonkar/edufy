@@ -361,7 +361,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <form
           onSubmit={handleSearchSubmit}
-          className="hidden md:flex flex-1 justify-center max-w-xl mx-auto"
+          className="hidden md:flex flex-none justify-center w-full max-w-[21.6rem] mx-auto"
         >
           <div ref={searchContainerRef} className="relative w-full">
             <FiSearch

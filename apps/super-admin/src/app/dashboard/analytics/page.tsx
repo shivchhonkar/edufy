@@ -7,7 +7,6 @@ import KpiCard from '@/features/dashboard/components/KpiCard';
 import {
   AttendanceTrendChart,
   FeeCollectionBarChart,
-  CompositionDonutChart,
   CategoryBarChart,
 } from '@/features/dashboard/components/DashboardCharts';
 import type { AnalyticsOverview } from '@/shared/types';
@@ -57,12 +56,6 @@ export default function AnalyticsPage() {
   }, []);
 
   const k = data?.kpis;
-
-  const studentClassChart =
-    data?.students_by_class.map((row) => ({
-      name: row.name,
-      value: row.count,
-    })) ?? [];
 
 const CHART_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#64748b', '#0d9488', '#ea580c'];
 
@@ -131,44 +124,8 @@ const CHART_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#6
               <ChartPanel title="Attendance Trend" subtitle="Last 30 days">
                 <AttendanceTrendChart data={data.attendance_trend_30d} />
               </ChartPanel>
-              <ChartPanel title="Fee Collection" subtitle="Last 12 months">
-                <FeeCollectionBarChart
-                  data={data.fee_collection_12m.map((row) => ({
-                    label: row.label,
-                    amount: row.amount,
-                  }))}
-                  formatValue={formatCurrency}
-                />
-              </ChartPanel>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <ChartPanel title="Students by Class">
-                <CategoryBarChart
-                  data={studentClassChart.slice(0, 10).map((row, i) => ({
-                    name: row.name,
-                    value: row.value,
-                    color: CHART_COLORS[i % CHART_COLORS.length],
-                  }))}
-                />
-              </ChartPanel>
-              <ChartPanel title="Admission Pipeline">
-                <CompositionDonutChart
-                  data={data.admissions_by_status.map((row, i) => ({
-                    name: row.name,
-                    value: row.count,
-                    color: CHART_COLORS[i % CHART_COLORS.length],
-                  }))}
-                />
-              </ChartPanel>
-              <ChartPanel title="Staff by Department">
-                <CategoryBarChart
-                  data={data.staff_by_department.slice(0, 8).map((row, i) => ({
-                    name: row.name,
-                    value: row.count,
-                    color: CHART_COLORS[i % CHART_COLORS.length],
-                  }))}
-                />
+              <ChartPanel title="Fee Collection" subtitle="Expected, received & due — session months">
+                <FeeCollectionBarChart data={data.fee_collection_12m} formatValue={formatCurrency} />
               </ChartPanel>
             </div>
 

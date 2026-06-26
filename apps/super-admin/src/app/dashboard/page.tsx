@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import KpiCard from '@/features/dashboard/components/KpiCard';
+import StudentStatsKpiCard from '@/features/dashboard/components/StudentStatsKpiCard';
+import FeeRevenueSummaryKpiCard from '@/features/dashboard/components/FeeRevenueSummaryKpiCard';
+import AttendanceStatsKpiCard from '@/features/dashboard/components/AttendanceStatsKpiCard';
+import TodayCollectionKpiCard from '@/features/dashboard/components/TodayCollectionKpiCard';
+import DashboardSkeleton from '@/features/dashboard/components/DashboardSkeleton';
 import {
   AttendanceTrendChart,
   FeeCollectionBarChart,
@@ -14,9 +19,6 @@ import {
 import { DashboardOverview } from '@/shared/types';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import {
-  FiUsers,
-  FiUser,
-  FiUserCheck,
   FiAlertCircle,
   FiCalendar,
   FiUserPlus,
@@ -36,6 +38,8 @@ function formatCurrencyFull(amount: number) {
   return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
+const CHART_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#64748b', '#0d9488', '#ea580c'];
+
 const EMPTY_DASHBOARD: DashboardOverview = {
   total_students: 0,
   total_staff: 0,
@@ -47,10 +51,39 @@ const EMPTY_DASHBOARD: DashboardOverview = {
   pending_fees: 0,
   low_stock_items: 0,
   fees_collected: 0,
+  today_collection: {
+    total: 0,
+    receipt_count: 0,
+    cash: 0,
+    bank: 0,
+  },
+  fee_revenue_summary: {
+    total: 0,
+    total_due: 0,
+    total_received: 0,
+    total_discount: 0,
+    due_percent: 0,
+    received_percent: 0,
+    discount_percent: 0,
+  },
   attendance_rate: 0,
   attendance_marked: 0,
+  attendance_stats: {
+    marked: 0,
+    present: 0,
+    absent: 0,
+    rate: 0,
+    rate_change: null,
+  },
   attendance_chart: [],
   fee_collection_chart: [],
+  student_stats: {
+    total: 0,
+    boys: 0,
+    girls: 0,
+    new_admissions: 0,
+    previous_students: 0,
+  },
   todays_classes: [],
   classes_conducted_today: 0,
   teacher_performance: [],
@@ -60,6 +93,9 @@ const EMPTY_DASHBOARD: DashboardOverview = {
   exams: { upcoming: 0, total: 0 },
   transport: { active_routes: 0, student_assignments: 0, active_vehicles: 0 },
   library: { total_items: 0, low_stock: 0 },
+  students_by_class: [],
+  admissions_by_status: [],
+  staff_by_department: [],
 };
 
 function PanelCard({
@@ -234,9 +270,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
-        </div>
+        <DashboardSkeleton />
       </DashboardLayout>
     );
   }
@@ -245,14 +279,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            Morning overview for principals and management
-          </p>
-        </div>
-
+      <div className="space-y-4">
         {error && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {error}. Showing empty dashboard — refresh or check your connection.
@@ -260,55 +287,35 @@ export default function DashboardPage() {
         )}
 
         {/* Row 1 — KPI cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-          <KpiCard
-            title="Students"
-            value={s.total_students.toLocaleString('en-IN')}
-            subtitle="Active enrolled"
-            icon={FiUsers}
-            color="blue"
+        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <StudentStatsKpiCard
+            stats={s.student_stats}
             onClick={() => router.push('/students')}
           />
-          <KpiCard
-            title="Teachers"
-            value={s.total_teachers.toLocaleString('en-IN')}
-            subtitle="Assigned staff"
-            icon={FiUser}
-            color="purple"
-            onClick={() => router.push('/hr/dashboard')}
-          />
-          <KpiCard
-            title="Attendance"
-            value={s.attendance_marked > 0 ? `${s.attendance_rate}%` : '—'}
-            subtitle={
-              s.attendance_marked > 0
-                ? `${s.present_today} present · ${s.absent_today} absent`
-                : 'Not marked today'
-            }
-            icon={FiUserCheck}
-            color="green"
-            onClick={() => router.push('/attendance/students')}
-          />
-          <KpiCard
-            title="Fees Collected"
-            value={formatCurrency(s.fees_collected)}
-            subtitle={formatCurrencyFull(s.fees_collected)}
-            icon={RupeeIcon}
-            color="green"
+          <FeeRevenueSummaryKpiCard
+            stats={s.fee_revenue_summary}
             onClick={() => router.push('/fees')}
           />
-          <KpiCard
+          <AttendanceStatsKpiCard
+            stats={s.attendance_stats}
+            onClick={() => router.push('/attendance/students')}
+          />
+          <TodayCollectionKpiCard
+            stats={s.today_collection}
+            onClick={() => router.push('/fees')}
+          />
+          {/* <KpiCard
             title="Pending Fees"
             value={formatCurrency(s.pending_fees)}
             subtitle={formatCurrencyFull(s.pending_fees)}
             icon={RupeeIcon}
             color="yellow"
             onClick={() => router.push('/fees')}
-          />
+          /> */}
         </div>
 
         {/* Row 2 — Trends (line) + Comparisons (bar) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard
             title="Attendance Trend"
             badge="Line"
@@ -320,7 +327,7 @@ export default function DashboardPage() {
           <PanelCard
             title="Fee Collection"
             badge="Bar"
-            subtitle="Monthly collections — last 6 months"
+            subtitle="Expected, received & due — session months (Apr–Mar)"
             href="/fees"
           >
             <FeeCollectionBarChart
@@ -331,7 +338,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 2b — Composition (donut) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard
             title="Today's Attendance"
             badge="Donut"
@@ -359,8 +366,41 @@ export default function DashboardPage() {
           </PanelCard>
         </div>
 
+        {/* Row 2c — Students, admissions & staff breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <PanelCard title="Students by Class" href="/students">
+            <CategoryBarChart
+              data={s.students_by_class.slice(0, 10).map((row, i) => ({
+                name: row.name,
+                value: row.count,
+                color: CHART_COLORS[i % CHART_COLORS.length],
+              }))}
+              emptyMessage="No students enrolled"
+            />
+          </PanelCard>
+          <PanelCard title="Admission Pipeline" href="/admissions">
+            <CompositionDonutChart
+              data={s.admissions_by_status.map((row, i) => ({
+                name: row.name,
+                value: row.count,
+                color: CHART_COLORS[i % CHART_COLORS.length],
+              }))}
+            />
+          </PanelCard>
+          <PanelCard title="Staff by Department" href="/hr/dashboard">
+            <CategoryBarChart
+              data={s.staff_by_department.slice(0, 8).map((row, i) => ({
+                name: row.name,
+                value: row.count,
+                color: CHART_COLORS[i % CHART_COLORS.length],
+              }))}
+              emptyMessage="No staff records"
+            />
+          </PanelCard>
+        </div>
+
         {/* Row 3 — Today's classes + Teacher comparison bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard
             title="Today's Classes"
             subtitle={`${s.classes_conducted_today} periods scheduled`}
@@ -408,7 +448,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 4 — Alerts & Recent activities */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard title="Alerts" badge="Bar" subtitle="Items needing attention by category">
             <CategoryBarChart
               data={alertsChartData}
@@ -470,7 +510,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 5 — Module shortcuts */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <ModuleCard
             title="Admissions"
             value={s.admissions.active}

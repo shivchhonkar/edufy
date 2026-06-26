@@ -99,24 +99,72 @@ export function FeeCollectionBarChart({
   data,
   formatValue,
 }: {
-  data: Array<{ label: string; amount: number }>;
+  data: Array<{
+    label: string;
+    amount?: number;
+    expected?: number;
+    received?: number;
+    due?: number;
+  }>;
   formatValue: (n: number) => string;
 }) {
-  if (data.length === 0) return <EmptyChart />;
+  const chartData = data.map((row) => ({
+    label: row.label,
+    expected: row.expected ?? 0,
+    received: row.received ?? row.amount ?? 0,
+    due: row.due ?? 0,
+  }));
+
+  const hasValues = chartData.some(
+    (row) => row.expected > 0 || row.received > 0 || row.due > 0,
+  );
+  if (!hasValues) return <EmptyChart message="No fee data for this session yet" />;
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart
+        data={chartData}
+        margin={{ top: 12, right: 8, left: -4, bottom: 0 }}
+        barCategoryGap="18%"
+        barGap={2}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: '#64748b' }}
+          axisLine={false}
+          tickLine={false}
+        />
         <YAxis
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => formatValue(v)}
+          width={56}
         />
         <Tooltip content={(props) => <ChartTooltip {...props} valueFormatter={formatValue} />} />
-        <Bar dataKey="amount" name="Collected" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} maxBarSize={48} />
+        <Legend
+          verticalAlign="top"
+          height={28}
+          iconType="square"
+          iconSize={10}
+          formatter={(value) => <span className="text-xs text-gray-600">{value}</span>}
+        />
+        <Bar
+          dataKey="expected"
+          name="Expected"
+          fill="#ec4899"
+          radius={[3, 3, 0, 0]}
+          maxBarSize={14}
+        />
+        <Bar
+          dataKey="received"
+          name="Received"
+          fill="#16a34a"
+          radius={[3, 3, 0, 0]}
+          maxBarSize={14}
+        />
+        <Bar dataKey="due" name="Due" fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={14} />
       </BarChart>
     </ResponsiveContainer>
   );

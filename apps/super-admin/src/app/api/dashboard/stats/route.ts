@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
 import type { DashboardOverview } from '@/shared/types';
 import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
+import { fetchFeeCollectionSessionChart } from '@/lib/dashboard/fee-collection-chart';
+import { fetchFeeRevenueSummary } from '@/lib/dashboard/fee-revenue-summary';
+import { fetchDashboardCompositionCharts } from '@/lib/dashboard/composition-charts';
+import {
+  EMPTY_STUDENT_STATS,
+  fetchStudentDashboardStats,
+} from '@/lib/dashboard/student-stats';
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -46,6 +53,11 @@ export async function GET(request: NextRequest) {
       );
       return parseInt(result.rows[0]?.count || '0', 10);
     }, 0);
+
+    const student_stats = await safeQuery(
+      () => fetchStudentDashboardStats(db, academicYear),
+      EMPTY_STUDENT_STATS,
+    );
 
     const total_teachers = await safeQuery(async () => {
       const result = await db.query<{ count: string }>(`
@@ -104,6 +116,46 @@ export async function GET(request: NextRequest) {
     const attendance_rate =
       attendance_marked > 0 ? Math.round((present_today / attendance_marked) * 100) : 0;
 
+    const attendance_stats = await safeQuery(async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      let rateChange: number | null = null;
+      try {
+        const yesterdayResult = await db.query<{ present: string; total: string }>(
+          `SELECT
+            COUNT(*) FILTER (WHERE status = 'present')::text AS present,
+            COUNT(*)::text AS total
+           FROM attendance
+           WHERE date = $1`,
+          [yesterdayStr],
+        );
+        const yPresent = parseInt(yesterdayResult.rows[0]?.present || '0', 10);
+        const yTotal = parseInt(yesterdayResult.rows[0]?.total || '0', 10);
+        if (yTotal > 0 && attendance_marked > 0) {
+          const yesterdayRate = Math.round((yPresent / yTotal) * 100);
+          rateChange = attendance_rate - yesterdayRate;
+        }
+      } catch {
+        rateChange = null;
+      }
+
+      return {
+        marked: attendance_marked,
+        present: present_today,
+        absent: absent_today,
+        rate: attendance_rate,
+        rate_change: rateChange,
+      };
+    }, {
+      marked: 0,
+      present: 0,
+      absent: 0,
+      rate: 0,
+      rate_change: null,
+    });
+
     const fees_collected = await safeQuery(async () => {
       const result = await db.query(
         `SELECT COALESCE(SUM(amount_paid), 0) as total
@@ -114,6 +166,48 @@ export async function GET(request: NextRequest) {
       );
       return parseFloat(result.rows[0].total);
     }, 0);
+
+    const today_collection = await safeQuery(async () => {
+      const result = await db.query<{
+        receipt_count: string;
+        total: string;
+        cash: string;
+        bank: string;
+      }>(
+        `SELECT
+          COUNT(*)::text AS receipt_count,
+          COALESCE(SUM(amount_paid), 0)::text AS total,
+          COALESCE(SUM(amount_paid) FILTER (
+            WHERE LOWER(COALESCE(payment_method, 'cash')) = 'cash'
+          ), 0)::text AS cash,
+          COALESCE(SUM(amount_paid) FILTER (
+            WHERE LOWER(COALESCE(payment_method, 'cash')) != 'cash'
+          ), 0)::text AS bank
+         FROM fee_payments
+         WHERE status = 'completed'
+         AND payment_date::date = CURRENT_DATE`,
+      );
+      const row = result.rows[0];
+      return {
+        total: parseFloat(row?.total || '0'),
+        receipt_count: parseInt(row?.receipt_count || '0', 10),
+        cash: parseFloat(row?.cash || '0'),
+        bank: parseFloat(row?.bank || '0'),
+      };
+    }, { total: 0, receipt_count: 0, cash: 0, bank: 0 });
+
+    const fee_revenue_summary = await safeQuery(
+      () => fetchFeeRevenueSummary(db, academicYear),
+      {
+        total: 0,
+        total_due: 0,
+        total_received: 0,
+        total_discount: 0,
+        due_percent: 0,
+        received_percent: 0,
+        discount_percent: 0,
+      },
+    );
 
     const pending_fees = await safeQuery(async () => {
       const result = await db.query(
@@ -186,33 +280,10 @@ export async function GET(request: NextRequest) {
       return series;
     }, []);
 
-    const fee_collection_chart = await safeQuery(async () => {
-      const result = await db.query<{ month: string; amount: string }>(
-        `SELECT TO_CHAR(payment_date, 'YYYY-MM') AS month,
-          COALESCE(SUM(amount_paid), 0)::text AS amount
-         FROM fee_payments
-         WHERE status = 'completed'
-           AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
-         GROUP BY TO_CHAR(payment_date, 'YYYY-MM')
-         ORDER BY month ASC`
-      );
-      const byMonth = new Map(
-        result.rows.map((row) => [row.month, parseFloat(row.amount)])
-      );
-
-      const series = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        series.push({
-          month: monthKey,
-          label: d.toLocaleDateString('en-IN', { month: 'short' }),
-          amount: byMonth.get(monthKey) ?? 0,
-        });
-      }
-      return series;
-    }, []);
+    const fee_collection_chart = await safeQuery(
+      () => fetchFeeCollectionSessionChart(db, academicYear),
+      [],
+    );
 
     const todays_classes = await safeQuery(async () => {
       const result = await db.query(
@@ -347,6 +418,11 @@ export async function GET(request: NextRequest) {
       };
     }, { total_items: 0, low_stock: low_stock_items });
 
+    const composition_charts = await safeQuery(
+      () => fetchDashboardCompositionCharts(db),
+      { students_by_class: [], admissions_by_status: [], staff_by_department: [] },
+    );
+
     const recent_activities = await safeQuery(async () => {
       const activities: DashboardOverview['recent_activities'] = [];
 
@@ -447,6 +523,7 @@ export async function GET(request: NextRequest) {
 
     const stats: DashboardOverview = {
       total_students,
+      student_stats,
       total_staff,
       total_teachers,
       total_classes,
@@ -456,8 +533,11 @@ export async function GET(request: NextRequest) {
       pending_fees,
       low_stock_items,
       fees_collected,
+      today_collection,
+      fee_revenue_summary,
       attendance_rate,
       attendance_marked,
+      attendance_stats,
       attendance_chart,
       fee_collection_chart,
       todays_classes,
@@ -469,6 +549,9 @@ export async function GET(request: NextRequest) {
       exams,
       transport,
       library,
+      students_by_class: composition_charts.students_by_class,
+      admissions_by_status: composition_charts.admissions_by_status,
+      staff_by_department: composition_charts.staff_by_department,
     };
 
     return NextResponse.json({

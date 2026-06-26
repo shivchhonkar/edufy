@@ -490,6 +490,40 @@ export interface InventoryTransaction {
 }
 
 // Dashboard Stats
+export interface DashboardAttendanceStats {
+  marked: number;
+  present: number;
+  absent: number;
+  rate: number;
+  /** Change in attendance rate vs yesterday (percentage points). */
+  rate_change: number | null;
+}
+
+export interface DashboardTodayCollectionStats {
+  total: number;
+  receipt_count: number;
+  cash: number;
+  bank: number;
+}
+
+export interface DashboardFeeRevenueSummary {
+  total: number;
+  total_due: number;
+  total_received: number;
+  total_discount: number;
+  due_percent: number;
+  received_percent: number;
+  discount_percent: number;
+}
+
+export interface DashboardStudentStats {
+  total: number;
+  boys: number;
+  girls: number;
+  new_admissions: number;
+  previous_students: number;
+}
+
 export interface DashboardStats {
   total_students: number;
   total_staff: number;
@@ -512,7 +546,11 @@ export interface DashboardAttendancePoint {
 export interface DashboardFeePoint {
   month: string;
   label: string;
-  amount: number;
+  /** @deprecated Use received — kept for legacy chart callers */
+  amount?: number;
+  expected: number;
+  received: number;
+  due: number;
 }
 
 export interface DashboardClassSlot {
@@ -550,8 +588,12 @@ export interface DashboardActivity {
 export interface DashboardOverview extends DashboardStats {
   total_teachers: number;
   fees_collected: number;
+  today_collection: DashboardTodayCollectionStats;
+  fee_revenue_summary: DashboardFeeRevenueSummary;
   attendance_rate: number;
   attendance_marked: number;
+  attendance_stats: DashboardAttendanceStats;
+  student_stats: DashboardStudentStats;
   attendance_chart: DashboardAttendancePoint[];
   fee_collection_chart: DashboardFeePoint[];
   todays_classes: DashboardClassSlot[];
@@ -578,6 +620,9 @@ export interface DashboardOverview extends DashboardStats {
     total_items: number;
     low_stock: number;
   };
+  students_by_class: Array<{ name: string; count: number }>;
+  admissions_by_status: Array<{ name: string; count: number }>;
+  staff_by_department: Array<{ name: string; count: number }>;
 }
 
 export interface AnalyticsKpis {

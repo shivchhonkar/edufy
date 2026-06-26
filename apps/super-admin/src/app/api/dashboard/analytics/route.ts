@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
-import { classNameOrderSql } from '@/lib/class-sort';
 import type { AnalyticsOverview } from '@/shared/types';
+import { fetchFeeCollectionSessionChart } from '@/lib/dashboard/fee-collection-chart';
+import { fetchDashboardCompositionCharts } from '@/lib/dashboard/composition-charts';
 import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -197,59 +198,15 @@ export async function GET(request: NextRequest) {
         ? Math.round(rates30.reduce((sum, d) => sum + d.rate, 0) / rates30.length)
         : 0;
 
-    const fee_collection_12m = await safeQuery(async () => {
-      const result = await db.query<{ month: string; amount: string }>(
-        `SELECT TO_CHAR(payment_date, 'YYYY-MM') AS month,
-          COALESCE(SUM(amount_paid), 0)::text AS amount
-         FROM fee_payments
-         WHERE status = 'completed'
-           AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
-         GROUP BY TO_CHAR(payment_date, 'YYYY-MM')
-         ORDER BY month ASC`
-      );
-      const byMonth = new Map(result.rows.map((row) => [row.month, parseFloat(row.amount)]));
+    const fee_collection_12m = await safeQuery(
+      () => fetchFeeCollectionSessionChart(db, academicYear),
+      [],
+    );
 
-      const series = [];
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        series.push({
-          month: monthKey,
-          label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
-          amount: byMonth.get(monthKey) ?? 0,
-        });
-      }
-      return series;
-    }, []);
-
-    const students_by_class = await safeQuery(async () => {
-      const result = await db.query<{ name: string; count: string }>(
-        `SELECT COALESCE(c.name, 'Unassigned') AS name, COUNT(s.id)::text AS count
-         FROM students s
-         LEFT JOIN classes c ON s.class_id = c.id
-         WHERE s.status = 'active'
-         GROUP BY c.name
-         ORDER BY ${classNameOrderSql('c.name', { nullsFirst: true, prioritizeNull: true })}`
-      );
-      return result.rows.map((row) => ({
-        name: row.name,
-        count: parseInt(row.count, 10),
-      }));
-    }, []);
-
-    const admissions_by_status = await safeQuery(async () => {
-      const result = await db.query<{ status: string; count: string }>(
-        `SELECT COALESCE(status, 'unknown') AS status, COUNT(*)::text AS count
-         FROM admission_inquiries
-         GROUP BY status
-         ORDER BY count DESC`
-      );
-      return result.rows.map((row) => ({
-        name: row.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        count: parseInt(row.count, 10),
-      }));
-    }, []);
+    const composition_charts = await safeQuery(
+      () => fetchDashboardCompositionCharts(db),
+      { students_by_class: [], admissions_by_status: [], staff_by_department: [] },
+    );
 
     const admissions_trend_6m = await safeQuery(async () => {
       const result = await db.query<{ month: string; count: string }>(
@@ -275,21 +232,6 @@ export async function GET(request: NextRequest) {
       return series;
     }, []);
 
-    const staff_by_department = await safeQuery(async () => {
-      const result = await db.query<{ name: string; count: string }>(
-        `SELECT COALESCE(d.name, 'Unassigned') AS name, COUNT(s.id)::text AS count
-         FROM staff s
-         LEFT JOIN departments d ON s.department_id = d.id
-         WHERE s.status = 'active'
-         GROUP BY d.name
-         ORDER BY count DESC`
-      );
-      return result.rows.map((row) => ({
-        name: row.name,
-        count: parseInt(row.count, 10),
-      }));
-    }, []);
-
     const data: AnalyticsOverview = {
       kpis: {
         total_students,
@@ -309,10 +251,10 @@ export async function GET(request: NextRequest) {
       },
       attendance_trend_30d,
       fee_collection_12m,
-      students_by_class,
-      admissions_by_status,
+      students_by_class: composition_charts.students_by_class,
+      admissions_by_status: composition_charts.admissions_by_status,
       admissions_trend_6m,
-      staff_by_department,
+      staff_by_department: composition_charts.staff_by_department,
     };
 
     return NextResponse.json({ success: true, data });

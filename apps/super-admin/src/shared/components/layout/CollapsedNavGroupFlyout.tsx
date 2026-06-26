@@ -138,13 +138,17 @@ export default function CollapsedNavGroupFlyout({
                     setOpen(false);
                     onNavigate?.();
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-2.5 py-1.5 text-xs transition-colors ${
                     itemActive
                       ? 'bg-primary-50 font-medium text-primary-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <ItemIcon className="h-4 w-4 shrink-0 opacity-80" />
+                  <ItemIcon
+                    className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                      itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                    }`}
+                  />
                   <span className="min-w-0 flex-1">{item.name}</span>
                   {item.comingSoon && (
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
@@ -171,13 +175,19 @@ export default function CollapsedNavGroupFlyout({
         onMouseEnter={openMenu}
         onMouseLeave={scheduleClose}
         onClick={() => (open ? setOpen(false) : openMenu())}
-        className={`sidebar-nav-link flex w-full items-center justify-center px-3 py-2.5 transition-colors ${
+        className={`sidebar-nav-link flex w-full items-center justify-center rounded-md px-1 py-1.5 mb-0.5 transition-colors ${
           active
             ? 'border-r-2 border-primary-600 bg-primary-50 text-primary-700'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         }`}
       >
-        <Icon className="sidebar-nav-icon h-5 w-5 shrink-0" />
+        <span
+          className={`sidebar-icon-badge flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+            active ? 'sidebar-icon-badge-active' : 'sidebar-icon-badge-default'
+          }`}
+        >
+          <Icon className="sidebar-nav-icon h-4 w-4" />
+        </span>
       </button>
       {menu}
     </>

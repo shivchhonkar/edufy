@@ -77,8 +77,8 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     icon: FiHome,
     items: [
       { name: 'Dashboard', path: '/dashboard', icon: FiGrid },
-      { name: 'Analytics', path: '/dashboard/analytics', icon: FiBarChart2 },
-      { name: 'Reports', path: '/settings/reports', icon: FiFileText },
+      // { name: 'Analytics', path: '/dashboard/analytics', icon: FiBarChart2 },
+      // { name: 'Reports', path: '/settings/reports', icon: FiFileText },
       { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: FiActivity },
     ],
   },

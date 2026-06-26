@@ -101,20 +101,60 @@ input, textarea, select {
   border-color: var(--theme-secondary) !important;
 }
 
+.sidebar-container .sidebar-icon-badge-default {
+  background-color: color-mix(in srgb, var(--theme-secondary) 14%, transparent);
+}
+
+.sidebar-container .sidebar-icon-badge-active {
+  background-color: color-mix(in srgb, var(--theme-secondary) 28%, transparent);
+}
+
+.sidebar-container .sidebar-nav-icon,
+.sidebar-container nav a svg.sidebar-nav-icon,
+.sidebar-container nav button svg.sidebar-nav-icon {
+  color: var(--theme-sidebar-active-text) !important;
+  flex-shrink: 0 !important;
+  stroke-width: 1.85;
+}
+
+.sidebar-container .sidebar-nav-icon-muted {
+  opacity: 0.72;
+}
+
+.sidebar-container .sidebar-nav-icon-active {
+  opacity: 1;
+}
+
+.sidebar-container .sidebar-chevron {
+  color: color-mix(in srgb, var(--theme-sidebar-text) 65%, transparent) !important;
+}
+
 .sidebar-container nav a svg,
 .sidebar-container nav button svg.sidebar-nav-icon {
-  margin-right: 12px !important;
-  min-width: 20px !important;
-  width: 20px !important;
-  height: 20px !important;
+  margin-right: 0 !important;
+  min-width: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.sidebar-container .sidebar-icon-badge .sidebar-nav-icon {
+  min-width: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.sidebar-container.w-14 .sidebar-nav-link svg.sidebar-nav-icon,
+.sidebar-container.w-14 .sidebar-icon-badge .sidebar-nav-icon {
+  min-width: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .sidebar-container .sidebar-nav-link svg.sidebar-nav-icon {
   flex-shrink: 0 !important;
-  stroke-width: 1.75;
 }
 
-.sidebar-container.w-16 .sidebar-nav-link svg.sidebar-nav-icon {
+.sidebar-container.w-14 .sidebar-nav-link svg.sidebar-nav-icon {
   margin-right: 0 !important;
 }
 
@@ -196,4 +236,17 @@ input, textarea, select {
 
 .shake {
   animation: shake 0.5s ease-in-out;
+}
+
+.dashboard-stat-card {
+  background: linear-gradient(165deg, var(--theme-primary-50) 0%, var(--theme-surface) 58%);
+  border: 1px solid var(--theme-primary-200);
+  border-top-width: 3px;
+  border-top-color: var(--theme-primary-600);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--theme-primary-800) 8%, transparent);
+}
+
+.dashboard-stat-card-clickable:hover {
+  border-color: var(--theme-primary-300);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-primary-600) 14%, transparent);
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, type ComponentType } from 'react';
 import AppLogo from '@/shared/components/common/AppLogo';
 import CollapsedNavGroupFlyout from '@/shared/components/layout/CollapsedNavGroupFlyout';
 import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/constants/sidebar';
@@ -13,16 +13,31 @@ import {
   getNavGroupDirectLink,
   isNavLinkActive,
 } from '@/shared/navigation/sidebar-navigation';
-import {
-  FiMenu,
-  FiChevronsLeft,
-  FiChevronDown,
-  FiChevronRight,
-} from 'react-icons/fi';
+import { FiMenu, FiChevronsLeft, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import type { PortalSidebarProps } from '@edulakhya/ui';
 
 interface SidebarProps extends PortalSidebarProps {
   onToggle?: (collapsed: boolean) => void;
+}
+
+function NavIconBadge({
+  icon: Icon,
+  active = false,
+  compact = false,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  active?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`sidebar-icon-badge flex shrink-0 items-center justify-center rounded-md ${
+        compact ? 'h-7 w-7' : 'h-6 w-6'
+      } ${active ? 'sidebar-icon-badge-active' : 'sidebar-icon-badge-default'}`}
+    >
+      <Icon className={`sidebar-nav-icon ${compact ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} />
+    </span>
+  );
 }
 
 export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
@@ -45,12 +60,12 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
 
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsedState);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
-    getInitialExpandedGroups(pathname)
+    getInitialExpandedGroups(pathname),
   );
 
   useEffect(() => {
     const activeGroup = SIDEBAR_NAV_GROUPS.find((group) =>
-      group.items.some((item) => isNavLinkActive(pathname, item.path))
+      group.items.some((item) => isNavLinkActive(pathname, item.path)),
     );
     if (activeGroup) {
       setExpandedGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
@@ -58,9 +73,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
   }, [pathname]);
 
   useEffect(() => {
-    if (onToggle) {
-      onToggle(isCollapsed);
-    }
+    onToggle?.(isCollapsed);
     window.dispatchEvent(new CustomEvent('sidebar-collapsed-change', { detail: isCollapsed }));
   }, [isCollapsed, onToggle]);
 
@@ -90,61 +103,62 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
 
   const displayCollapsed = isCollapsed && !mobileOpen;
 
+  const linkActiveClass =
+    'bg-primary-50 text-primary-700 border-r-2 border-primary-600 font-medium';
+  const linkIdleClass = 'text-gray-700 hover:bg-gray-50 hover:text-gray-900';
+
   return (
     <div
-      className={`sidebar-container flex-shrink-0 h-full bg-gray-50 border-r border-gray-200 text-gray-700 overflow-y-auto transition-transform duration-300 z-50 text-sm shadow-sm fixed inset-y-0 left-0 lg:relative ${
+      className={`sidebar-container flex-shrink-0 h-full overflow-y-auto transition-transform duration-300 z-50 text-xs shadow-sm fixed inset-y-0 left-0 lg:relative ${
         displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
       } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
-      <div className={`border-b border-gray-200 ${displayCollapsed ? 'px-3 py-4' : 'px-4 py-4'}`}>
+      <div className={`border-b border-gray-200 ${displayCollapsed ? 'px-2 py-2.5' : 'px-3 py-2.5'}`}>
         {displayCollapsed ? (
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-2">
             <Link
               href="/dashboard"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/40"
-              title={schoolName.length > 10 ? `${schoolName.slice(0, 10)}...` : schoolName}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/40"
+              title={schoolName}
             >
               <AppLogo variant="sidebar-collapsed" src={schoolLogo} alt={schoolName} />
             </Link>
             <button
               onClick={toggleSidebar}
-              className="hidden lg:block p-1.5 hover:bg-gray-100 rounded-lg transition-all duration-300"
+              className="hidden lg:block rounded-md p-1 hover:bg-gray-100 transition-colors"
               title="Expand Menu"
             >
-              <FiMenu size={20} className="text-primary-600" />
+              <FiMenu size={16} className="text-primary-600" />
             </button>
           </div>
         ) : (
-          <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center justify-between gap-1.5">
             <Link
               href="/dashboard"
-              className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden rounded-xl p-1.5 -m-1.5 transition-colors hover:bg-white/80"
+              className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg p-1 -m-1 transition-colors hover:bg-white/80"
               title={schoolName}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
                 <AppLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
               </div>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <p
-                  className="truncate text-sm font-semibold leading-snug text-gray-900"
-                  title={schoolName}
-                >
-                  {schoolName.length > 60 ? `${schoolName.slice(0, 60)}...` : schoolName}
-                </p>
-              </div>
+              <p className="truncate text-[11px] font-semibold leading-tight text-gray-900" title={schoolName}>
+                {schoolName.length > 48 ? `${schoolName.slice(0, 48)}...` : schoolName}
+              </p>
             </Link>
             <button
               type="button"
               onClick={toggleSidebar}
-              className="hidden lg:flex shrink-0 rounded-lg p-1.5 transition-all duration-300 hover:bg-gray-100"
+              className="hidden lg:flex shrink-0 rounded-md p-1 transition-colors hover:bg-gray-100"
               title="Collapse sidebar"
               aria-label="Collapse sidebar"
             >
-              <FiChevronsLeft size={20} className="text-primary-600" />
+              <FiChevronsLeft size={16} className="text-primary-600" />
             </button>
           </div>
         )}
-      <nav className="mt-1 pb-6">
+      </div>
+
+      <nav className="px-1.5 py-2 pb-4">
         {SIDEBAR_NAV_GROUPS.map((group) => {
           const Icon = group.icon;
           const directLink = getNavGroupDirectLink(group);
@@ -158,14 +172,12 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                   key={group.id}
                   href={directLink.path}
                   onClick={() => onMobileClose?.()}
-                  className={`sidebar-nav-link flex items-center justify-center w-full px-3 py-2.5 transition-colors ${
-                    active
-                      ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  className={`sidebar-nav-link flex items-center justify-center w-full rounded-md px-1 py-1.5 mb-0.5 transition-colors ${
+                    active ? linkActiveClass : linkIdleClass
                   }`}
                   title={group.title}
                 >
-                  <Icon className="sidebar-nav-icon w-5 h-5 flex-shrink-0" />
+                  <NavIconBadge icon={Icon} active={active} compact />
                 </Link>
               );
             }
@@ -187,22 +199,16 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                 key={group.id}
                 href={directLink.path}
                 onClick={() => onMobileClose?.()}
-                className={`sidebar-nav-link flex items-center w-full px-4 py-2 transition-colors mb-0.5 ${
-                  active
-                    ? 'text-primary-700 bg-primary-50 border-r-2 border-primary-600 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                className={`sidebar-nav-link flex items-center gap-2 w-full rounded-md px-2 py-1.5 mb-0.5 transition-colors ${
+                  active ? linkActiveClass : linkIdleClass
                 }`}
               >
-                <Icon
-                  className={`sidebar-nav-icon w-4 h-4 flex-shrink-0 ${
-                    active ? 'text-primary-600' : 'text-gray-400'
-                  }`}
-                />
-                <span className="whitespace-nowrap flex-1 text-left text-[13px] uppercase tracking-wide leading-snug ml-2">
+                <NavIconBadge icon={Icon} active={active} />
+                <span className="min-w-0 flex-1 truncate text-left text-[11px] uppercase tracking-wide leading-none">
                   {group.title}
                 </span>
                 {directLink.comingSoon && (
-                  <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
+                  <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
                     Soon
                   </span>
                 )}
@@ -215,25 +221,23 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
-                className={`sidebar-nav-link flex items-center w-full px-4 py-2 transition-colors ${
-                  active
-                    ? 'text-primary-700 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                className={`sidebar-nav-link flex items-center gap-2 w-full rounded-md px-2 py-1.5 transition-colors ${
+                  active ? 'text-primary-700 font-medium' : linkIdleClass
                 }`}
               >
-                <Icon className="sidebar-nav-icon w-4 h-4 flex-shrink-0 text-gray-400" />
-                <span className="whitespace-nowrap flex-1 text-left text-[13px] uppercase tracking-wide leading-snug ml-2">
+                <NavIconBadge icon={Icon} active={active} />
+                <span className="min-w-0 flex-1 truncate text-left text-[11px] uppercase tracking-wide leading-none">
                   {group.title}
                 </span>
                 {expanded ? (
-                  <FiChevronDown className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                  <FiChevronDown className="sidebar-chevron h-3.5 w-3.5 shrink-0 opacity-60" />
                 ) : (
-                  <FiChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                  <FiChevronRight className="sidebar-chevron h-3.5 w-3.5 shrink-0 opacity-60" />
                 )}
               </button>
 
               {expanded && (
-                <div className="pb-2">
+                <div className="mt-0.5 space-y-0.5 pb-1">
                   {group.items.map((item) => {
                     const itemActive = isNavLinkActive(pathname, item.path);
                     const ItemIcon = item.icon;
@@ -242,20 +246,18 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                         key={`${group.id}-${item.path}`}
                         href={item.path}
                         onClick={() => onMobileClose?.()}
-                        className={`flex items-center gap-2.5 pl-8 pr-4 py-1.5 text-sm transition-colors ${
-                          itemActive
-                            ? 'text-primary-700 bg-primary-50 border-r-2 border-primary-600 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        className={`flex items-center gap-2 rounded-md pl-7 pr-2 py-1 transition-colors ${
+                          itemActive ? linkActiveClass : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         <ItemIcon
-                          className={`w-4 h-4 shrink-0 ${
-                            itemActive ? 'text-primary-600' : 'text-gray-400'
+                          className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                            itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
                           }`}
                         />
-                        <span className="flex-1 min-w-0">{item.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-[11px] leading-tight">{item.name}</span>
                         {item.comingSoon && (
-                          <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold shrink-0">
+                          <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
                             Soon
                           </span>
                         )}
@@ -268,7 +270,6 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
           );
         })}
       </nav>
-    </div>
     </div>
   );
 }
