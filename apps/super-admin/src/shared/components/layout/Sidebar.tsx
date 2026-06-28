@@ -204,7 +204,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                 }`}
               >
                 <NavIconBadge icon={Icon} active={active} />
-                <span className="min-w-0 flex-1 truncate text-left text-[11px] uppercase tracking-wide leading-none">
+                <span className="min-w-0 flex-1 truncate text-left text-[12px] uppercase tracking-wide leading-none">
                   {group.title}
                 </span>
                 {directLink.comingSoon && (
@@ -226,7 +226,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                 }`}
               >
                 <NavIconBadge icon={Icon} active={active} />
-                <span className="min-w-0 flex-1 truncate text-left text-[11px] uppercase tracking-wide leading-none">
+                <span className="min-w-0 flex-1 truncate text-left text-[12px] uppercase tracking-wide leading-none">
                   {group.title}
                 </span>
                 {expanded ? (
@@ -255,7 +255,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                             itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
                           }`}
                         />
-                        <span className="min-w-0 flex-1 truncate text-[11px] leading-tight">{item.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-[12px] leading-tight">{item.name}</span>
                         {item.comingSoon && (
                           <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
                             Soon

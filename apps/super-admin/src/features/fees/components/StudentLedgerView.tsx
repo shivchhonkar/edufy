@@ -30,8 +30,9 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
   const [transportInfo, setTransportInfo] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<LedgerTab>('overview');
+  const [activeTab, setActiveTab] = useState<LedgerTab>('monthly');
   const [showPayment, setShowPayment] = useState(false);
+  const [paymentMonth, setPaymentMonth] = useState<number | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Record<string, unknown> | null>(null);
   const [receiptStudent, setReceiptStudent] = useState<Record<string, unknown> | null>(null);
@@ -123,11 +124,16 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
     .reduce((s, r) => s + r.totalBalance, 0);
 
   const tabs: { id: LedgerTab; label: string }[] = [
+    { id: 'monthly', label: 'Monthly Fees Status' },
     { id: 'overview', label: 'Overview' },
-    { id: 'monthly', label: 'Monthly Dues' },
     { id: 'payments', label: 'Payments' },
     { id: 'receipts', label: 'Receipts' },
   ];
+
+  const openCollectPayment = (calendarMonth: number | null = null) => {
+    setPaymentMonth(calendarMonth);
+    setShowPayment(true);
+  };
 
   if (loading && !student) {
     return <div className="py-20 text-center text-gray-500">Loading ledger...</div>;
@@ -160,7 +166,7 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
         actions={
           <button
             type="button"
-            onClick={() => setShowPayment(true)}
+            onClick={() => openCollectPayment()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
           >
             <FiCreditCard size={16} />
@@ -216,14 +222,26 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
             .filter((row) => row.hasFees || row.isPastOrCurrent)
             .map((row) => (
               <div key={row.monthIndex} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex flex-wrap justify-between gap-2 px-4 py-3 bg-gray-50 border-b">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-gray-50 border-b">
                   <span className="font-semibold">{row.monthName}</span>
-                  <div className="flex gap-4 text-sm">
-                    <span>Due: {formatFeeCurrency(row.totalDue)}</span>
-                    <span className="text-green-700">Paid: {formatFeeCurrency(row.totalPaid)}</span>
-                    <span className={row.totalBalance > 0 ? 'text-red-700 font-medium' : ''}>
-                      Balance: {formatFeeCurrency(row.totalBalance)}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex gap-4 text-sm">
+                      <span>Due: {formatFeeCurrency(row.totalDue)}</span>
+                      <span className="text-green-700">Paid: {formatFeeCurrency(row.totalPaid)}</span>
+                      <span className={row.totalBalance > 0 ? 'text-red-700 font-medium' : ''}>
+                        Balance: {formatFeeCurrency(row.totalBalance)}
+                      </span>
+                    </div>
+                    {row.totalBalance > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => openCollectPayment(row.monthIndex)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
+                      >
+                        <FiCreditCard size={13} />
+                        Collect Payment
+                      </button>
+                    )}
                   </div>
                 </div>
                 {row.monthFees.length === 0 ? (
@@ -294,12 +312,17 @@ export default function StudentLedgerView({ studentId }: StudentLedgerViewProps)
 
       <RecordPaymentModal
         isOpen={showPayment}
-        onClose={() => setShowPayment(false)}
+        onClose={() => {
+          setShowPayment(false);
+          setPaymentMonth(null);
+        }}
         onSuccess={() => {
           setShowPayment(false);
+          setPaymentMonth(null);
           load();
         }}
         selectedStudent={student}
+        initialCalendarMonth={paymentMonth}
       />
 
       {showReceipt && selectedPayment && (

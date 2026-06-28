@@ -52,6 +52,8 @@ interface RecordPaymentModalProps {
   onSuccess: () => void;
   selectedStudent?: any;
   selectedFee?: any;
+  /** Pre-select tuition/transport for this calendar month (1–12) when opening. */
+  initialCalendarMonth?: number | null;
 }
 
 interface MonthFee {
@@ -137,7 +139,8 @@ export default function RecordPaymentModal({
   onClose, 
   onSuccess,
   selectedStudent,
-  selectedFee 
+  selectedFee,
+  initialCalendarMonth = null,
 }: RecordPaymentModalProps) {
   const { alert, confirm } = useDialog();
   const { settings } = useSettings();
@@ -198,7 +201,19 @@ export default function RecordPaymentModal({
       setFieldErrors({});
       setShowStudentDropdown(false);
     }
-  }, [isOpen, selectedStudent]);
+  }, [isOpen, selectedStudent, initialCalendarMonth]);
+
+  const applyMonthPreselection = (months: MonthFee[], calendarMonth: number | null | undefined) => {
+    if (!calendarMonth) return months;
+    return months.map((monthFee) => {
+      if (monthFee.month !== calendarMonth) return monthFee;
+      return {
+        ...monthFee,
+        tuitionSelected: hasTuitionOutstanding(monthFee),
+        transportSelected: hasTransportOutstanding(monthFee),
+      };
+    });
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -448,7 +463,7 @@ export default function RecordPaymentModal({
         });
       }
       
-      setMonthFees(generatedMonths);
+      setMonthFees(applyMonthPreselection(generatedMonths, initialCalendarMonth));
 
       const payingStudent =
         students.find((s) => s.id === studentId) ||
