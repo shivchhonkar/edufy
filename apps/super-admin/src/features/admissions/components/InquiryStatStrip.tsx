@@ -49,24 +49,24 @@ export default function InquiryStatStrip({
       <button
         type="button"
         onClick={() => onStatusClick('')}
-        className={`shrink-0 min-w-[9.5rem] rounded-lg border bg-white p-3 text-left transition-all hover:shadow-sm ${
+        className={`shrink-0 min-w-[10.5rem] rounded-lg border bg-white p-3.5 text-left transition-all hover:shadow-sm ${
           activeStatus === '' ? 'border-primary-300 ring-1 ring-primary-200' : 'border-gray-200'
         }`}
       >
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-            <FiTrendingUp size={16} />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+            <FiTrendingUp size={18} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
               Total Inquiries
             </p>
-            <p className="text-xl font-bold text-gray-900 leading-tight">{stats.total}</p>
+            <p className="text-2xl font-bold text-gray-900 leading-tight">{stats.total}</p>
           </div>
         </div>
-        <p className="mt-2 text-[10px] text-gray-500">
+        <p className="mt-2 text-xs text-gray-500">
           This week{' '}
-          <span className="font-semibold text-emerald-600">
+          <span className="font-semibold text-primary-700">
             {stats.new_this_week} new
             {weekPct > 0 ? ` · ${weekPct}%` : ''}
           </span>
@@ -84,24 +84,24 @@ export default function InquiryStatStrip({
             key={status}
             type="button"
             onClick={() => onStatusClick(status)}
-            className={`shrink-0 min-w-[9rem] rounded-lg border bg-white p-3 text-left transition-all hover:shadow-sm ${
+            className={`shrink-0 min-w-[10rem] rounded-lg border bg-white p-3.5 text-left transition-all hover:shadow-sm ${
               isActive ? 'border-primary-300 ring-1 ring-primary-200' : 'border-gray-200'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-lg ${meta.iconBg} ${meta.iconColor}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg ${meta.iconBg} ${meta.iconColor}`}
               >
-                <Icon size={15} />
+                <Icon size={17} />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-gray-500 truncate">
+                <p className="text-xs font-medium text-gray-600 truncate">
                   {STATUS_LABELS[status]}
                 </p>
-                <p className="text-lg font-bold text-gray-900 leading-tight">{count}</p>
+                <p className="text-xl font-bold text-gray-900 leading-tight">{count}</p>
               </div>
             </div>
-            <p className="mt-1.5 text-[10px] text-gray-400 truncate">{meta.statHint}</p>
+            <p className="mt-1.5 text-xs text-gray-500 truncate">{meta.statHint}</p>
           </button>
         );
       })}

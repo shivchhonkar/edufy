@@ -194,17 +194,17 @@ export default function AdmissionsPage() {
       <div className="space-y-3 min-w-0 w-full max-w-full">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiClipboard className="text-primary-600 shrink-0" size={20} />
+            <h1 className="text-xl font-semibold text-[var(--theme-brand-dark)] flex items-center gap-2">
+              <FiClipboard className="text-[var(--theme-primary-600)] shrink-0" size={22} />
               Admission Inquiries
               <span
                 className="text-gray-400 cursor-help"
                 title="Drag cards between columns to update pipeline status"
               >
-                <FiInfo size={14} />
+                <FiInfo size={16} />
               </span>
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-500 mt-0.5">
               Track leads from first contact through enrollment
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function AdmissionsPage() {
             <button
               type="button"
               onClick={() => setShowFilters((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 border rounded-lg text-sm font-medium transition-colors ${
                 showFilters || priorityFilter
                   ? 'border-primary-300 bg-primary-50 text-primary-700'
                   : 'border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -232,9 +232,9 @@ export default function AdmissionsPage() {
             <button
               type="button"
               onClick={() => openAddModal('new')}
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs font-semibold"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-[var(--theme-primary-600)] text-white rounded-lg hover:bg-[var(--theme-primary-700)] text-sm font-semibold"
             >
-              <FiPlus size={14} />
+              <FiPlus size={16} />
               New Inquiry
             </button>
           </div>
@@ -252,21 +252,21 @@ export default function AdmissionsPage() {
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="relative flex-1">
               <FiSearch
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, phone, inquiry #..."
-                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
             <div className="flex items-center gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-2.5 py-2 text-xs bg-white min-w-[8rem]"
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white min-w-[9rem]"
               >
                 <option value="">All statuses</option>
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -298,13 +298,13 @@ export default function AdmissionsPage() {
 
           {showFilters && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2">
-              <span className="text-[10px] font-semibold uppercase text-gray-500">Priority</span>
+              <span className="text-xs font-semibold uppercase text-gray-500">Priority</span>
               {['', 'high', 'normal', 'low'].map((value) => (
                 <button
                   key={value || 'all'}
                   type="button"
                   onClick={() => setPriorityFilter(value)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     priorityFilter === value
                       ? 'bg-primary-600 text-white'
                       : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -320,7 +320,7 @@ export default function AdmissionsPage() {
                     setStatusFilter('');
                     setPriorityFilter('');
                   }}
-                  className="ml-auto text-[11px] text-primary-600 hover:text-primary-800 font-medium"
+                  className="ml-auto text-sm text-primary-600 hover:text-primary-800 font-medium"
                 >
                   Clear filters
                 </button>
@@ -331,7 +331,7 @@ export default function AdmissionsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <p className="text-xs text-gray-500">Loading inquiries...</p>
+            <p className="text-sm text-gray-500">Loading inquiries...</p>
           </div>
         ) : showBoard ? (
           <InquiryKanbanBoard
@@ -353,15 +353,15 @@ export default function AdmissionsPage() {
           />
         ) : (
           <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-            <table className="w-full text-xs min-w-[720px]">
+            <table className="w-full text-sm min-w-[720px]">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Inquiry</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Student</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Parent</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Class</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Status</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-gray-600">Follow-up</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Inquiry</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Student</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Parent</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Class</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Status</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Follow-up</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -371,40 +371,40 @@ export default function AdmissionsPage() {
                     onClick={() => setSelectedInquiryId(inquiry.id)}
                     className="hover:bg-gray-50 cursor-pointer"
                   >
-                    <td className="px-3 py-2 font-mono text-[11px] text-gray-500">
+                    <td className="px-3 py-2.5 font-mono text-xs text-gray-500">
                       {formatInquiryNumber(inquiry.inquiry_number)}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium text-gray-900">
                           {inquiryStudentName(inquiry)}
                         </span>
                         {needsStudentConversion(inquiry) && (
-                          <FiAlertCircle className="text-amber-500 shrink-0" size={13} />
+                          <FiAlertCircle className="text-[var(--theme-primary-600)] shrink-0" size={15} />
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <div className="text-gray-800">{inquiry.parent_name}</div>
-                      <div className="text-[11px] text-gray-500">
+                      <div className="text-xs text-gray-500">
                         {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']} ·{' '}
                         {inquiry.parent_phone}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-gray-600">
+                    <td className="px-3 py-2.5 text-gray-600">
                       {(() => {
                         const classInfo = inquiryClassDisplay(inquiry);
                         return classInfo.name ? classInfo.name : '—';
                       })()}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[inquiry.status]}`}
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inquiry.status]}`}
                       >
                         {STATUS_LABELS[inquiry.status]}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-gray-500">
+                    <td className="px-3 py-2.5 text-gray-500">
                       {inquiry.follow_up_date
                         ? new Date(inquiry.follow_up_date).toLocaleDateString('en-IN', {
                             day: 'numeric',
@@ -417,7 +417,7 @@ export default function AdmissionsPage() {
                 ))}
                 {inquiries.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-gray-400">
+                    <td colSpan={6} className="px-3 py-10 text-center text-sm text-gray-400">
                       No inquiries match your filters.
                     </td>
                   </tr>

@@ -63,27 +63,27 @@ function InquiryCard({
       <button
         type="button"
         onClick={onOpen}
-        className="w-full text-left rounded-md border border-gray-200 bg-white px-2.5 py-2 hover:border-gray-300 hover:shadow-sm transition-all"
+        className="w-full text-left rounded-md border border-gray-200 bg-white px-3 py-2.5 hover:border-gray-300 hover:shadow-sm transition-all"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-900 truncate">
+            <p className="text-sm font-semibold text-gray-900 truncate">
               {inquiryStudentName(inquiry)}
             </p>
-            <p className="text-[10px] text-gray-500 truncate">
+            <p className="text-xs text-gray-500 truncate">
               {formatInquiryNumber(inquiry.inquiry_number)}
               {classInfo.name ? ` · Class ${classInfo.name}` : ''}
             </p>
           </div>
           {tags[0] && (
             <span
-              className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-medium ${tags[0].className}`}
+              className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium ${tags[0].className}`}
             >
               {tags[0].label}
             </span>
           )}
         </div>
-        <p className="text-[10px] text-gray-400 mt-1 truncate">
+        <p className="text-xs text-gray-500 mt-1 truncate">
           {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']}: {inquiry.parent_name} ·{' '}
           {inquiry.parent_phone}
         </p>
@@ -102,30 +102,30 @@ function InquiryCard({
       }}
       onDragEnd={onDragEnd}
       onClick={onOpen}
-      className={`w-full text-left rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-grab active:cursor-grabbing ${
+      className={`w-full text-left rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-grab active:cursor-grabbing ${
         dragging ? 'opacity-40 ring-2 ring-primary-300' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-1.5">
-        <p className="text-sm font-semibold text-gray-900 leading-snug">
+        <p className="text-base font-semibold text-gray-900 leading-snug">
           {inquiryStudentName(inquiry)}
         </p>
         {pendingConversion && (
-          <FiAlertCircle className="shrink-0 text-amber-500" size={14} aria-label="Conversion pending" />
+          <FiAlertCircle className="shrink-0 text-primary-600" size={16} aria-label="Conversion pending" />
         )}
       </div>
 
-      <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+      <p className="text-xs text-gray-500 mt-0.5 font-mono">
         {formatInquiryNumber(inquiry.inquiry_number)}
       </p>
 
-      <p className="text-[11px] text-gray-500 mt-1 truncate">
+      <p className="text-sm text-gray-600 mt-1 truncate">
         {PARENT_RELATION_LABELS[inquiry.parent_relation || 'father']}: {inquiry.parent_name}
       </p>
-      <p className="text-[11px] text-gray-400 truncate">{inquiry.parent_phone}</p>
+      <p className="text-sm text-gray-500 truncate">{inquiry.parent_phone}</p>
 
       {timeLabel && (
-        <p className="text-[10px] text-gray-400 mt-1.5">
+        <p className="text-xs text-gray-500 mt-1.5">
           {inquiry.status === 'visit_scheduled' && inquiry.follow_up_date
             ? `Visit: ${timeLabel}`
             : timeLabel}
@@ -137,13 +137,13 @@ function InquiryCard({
           {tags.map((tag) => (
             <span
               key={tag.label}
-              className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${tag.className}`}
+              className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${tag.className}`}
             >
               {tag.label}
             </span>
           ))}
           {classInfo.name && (
-            <span className="ml-auto text-[10px] text-gray-500 font-medium">
+            <span className="ml-auto text-xs text-gray-600 font-medium">
               Class: {classInfo.name}
             </span>
           )}
@@ -184,7 +184,7 @@ function KanbanColumn({
 
   return (
     <div
-      className={`shrink-0 w-[17rem] flex flex-col max-h-[calc(100vh-18rem)] min-h-[20rem] rounded-lg border border-gray-200 bg-gray-50/80 border-t-[3px] ${meta.borderClass} ${
+      className={`shrink-0 w-[18.5rem] flex flex-col max-h-[calc(100vh-18rem)] min-h-[20rem] rounded-lg border border-gray-200 bg-gray-50/80 border-t-[3px] ${meta.borderClass} ${
         isDragOver ? 'ring-2 ring-primary-400 bg-primary-50/30' : ''
       }`}
       onDragOver={(e) => {
@@ -198,28 +198,28 @@ function KanbanColumn({
         if (id) onDrop(id);
       }}
     >
-      <div className="px-2.5 pt-2.5 pb-2 border-b border-gray-200/80">
+      <div className="px-3 pt-3 pb-2.5 border-b border-gray-200/80">
         <div className="flex items-start justify-between gap-1">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs font-bold text-gray-800">{STATUS_LABELS[status]}</h3>
-              <span className="text-[10px] font-semibold bg-gray-200/80 text-gray-600 px-1.5 py-0.5 rounded-full">
+              <h3 className="text-sm font-bold text-gray-800">{STATUS_LABELS[status]}</h3>
+              <span className="text-xs font-semibold bg-gray-200/80 text-gray-600 px-2 py-0.5 rounded-full">
                 {inquiries.length}
               </span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-0.5">{meta.subtitle}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{meta.subtitle}</p>
           </div>
           <button
             type="button"
             className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200/60"
             aria-label="Column options"
           >
-            <FiMoreVertical size={14} />
+            <FiMoreVertical size={16} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 scrollbar-thin">
         {inquiries.map((inquiry) => (
           <InquiryCard
             key={inquiry.id}
@@ -231,20 +231,20 @@ function KanbanColumn({
           />
         ))}
         {inquiries.length === 0 && (
-          <div className="rounded-md border border-dashed border-gray-300 py-6 text-center text-[10px] text-gray-400">
+          <div className="rounded-md border border-dashed border-gray-300 py-6 text-center text-xs text-gray-500">
             Drop inquiries here
           </div>
         )}
       </div>
 
       {showAddButton && (
-        <div className="p-2 border-t border-gray-200/80">
+        <div className="p-2.5 border-t border-gray-200/80">
           <button
             type="button"
             onClick={onAddInquiry}
-            className="w-full flex items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-medium text-gray-600 hover:bg-white hover:text-primary-700 border border-transparent hover:border-gray-200 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium text-gray-600 hover:bg-white hover:text-primary-700 border border-transparent hover:border-gray-200 transition-colors"
           >
-            <FiPlus size={12} />
+            <FiPlus size={14} />
             Add Inquiry
           </button>
         </div>
@@ -290,8 +290,8 @@ export default function InquiryKanbanBoard({
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-3">
-        <h3 className="text-xs font-bold text-gray-700 mb-3">Closed pipeline</h3>
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <h3 className="text-sm font-bold text-gray-700 mb-3">Closed pipeline</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {TERMINAL_STATUSES.map((status) => {
             const items = terminalColumns[status] || [];
@@ -301,7 +301,7 @@ export default function InquiryKanbanBoard({
             return (
               <div
                 key={status}
-                className={`rounded-lg border border-gray-200 border-t-[3px] ${meta.borderClass} p-2.5`}
+                className={`rounded-lg border border-gray-200 border-t-[3px] ${meta.borderClass} p-3`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -311,10 +311,10 @@ export default function InquiryKanbanBoard({
               >
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <h4 className="text-xs font-bold text-gray-800">{STATUS_LABELS[status]}</h4>
-                    <p className="text-[10px] text-gray-400">{meta.subtitle}</p>
+                    <h4 className="text-sm font-bold text-gray-800">{STATUS_LABELS[status]}</h4>
+                    <p className="text-xs text-gray-500">{meta.subtitle}</p>
                   </div>
-                  <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 </div>
@@ -332,7 +332,7 @@ export default function InquiryKanbanBoard({
                     />
                   ))}
                   {items.length === 0 && (
-                    <p className="text-[10px] text-gray-400 text-center py-3">None yet</p>
+                    <p className="text-xs text-gray-500 text-center py-3">None yet</p>
                   )}
                 </div>
 
@@ -340,7 +340,7 @@ export default function InquiryKanbanBoard({
                   <button
                     type="button"
                     onClick={() => onViewAllClosed(status)}
-                    className="mt-2 text-[10px] font-medium text-primary-600 hover:text-primary-800"
+                    className="mt-2 text-xs font-medium text-primary-600 hover:text-primary-800"
                   >
                     View all {STATUS_LABELS[status].toLowerCase()} ({items.length}) →
                   </button>
@@ -348,8 +348,8 @@ export default function InquiryKanbanBoard({
 
                 {status === 'registered' &&
                   (boardColumns.registered?.some(needsStudentConversion) ?? false) && (
-                    <p className="mt-2 text-[10px] text-amber-700 flex items-center gap-1">
-                      <FiAlertCircle size={11} />
+                    <p className="mt-2 text-xs text-primary-800 flex items-center gap-1">
+                      <FiAlertCircle size={13} />
                       Some registered leads need student conversion
                     </p>
                   )}

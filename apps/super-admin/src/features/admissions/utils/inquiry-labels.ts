@@ -12,13 +12,13 @@ export const STATUS_LABELS: Record<InquiryStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<InquiryStatus, string> = {
-  new: 'bg-blue-100 text-blue-800',
-  contacted: 'bg-purple-100 text-purple-800',
-  visit_scheduled: 'bg-orange-100 text-orange-800',
-  interested: 'bg-amber-100 text-amber-800',
-  registered: 'bg-teal-100 text-teal-800',
-  enrolled: 'bg-green-100 text-green-800',
-  lost: 'bg-red-100 text-red-800',
+  new: 'bg-primary-100 text-primary-800',
+  contacted: 'bg-primary-100 text-primary-700',
+  visit_scheduled: 'bg-primary-50 text-primary-700',
+  interested: 'bg-primary-50 text-primary-600',
+  registered: 'bg-primary-100 text-primary-600',
+  enrolled: 'bg-primary-100 text-primary-700',
+  lost: 'bg-primary-50 text-primary-900',
   on_hold: 'bg-gray-100 text-gray-700',
 };
 
@@ -39,58 +39,58 @@ export const STATUS_COLUMN_META: Record<
   new: {
     subtitle: 'Not yet contacted',
     statHint: 'Needs contact',
-    borderClass: 'border-t-blue-500',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
+    borderClass: 'border-t-primary-800',
+    iconBg: 'bg-primary-100',
+    iconColor: 'text-primary-800',
   },
   contacted: {
     subtitle: 'In progress',
     statHint: 'In progress',
-    borderClass: 'border-t-violet-500',
-    iconBg: 'bg-violet-100',
-    iconColor: 'text-violet-600',
+    borderClass: 'border-t-primary-700',
+    iconBg: 'bg-primary-100',
+    iconColor: 'text-primary-700',
   },
   visit_scheduled: {
     subtitle: 'Visit planned',
     statHint: 'Visit planned',
-    borderClass: 'border-t-orange-500',
-    iconBg: 'bg-orange-100',
-    iconColor: 'text-orange-600',
+    borderClass: 'border-t-primary-600',
+    iconBg: 'bg-primary-50',
+    iconColor: 'text-primary-600',
   },
   interested: {
     subtitle: 'High potential',
     statHint: 'High potential',
-    borderClass: 'border-t-amber-500',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
+    borderClass: 'border-t-primary-400',
+    iconBg: 'bg-primary-50',
+    iconColor: 'text-primary-500',
   },
   registered: {
     subtitle: 'Ready to enroll',
     statHint: 'Ready to enroll',
-    borderClass: 'border-t-teal-500',
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
+    borderClass: 'border-t-primary-300',
+    iconBg: 'bg-primary-50',
+    iconColor: 'text-primary-600',
   },
   enrolled: {
     subtitle: 'Successfully enrolled',
     statHint: 'Enrolled',
-    borderClass: 'border-t-green-500',
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
+    borderClass: 'border-t-primary-600',
+    iconBg: 'bg-primary-100',
+    iconColor: 'text-primary-700',
   },
   lost: {
     subtitle: 'Did not enroll',
     statHint: 'Lost leads',
-    borderClass: 'border-t-red-500',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
+    borderClass: 'border-t-primary-900',
+    iconBg: 'bg-primary-50',
+    iconColor: 'text-primary-800',
   },
   on_hold: {
     subtitle: 'Paused follow-up',
     statHint: 'On hold',
-    borderClass: 'border-t-slate-400',
-    iconBg: 'bg-slate-100',
-    iconColor: 'text-slate-600',
+    borderClass: 'border-t-primary-200',
+    iconBg: 'bg-gray-100',
+    iconColor: 'text-gray-600',
   },
 };
 
@@ -134,28 +134,28 @@ export function getInquiryCardTags(inquiry: {
   if (inquiry.priority === 'high' || inquiry.status === 'interested') {
     tags.push({
       label: inquiry.status === 'interested' ? 'High Potential' : 'High Priority',
-      className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+      className: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
     });
   }
 
   if (inquiry.status === 'registered' && !inquiry.converted_student_id) {
     tags.push({
       label: 'Ready to Enroll',
-      className: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
+      className: 'bg-primary-100 text-primary-800 ring-1 ring-primary-300',
     });
   }
 
   if (inquiry.status === 'enrolled') {
     tags.push({
       label: 'Enrolled',
-      className: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+      className: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
     });
   }
 
   if (inquiry.status === 'lost') {
     tags.push({
       label: 'Lost',
-      className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+      className: 'bg-primary-50 text-primary-900 ring-1 ring-primary-300',
     });
   }
 
@@ -168,14 +168,14 @@ export function formatInquiryNumber(inquiryNumber: string): string {
 
 /** Card surface + border tint for inquiry tiles */
 export const STATUS_CARD_STYLES: Record<InquiryStatus, string> = {
-  new: 'bg-blue-50 border-blue-200 hover:bg-blue-100/80',
-  contacted: 'bg-purple-50 border-purple-200 hover:bg-purple-100/80',
-  visit_scheduled: 'bg-orange-50 border-orange-200 hover:bg-orange-100/80',
-  interested: 'bg-amber-50 border-amber-200 hover:bg-amber-100/80',
-  registered: 'bg-teal-50 border-teal-200 hover:bg-teal-100/80',
-  enrolled: 'bg-green-50 border-green-300 hover:bg-green-100/80',
-  lost: 'bg-red-50 border-red-200 hover:bg-red-100/80',
-  on_hold: 'bg-slate-100 border-slate-300 hover:bg-slate-200/80',
+  new: 'bg-primary-50 border-primary-200 hover:bg-primary-100/80',
+  contacted: 'bg-primary-50 border-primary-200 hover:bg-primary-100/80',
+  visit_scheduled: 'bg-primary-50 border-primary-200 hover:bg-primary-100/80',
+  interested: 'bg-primary-50 border-primary-300 hover:bg-primary-100/80',
+  registered: 'bg-primary-50 border-primary-300 hover:bg-primary-100/80',
+  enrolled: 'bg-primary-50 border-primary-300 hover:bg-primary-100/80',
+  lost: 'bg-primary-50 border-primary-300 hover:bg-primary-100/80',
+  on_hold: 'bg-gray-50 border-gray-200 hover:bg-gray-100/80',
 };
 
 /** Column background for terminal status groups */
@@ -183,9 +183,9 @@ export const TERMINAL_COLUMN_STYLES: Record<
   (typeof TERMINAL_STATUSES)[number],
   string
 > = {
-  enrolled: 'bg-green-50/60 ring-1 ring-green-200',
-  lost: 'bg-red-50/60 ring-1 ring-red-200',
-  on_hold: 'bg-slate-50 ring-1 ring-slate-200',
+  enrolled: 'bg-primary-50/60 ring-1 ring-primary-200',
+  lost: 'bg-primary-50/60 ring-1 ring-primary-300',
+  on_hold: 'bg-gray-50 ring-1 ring-gray-200',
 };
 
 export const SOURCE_LABELS: Record<InquirySource, string> = {
