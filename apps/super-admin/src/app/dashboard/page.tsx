@@ -16,6 +16,7 @@ import {
   TeacherComparisonBarChart,
   CategoryBarChart,
 } from '@/features/dashboard/components/DashboardCharts';
+import { DASHBOARD_CHART_PALETTE, DASHBOARD_CHART_THEME } from '@/features/dashboard/components/dashboard-chart-theme';
 import { DashboardOverview } from '@/shared/types';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import {
@@ -37,8 +38,6 @@ function formatCurrency(amount: number) {
 function formatCurrencyFull(amount: number) {
   return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
-
-const CHART_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#64748b', '#0d9488', '#ea580c'];
 
 const EMPTY_DASHBOARD: DashboardOverview = {
   total_students: 0,
@@ -118,11 +117,11 @@ function PanelCard({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-            {badge && (
+            {/* {badge && (
               <span className="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                 {badge}
               </span>
-            )}
+            )} */}
           </div>
           {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
         </div>
@@ -205,17 +204,17 @@ export default function DashboardPage() {
     if (!stats) return [];
     const other = Math.max(0, stats.attendance_marked - stats.present_today - stats.absent_today);
     return [
-      { name: 'Present', value: stats.present_today, color: '#16a34a' },
-      { name: 'Absent', value: stats.absent_today, color: '#dc2626' },
-      ...(other > 0 ? [{ name: 'Leave / Late', value: other, color: '#d97706' }] : []),
+      { name: 'Present', value: stats.present_today, color: DASHBOARD_CHART_THEME.primary },
+      { name: 'Absent', value: stats.absent_today, color: DASHBOARD_CHART_THEME.primaryDark },
+      ...(other > 0 ? [{ name: 'Leave / Late', value: other, color: DASHBOARD_CHART_THEME.secondary }] : []),
     ];
   }, [stats]);
 
   const feeComposition = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: 'Collected', value: stats.fees_collected, color: '#2563eb' },
-      { name: 'Pending', value: stats.pending_fees, color: '#f59e0b' },
+      { name: 'Collected', value: stats.fees_collected, color: DASHBOARD_CHART_THEME.primary },
+      { name: 'Pending', value: stats.pending_fees, color: DASHBOARD_CHART_THEME.secondary },
     ];
   }, [stats]);
 
@@ -229,11 +228,11 @@ export default function DashboardPage() {
       exams: 'Exams',
     };
     const typeColors: Record<string, string> = {
-      attendance: '#16a34a',
-      fees: '#d97706',
-      admissions: '#2563eb',
-      inventory: '#64748b',
-      exams: '#7c3aed',
+      attendance: DASHBOARD_CHART_THEME.primary,
+      fees: DASHBOARD_CHART_THEME.primaryMid,
+      admissions: DASHBOARD_CHART_THEME.primaryDark,
+      inventory: DASHBOARD_CHART_THEME.muted,
+      exams: DASHBOARD_CHART_THEME.secondary,
     };
     const counts = new Map<string, number>();
     for (const alert of stats.alerts) {
@@ -242,7 +241,7 @@ export default function DashboardPage() {
     return Array.from(counts.entries()).map(([type, value]) => ({
       name: typeLabels[type] ?? type,
       value,
-      color: typeColors[type] ?? '#64748b',
+      color: typeColors[type] ?? DASHBOARD_CHART_THEME.muted,
     }));
   }, [stats]);
 
@@ -253,8 +252,8 @@ export default function DashboardPage() {
       admission: 'Admissions',
     };
     const typeColors: Record<string, string> = {
-      payment: '#16a34a',
-      admission: '#2563eb',
+      payment: DASHBOARD_CHART_THEME.primary,
+      admission: DASHBOARD_CHART_THEME.primaryDark,
     };
     const counts = new Map<string, number>();
     for (const activity of stats.recent_activities) {
@@ -263,7 +262,7 @@ export default function DashboardPage() {
     return Array.from(counts.entries()).map(([type, value]) => ({
       name: typeLabels[type] ?? type,
       value,
-      color: typeColors[type] ?? '#64748b',
+      color: typeColors[type] ?? DASHBOARD_CHART_THEME.muted,
     }));
   }, [stats]);
 
@@ -338,7 +337,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 2b — Composition (donut) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard
             title="Today's Attendance"
             badge="Donut"
@@ -364,7 +363,7 @@ export default function DashboardPage() {
               centerLabel={formatCurrency(s.fees_collected + s.pending_fees)}
             />
           </PanelCard>
-        </div>
+        </div> */}
 
         {/* Row 2c — Students, admissions & staff breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -373,7 +372,7 @@ export default function DashboardPage() {
               data={s.students_by_class.slice(0, 10).map((row, i) => ({
                 name: row.name,
                 value: row.count,
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
               }))}
               emptyMessage="No students enrolled"
             />
@@ -383,7 +382,7 @@ export default function DashboardPage() {
               data={s.admissions_by_status.map((row, i) => ({
                 name: row.name,
                 value: row.count,
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
               }))}
             />
           </PanelCard>
@@ -392,7 +391,7 @@ export default function DashboardPage() {
               data={s.staff_by_department.slice(0, 8).map((row, i) => ({
                 name: row.name,
                 value: row.count,
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
               }))}
               emptyMessage="No staff records"
             />

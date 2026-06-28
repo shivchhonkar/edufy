@@ -16,14 +16,10 @@ import {
   Legend,
 } from 'recharts';
 
-const CHART_COLORS = {
-  primary: '#2563eb',
-  green: '#16a34a',
-  red: '#dc2626',
-  amber: '#d97706',
-  purple: '#7c3aed',
-  slate: '#64748b',
-};
+import {
+  DASHBOARD_CHART_THEME,
+  FEE_COLLECTION_COLORS,
+} from './dashboard-chart-theme';
 
 function EmptyChart({ message = 'No data available yet' }: { message?: string }) {
   return (
@@ -85,10 +81,10 @@ export function AttendanceTrendChart({
           type="monotone"
           dataKey="rate"
           name="Attendance"
-          stroke={CHART_COLORS.green}
+          stroke={DASHBOARD_CHART_THEME.primary}
           strokeWidth={2.5}
-          dot={{ r: 4, fill: CHART_COLORS.green, strokeWidth: 0 }}
-          activeDot={{ r: 6 }}
+          dot={{ r: 4, fill: DASHBOARD_CHART_THEME.primary, strokeWidth: 0 }}
+          activeDot={{ r: 6, fill: DASHBOARD_CHART_THEME.primaryDark }}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -153,18 +149,24 @@ export function FeeCollectionBarChart({
         <Bar
           dataKey="expected"
           name="Expected"
-          fill="#ec4899"
+          fill={FEE_COLLECTION_COLORS.expected}
           radius={[3, 3, 0, 0]}
           maxBarSize={14}
         />
         <Bar
           dataKey="received"
           name="Received"
-          fill="#16a34a"
+          fill={FEE_COLLECTION_COLORS.received}
           radius={[3, 3, 0, 0]}
           maxBarSize={14}
         />
-        <Bar dataKey="due" name="Due" fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={14} />
+        <Bar
+          dataKey="due"
+          name="Due"
+          fill={FEE_COLLECTION_COLORS.due}
+          radius={[3, 3, 0, 0]}
+          maxBarSize={14}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -270,7 +272,13 @@ export function TeacherComparisonBarChart({
             );
           }}
         />
-        <Bar dataKey="score" name="Score" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} maxBarSize={20} />
+        <Bar
+          dataKey="score"
+          name="Score"
+          fill={DASHBOARD_CHART_THEME.primaryMid}
+          radius={[0, 4, 4, 0]}
+          maxBarSize={20}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

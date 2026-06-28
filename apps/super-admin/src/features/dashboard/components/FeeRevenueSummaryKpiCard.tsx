@@ -17,21 +17,37 @@ function formatAmount(amount: number) {
   return amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
+type RevenueBarVariant = 'due' | 'received' | 'discount';
+
+const BAR_STYLES: Record<RevenueBarVariant, { percentClass: string; barClass: string }> = {
+  due: {
+    percentClass: 'text-[var(--theme-primary-800)]',
+    barClass: 'bg-[var(--theme-primary-800)]',
+  },
+  received: {
+    percentClass: 'text-[var(--theme-primary-600)]',
+    barClass: 'bg-[var(--theme-primary-600)]',
+  },
+  discount: {
+    percentClass: 'text-[var(--theme-secondary)]',
+    barClass: 'bg-[var(--theme-secondary)]',
+  },
+};
+
 function ProgressRow({
   label,
   amount,
   percent,
-  barColor,
+  variant,
   showBar = true,
 }: {
   label: string;
   amount: number;
   percent: number;
-  barColor: 'red' | 'green';
+  variant: RevenueBarVariant;
   showBar?: boolean;
 }) {
-  const percentColor = barColor === 'red' ? 'text-red-500' : 'text-green-600';
-  const barFill = barColor === 'red' ? 'bg-red-500' : 'bg-green-500';
+  const styles = BAR_STYLES[variant];
 
   return (
     <div className={showBar ? 'space-y-1' : ''}>
@@ -39,13 +55,13 @@ function ProgressRow({
         <span className={dashboardStatMutedClass}>{label}</span>
         <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
           {formatAmount(amount)}{' '}
-          <span className={`font-medium ${percentColor}`}>({percent}%)</span>
+          <span className={`font-medium ${styles.percentClass}`}>({percent}%)</span>
         </span>
       </div>
       {showBar && (
         <div className="h-1 w-full rounded-full bg-[var(--theme-primary-100)] overflow-hidden">
           <div
-            className={`h-full rounded-full ${barFill} transition-all`}
+            className={`h-full rounded-full ${styles.barClass} transition-all`}
             style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
           />
         </div>
@@ -78,19 +94,19 @@ export default function FeeRevenueSummaryKpiCard({
           label="Total Due"
           amount={stats.total_due}
           percent={stats.due_percent}
-          barColor="red"
+          variant="due"
         />
         <ProgressRow
           label="Total Received (YTD)"
           amount={stats.total_received}
           percent={stats.received_percent}
-          barColor="green"
+          variant="received"
         />
         <ProgressRow
           label="Total Discount"
           amount={stats.total_discount}
           percent={stats.discount_percent}
-          barColor="green"
+          variant="discount"
           showBar={false}
         />
       </div>
