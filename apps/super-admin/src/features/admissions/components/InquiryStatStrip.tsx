@@ -61,7 +61,7 @@ export default function InquiryStatStrip({
             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
               Total Inquiries
             </p>
-            <p className="text-2xl font-bold text-gray-900 leading-tight">{stats.total}</p>
+            <p className="text-2xl text-gray-900 leading-tight">{stats.total}</p>
           </div>
         </div>
         <p className="mt-2 text-xs text-gray-500">
@@ -98,7 +98,7 @@ export default function InquiryStatStrip({
                 <p className="text-xs font-medium text-gray-600 truncate">
                   {STATUS_LABELS[status]}
                 </p>
-                <p className="text-xl font-bold text-gray-900 leading-tight">{count}</p>
+                <p className="text-xl text-gray-900 leading-tight">{count}</p>
               </div>
             </div>
             <p className="mt-1.5 text-xs text-gray-500 truncate">{meta.statHint}</p>
