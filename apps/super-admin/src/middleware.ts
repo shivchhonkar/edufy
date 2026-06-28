@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { extractSubdomain, shouldValidateTenant } from '@/lib/tenant-host';
 
-const PUBLIC_PATHS = ['/login', '/register-school', '/verify'];
+const PUBLIC_PATHS = ['/login', '/register-school', '/verify', '/school-unavailable'];
 
 /** Legacy academic URLs → /academics/* (query string preserved) */
 const ACADEMIC_ROUTE_REDIRECTS: [string, string][] = [
@@ -22,6 +23,8 @@ const FEE_TAB_REDIRECTS: Record<string, string> = {
 
 const PUBLIC_API_PATHS = [
   '/api/auth/login',
+  '/api/tenant/check',
+  '/api/tenant/branding',
   '/api/platform/schools/register',
   '/api/platform/schools/check-slug',
   '/api/marksheets/verify',
@@ -61,11 +64,38 @@ function getRoleFromToken(token: string): string | null {
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = getToken(request);
   const pathname = request.nextUrl.pathname;
   const isPublicPage = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const isApiRoute = pathname.startsWith('/api');
+
+  const host = request.headers.get('host');
+  const subdomain = extractSubdomain(host);
+
+  if (subdomain && shouldValidateTenant(pathname)) {
+    try {
+      const checkUrl = new URL('/api/tenant/check', request.nextUrl.origin);
+      const checkResponse = await fetch(checkUrl.toString(), {
+        headers: {
+          'x-tenant-host': host ?? '',
+        },
+        cache: 'no-store',
+      });
+
+      if (checkResponse.ok) {
+        const payload = (await checkResponse.json()) as { exists?: boolean | null };
+        if (payload.exists === false) {
+          const rewriteUrl = request.nextUrl.clone();
+          rewriteUrl.pathname = '/school-unavailable';
+          rewriteUrl.search = '';
+          return NextResponse.rewrite(rewriteUrl);
+        }
+      }
+    } catch {
+      // If tenant lookup is unreachable, continue — do not block the whole app.
+    }
+  }
 
   if (!isApiRoute) {
     for (const [from, to] of ACADEMIC_ROUTE_REDIRECTS) {
@@ -111,6 +141,10 @@ export function middleware(request: NextRequest) {
   }
 
   if (!token && !isPublicPage && pathname !== '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (!isApiRoute && subdomain && pathname === '/' && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

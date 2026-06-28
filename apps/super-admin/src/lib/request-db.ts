@@ -9,6 +9,9 @@ import { query, getClient, transaction } from '@/lib/db';
 import { requireAuth, type AuthUser } from '@/lib/api-auth';
 import type { TenantContext } from '@edulakhya/types';
 import type { QueryResult, QueryResultRow } from 'pg';
+import { extractSubdomain } from '@/lib/tenant-host';
+
+export { extractSubdomain } from '@/lib/tenant-host';
 export interface RequestDb {
   query: <T extends QueryResultRow = QueryResultRow>(
     text: string,
@@ -28,30 +31,6 @@ export class TenantResolutionError extends Error {
     super(message);
     this.name = 'TenantResolutionError';
   }
-}
-
-/** Extract school subdomain from host (e.g. gla.localhost → gla) */
-export function extractSubdomain(host: string | null): string | null {
-  if (!host) return null;
-  const hostname = host.split(':')[0].toLowerCase();
-
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return null;
-  }
-
-  const parts = hostname.split('.');
-
-  // gla.localhost
-  if (parts.length >= 2 && parts[parts.length - 1] === 'localhost') {
-    return parts[0] || null;
-  }
-
-  // gla.edufy.example.com (subdomain present)
-  if (parts.length >= 3) {
-    return parts[0] || null;
-  }
-
-  return null;
 }
 
 /**
