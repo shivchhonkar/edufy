@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LandingPage from '@/features/landing/LandingPage';
-import { isClientAuthenticated } from '@/lib/client-auth';
+import { isClientAuthenticated, getClientRoleHomePath } from '@/lib/client-auth';
 
 export default function HomeClient() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function HomeClient() {
   useEffect(() => {
     const token = isClientAuthenticated();
     if (token) {
-      router.replace('/dashboard');
+      router.replace(getClientRoleHomePath());
     } else {
       setReady(true);
     }

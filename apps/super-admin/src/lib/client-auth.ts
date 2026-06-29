@@ -69,6 +69,12 @@ export function clearClientSession(): void {
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 }
 
+import { getRoleHomePath } from './role-routing';
+
+export function getClientRoleHomePath(): string {
+  return getRoleHomePath(getClientUserRole());
+}
+
 export function setClientSession(token: string, user: Record<string, unknown>): void {
   const sessionUser = { ...user };
   if (sessionUser.role == null || String(sessionUser.role).trim() === '') {

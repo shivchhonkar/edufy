@@ -94,6 +94,18 @@ export async function getRequestDb(
   };
 }
 
+export async function getRequestDbOrError(
+  request: NextRequest,
+): Promise<RequestDbResult | NextResponse> {
+  try {
+    return await getRequestDb(request);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Tenant resolution failed';
+    const status = message.includes('not found') ? 404 : 403;
+    return NextResponse.json({ success: false, error: message }, { status });
+  }
+}
+
 /** Authenticated request DB with tenant validation */
 export async function getAuthenticatedDb(
   request: NextRequest

@@ -72,7 +72,18 @@ export function buildStaffPortalUrl(
   const subdomain =
     parts.length >= 2 && parts[parts.length - 1] === 'localhost' ? parts[0] : 'global'
   const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:'
-  return `${protocol}//${subdomain}.localhost:${portal.port}${portal.path}`
+  const port =
+    typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : ':7000'
+
+  const pathByPortal: Record<string, string> = {
+    transport: '/transport',
+    fees: '/fees/dashboard',
+    inventory: '/inventory',
+    teacher: '/teacher',
+  }
+
+  const unifiedPath = pathByPortal[portal.key] || portal.path
+  return `${protocol}//${subdomain}.localhost${port}${unifiedPath}`
 }
 
 export function mergePermissions(

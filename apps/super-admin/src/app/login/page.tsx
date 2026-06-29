@@ -40,6 +40,7 @@ export default function LoginPage() {
           showRegisterLink={false}
           submitLabel="Login"
           emailLabel="User ID"
+          identifierMode="user-id"
           buttonClassName={TENANT_LOGIN_BUTTON_CLASS}
           buttonStyle={TENANT_LOGIN_BUTTON_STYLE}
         />

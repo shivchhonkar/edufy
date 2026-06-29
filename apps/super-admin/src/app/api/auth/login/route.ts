@@ -1,68 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authenticateUnifiedLogin } from '@/lib/authenticate-login';
 import { getRequestDb, TenantResolutionError } from '@/lib/request-db';
-import { verifyPassword, generateToken } from '@edulakhya/auth';
-import type { User } from '@edulakhya/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
+    const login = String(body.login ?? body.email ?? body.user_id ?? '').trim();
+    const password = String(body.password ?? '');
 
     const { db, context } = await getRequestDb(request);
-
-    const result = await db.query<User>(
-      'SELECT * FROM users WHERE email = $1 AND is_active = true',
-      [email]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
-
-    const user = result.rows[0];
-
-    const isPasswordValid = await verifyPassword(
+    const result = await authenticateUnifiedLogin(
+      db,
+      login,
       password,
-      user.password_hash as string
+      context?.tenant ?? null,
     );
 
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
-        { status: 401 }
-      );
+    if ('error' in result) {
+      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
     }
-
-    const tokenPayload: Parameters<typeof generateToken>[0] = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      full_name: user.full_name,
-    };
-    if (context?.tenant) {
-      tokenPayload.tenant_id = context.tenant.id;
-      tokenPayload.tenant_slug = context.tenant.slug;
-    }
-    const token = generateToken(tokenPayload);
-
-    const { password_hash: _p, ...userWithoutPassword } = user as User & { password_hash?: string };
 
     return NextResponse.json({
       success: true,
       data: {
-        user: userWithoutPassword,
-        token,
-        tenant: context ? { id: context.tenant.id, name: context.tenant.name, slug: context.tenant.slug } : null,
+        user: result.user,
+        token: result.token,
+        tenant: context
+          ? { id: context.tenant.id, name: context.tenant.name, slug: context.tenant.slug }
+          : null,
       },
       message: 'Login successful',
     });
@@ -71,9 +36,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 404 });
     }
     console.error('Login error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

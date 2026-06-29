@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractSubdomain, shouldValidateTenant } from '@/lib/tenant-host';
+import {
+  canRoleAccessPath,
+  decodeJwtRole,
+  getRoleHomePath,
+  isAdminRole,
+} from '@/lib/role-routing';
 
 const PUBLIC_PATHS = ['/login', '/register-school', '/verify', '/school-unavailable'];
 
@@ -149,7 +155,27 @@ export async function middleware(request: NextRequest) {
   }
 
   if (token && pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const role = decodeJwtRole(token);
+    return NextResponse.redirect(new URL(getRoleHomePath(role), request.url));
+  }
+
+  if (token && pathname === '/dashboard') {
+    const role = decodeJwtRole(token);
+    if (isAdminRole(role)) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+  }
+
+  if (
+    token &&
+    !isApiRoute &&
+    !isPublicPage &&
+    pathname !== '/'
+  ) {
+    const role = decodeJwtRole(token);
+    if (role && !canRoleAccessPath(role, pathname)) {
+      return NextResponse.redirect(new URL(getRoleHomePath(role), request.url));
+    }
   }
 
   return NextResponse.next();

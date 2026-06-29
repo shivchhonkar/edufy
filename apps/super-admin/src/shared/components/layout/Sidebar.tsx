@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo, useCallback, type ComponentType } from 'react';
-import AppLogo from '@/shared/components/common/AppLogo';
 import CollapsedNavGroupFlyout from '@/shared/components/layout/CollapsedNavGroupFlyout';
+import SidebarBrandHeader from '@/shared/components/layout/SidebarBrandHeader';
 import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/constants/sidebar';
 import { useSettings } from '@/shared/SettingsContext';
 import {
@@ -13,7 +13,7 @@ import {
   getNavGroupDirectLink,
   isNavLinkActive,
 } from '@/shared/navigation/sidebar-navigation';
-import { FiMenu, FiChevronsLeft, FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import type { PortalSidebarProps } from '@edulakhya/ui';
 
 interface SidebarProps extends PortalSidebarProps {
@@ -113,50 +113,13 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
         displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
       } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
-      <div className={`border-b border-gray-200 ${displayCollapsed ? 'px-2 py-2.5' : 'px-3 py-2.5'}`}>
-        {displayCollapsed ? (
-          <div className="flex flex-col items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/40"
-              title={schoolName}
-            >
-              <AppLogo variant="sidebar-collapsed" src={schoolLogo} alt={schoolName} />
-            </Link>
-            <button
-              onClick={toggleSidebar}
-              className="hidden lg:block rounded-md p-1 hover:bg-gray-100 transition-colors"
-              title="Expand Menu"
-            >
-              <FiMenu size={16} className="text-primary-600" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex min-w-0 items-center justify-between gap-1.5">
-            <Link
-              href="/dashboard"
-              className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg p-1 -m-1 transition-colors hover:bg-white/80"
-              title={schoolName}
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
-                <AppLogo variant="sidebar" src={schoolLogo} alt={schoolName} />
-              </div>
-              <p className="truncate text-[11px] font-semibold leading-tight text-gray-900" title={schoolName}>
-                {schoolName.length > 48 ? `${schoolName.slice(0, 48)}...` : schoolName}
-              </p>
-            </Link>
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="hidden lg:flex shrink-0 rounded-md p-1 transition-colors hover:bg-gray-100"
-              title="Collapse sidebar"
-              aria-label="Collapse sidebar"
-            >
-              <FiChevronsLeft size={16} className="text-primary-600" />
-            </button>
-          </div>
-        )}
-      </div>
+      <SidebarBrandHeader
+        schoolName={schoolName}
+        schoolLogo={schoolLogo}
+        homeHref="/admin"
+        collapsed={displayCollapsed}
+        onToggle={toggleSidebar}
+      />
 
       <nav className="px-1.5 py-2 pb-4">
         {SIDEBAR_NAV_GROUPS.map((group) => {

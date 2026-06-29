@@ -1,12 +1,7 @@
 'use client';
 
-import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import TransportDriverManagementView from '@/features/transport/components/TransportDriverManagementView';
+import TransportDriversView from '@/features/transport/components/TransportDriversView';
 
 export default function TransportDriverManagementPage() {
-  return (
-    <DashboardLayout>
-      <TransportDriverManagementView />
-    </DashboardLayout>
-  );
+  return <TransportDriversView />;
 }

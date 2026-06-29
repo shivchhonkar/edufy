@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
 import AuthInput from '@/features/auth/components/AuthInput';
 import AuthAlert from '@/features/auth/components/AuthAlert';
-import { setClientSession } from '@/lib/client-auth';
+import { setClientSession, getClientUserRole } from '@/lib/client-auth';
+import { getRoleHomePath } from '@/lib/role-routing';
 
 function formatLoginError(message: string): string {
   const normalized = message.trim().toLowerCase();
   if (normalized === 'invalid credentials' || normalized === 'invalid email or password') {
-    return 'The email or password you entered is incorrect. Please check your details and try again.';
+    return 'The user ID or password you entered is incorrect. Please check your details and try again.';
   }
   return message;
 }
@@ -22,6 +23,8 @@ interface LoginFormProps {
   buttonStyle?: CSSProperties;
   emailLabel?: string;
   passwordLabel?: string;
+  /** Use text input — phone, email, or student ID (no browser email validation). */
+  identifierMode?: 'email' | 'user-id';
 }
 
 export default function LoginForm({
@@ -31,8 +34,9 @@ export default function LoginForm({
   buttonStyle,
   emailLabel = 'Email address',
   passwordLabel = 'Password',
+  identifierMode = 'email',
 }: LoginFormProps) {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ login: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +50,10 @@ export default function LoginForm({
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          login: formData.login.trim(),
+          password: formData.password,
+        }),
       });
 
       const data = await response.json();
@@ -58,9 +65,10 @@ export default function LoginForm({
 
       if (data.success) {
         setClientSession(data.data.token, data.data.user);
-        window.location.href = '/dashboard';
+        const role = String(data.data.user?.role || getClientUserRole() || '');
+        window.location.href = getRoleHomePath(role);
       } else {
-        setError(formatLoginError(data.error || 'Invalid email or password. Please try again.'));
+        setError(formatLoginError(data.error || 'Invalid user ID or password. Please try again.'));
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -80,12 +88,17 @@ export default function LoginForm({
 
         <AuthInput
           label={emailLabel}
-          type="email"
+          type={identifierMode === 'user-id' ? 'text' : 'email'}
           required
-          autoComplete="email"
-          placeholder="admin@school.com"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          autoComplete={identifierMode === 'user-id' ? 'username' : 'email'}
+          inputMode={identifierMode === 'user-id' ? 'text' : undefined}
+          placeholder={
+            identifierMode === 'user-id'
+              ? 'Phone number, email, or student ID'
+              : 'admin@school.com'
+          }
+          value={formData.login}
+          onChange={(e) => setFormData({ ...formData, login: e.target.value })}
         />
 
         <div>
