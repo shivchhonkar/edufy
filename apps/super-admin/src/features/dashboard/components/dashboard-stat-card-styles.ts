@@ -8,7 +8,7 @@ export function dashboardStatCardClass(interactive?: boolean) {
 }
 
 export const dashboardStatTitleClass =
-  'text-[11px] font-semibold uppercase tracking-wide text-[var(--theme-primary-800)]';
+  'text-sm font-medium text-[var(--theme-primary-800)]';
 
 export const dashboardStatHeadingClass =
   'text-sm font-medium text-[var(--theme-primary-800)]';

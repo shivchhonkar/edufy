@@ -56,8 +56,8 @@ export default function TodayCollectionKpiCard({ stats, onClick }: TodayCollecti
           >
             {hasData ? formatAmount(stats.cash) : '—'}
           </p>
-          <p className={`flex items-center gap-1 text-[11px] ${dashboardStatMutedClass} mt-0.5`}>
-            <MdOutlinePayments className="h-3.5 w-3.5 text-green-600" aria-hidden />
+          <p className={`flex items-center gap-1 text-[11px] ${dashboardStatMutedClass}  mt-0.5`}>
+            <MdOutlinePayments className="h-3.5 w-3.5 text-[var(--theme-primary-600)]" aria-hidden />
             Cash
           </p>
         </div>

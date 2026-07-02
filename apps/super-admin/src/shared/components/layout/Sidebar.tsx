@@ -104,7 +104,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
   const displayCollapsed = isCollapsed && !mobileOpen;
 
   const linkActiveClass =
-    'bg-primary-50 text-primary-700 border-r-2 border-primary-600 font-medium';
+    'bg-primary-50 text-primary-700 font-medium';
   const linkIdleClass = 'text-gray-700 hover:bg-gray-50 hover:text-gray-900';
 
   return (
@@ -218,7 +218,7 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
                             itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
                           }`}
                         />
-                        <span className="min-w-0 flex-1 truncate text-[12px] leading-tight">{item.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-[12px] ">{item.name}</span>
                         {item.comingSoon && (
                           <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
                             Soon

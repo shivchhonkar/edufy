@@ -83,11 +83,12 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: 'admissions',
-    title: 'Admissions',
-    icon: FiUserPlus,
+    id: 'visitor-management',
+    title: 'Visitor Mgmt.',
+    icon: FiUserCheck,
     items: [
-      { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
+      // { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
+      { name: 'Visitor Mgmt.', path: '/visitor-management', icon: FiUserCheck },
       // { name: 'Students', path: '/students', icon: FiUsers },
       // { name: 'Promotions', path: '/promotions', icon: FiArrowUpCircle },
     ],
@@ -97,9 +98,10 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Students',
     icon: FiUsers,
     items: [
+      { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
       // { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
-      { name: 'Students', path: '/students', icon: FiUsers },
-      { name: 'Promotions', path: '/promotions', icon: FiArrowUpCircle },
+      { name: 'Students List', path: '/students', icon: FiUsers },
+      { name: 'Promote Students', path: '/promotions', icon: FiArrowUpCircle },
       {
         name: 'Transfer Certificate',
         // path: '/students/transfer-certificates/generate',
@@ -115,19 +117,19 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       // { name: 'Student Health Records', path: '/students?hint=medical', icon: FiHeart },
       { name: 'Student ID Cards', path: '/students/id-cards', icon: FiCreditCard },
       { name: 'Gate Pass Exit', path: '/students/gate-pass', icon: FiShield },
-      { name: 'Visitor Mgmt.', path: '/visitor-management', icon: FiUserCheck },
+      
     ],
   },
   {
-    id: 'staff-management',
-    title: 'Staff',
+    id: 'employee-management',
+    title: 'Employee Mgmt.',
     icon: FiBriefcase,
     items: [
-      { name: 'Staff', path: '/staff', icon: FiUsers },
-      { name: 'Staff Attendance', path: '/attendance/staff', icon: FiUserCheck },
+      { name: 'Employee', path: '/staff', icon: FiUsers },
+      { name: 'Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Staff ID Cards', path: '/staff/id-cards', icon: FiCreditCard },
-      { name: 'Staff Documents', path: '/staff/documents', icon: FiFolder },
-      { name: 'Staff Reports', path: '/staff/reports', icon: FiBarChart2 },
+      { name: 'Employee Documents', path: '/staff/documents', icon: FiFolder },
+      { name: 'Employee Reports', path: '/staff/reports', icon: FiBarChart2 },
     ],
   },
   {

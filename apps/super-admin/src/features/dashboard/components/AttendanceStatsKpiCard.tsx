@@ -33,7 +33,7 @@ export default function AttendanceStatsKpiCard({ stats, onClick }: AttendanceSta
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col items-start shrink-0">
+        {/* <div className="flex flex-col items-start shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--theme-primary-100)] text-[var(--theme-primary-700)]">
             <PiHandPointingFill className="h-4 w-4" aria-hidden />
           </div>
@@ -47,13 +47,13 @@ export default function AttendanceStatsKpiCard({ stats, onClick }: AttendanceSta
               {showTrend && (trendUp ? ' ↑' : ' ↓')}
             </span>
           )}
-        </div>
+        </div> */}
 
         <div className="min-w-0 flex-1 text-right">
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-start justify-between gap-2">
             <p className={dashboardStatHeadingClass}>Student Attendance</p>
             {onClick && (
-              <FiExternalLink className="h-3.5 w-3.5 shrink-0 text-[var(--theme-primary-700)]" aria-hidden />
+              <FiExternalLink className="h-3.5 w-3.5 shrink-0 text-[var(--theme-primary-700)] text-right" aria-hidden />
             )}
           </div>
           <p className={`text-2xl ${dashboardStatValueClass} leading-none mt-0.5`}>
