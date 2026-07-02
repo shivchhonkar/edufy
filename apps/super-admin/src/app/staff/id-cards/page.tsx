@@ -118,20 +118,22 @@ export default function StaffIdCardsPage() {
     <DashboardLayout>
       <div className="mx-auto max-w-7xl space-y-4 print:hidden">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <Link
+          <div className='flex gap-2'>
+            {/* <Link
               href="/staff"
               className="mb-2 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
             >
               <FiArrowLeft size={14} /> Back to Staff
-            </Link>
-            <h1 className="flex items-center gap-2 text-xl text-gray-900">
+            </Link> */}
+            <div className='flex flex-col gap-1'>
+            <h1 className="flex items-center gap-2 text-lg text-gray-900">
               <FiCreditCard className="text-primary-600" />
               Staff ID Cards
             </h1>
             <p className="mt-1 text-sm text-gray-600">
               Select staff members and print identity cards.
             </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button

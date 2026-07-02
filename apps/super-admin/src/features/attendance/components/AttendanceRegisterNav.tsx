@@ -12,19 +12,19 @@ const LINKS = [
     icon: FiCalendar,
     match: (path: string) => path.startsWith('/attendance/staff/register'),
   },
-  {
-    href: '/attendance/students',
-    label: 'Mark Student',
-    icon: FiCheckCircle,
-    match: (path: string) => path.startsWith('/attendance/students'),
-  },
-  {
-    href: '/attendance/staff',
-    label: 'Mark Staff',
-    icon: FiCheckCircle,
-    match: (path: string) =>
-      path.startsWith('/attendance/staff') && !path.startsWith('/attendance/staff/register'),
-  },
+  // {
+  //   href: '/attendance/students',
+  //   label: 'Mark Student',
+  //   icon: FiCheckCircle,
+  //   match: (path: string) => path.startsWith('/attendance/students'),
+  // },
+  // {
+  //   href: '/attendance/staff',
+  //   label: 'Mark Staff',
+  //   icon: FiCheckCircle,
+  //   match: (path: string) =>
+  //     path.startsWith('/attendance/staff') && !path.startsWith('/attendance/staff/register'),
+  // },
 ]
 
 export default function AttendanceRegisterNav() {

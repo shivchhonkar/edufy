@@ -108,13 +108,13 @@ export default function StaffDetailPage() {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-4">
-        <Link
+        {/* <Link
           href="/staff"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
         >
           <FiArrowLeft size={14} />
           Back to Staff
-        </Link>
+        </Link> */}
 
         {loading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500">

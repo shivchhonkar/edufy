@@ -2,11 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { FiCheckCircle, FiDownload, FiPrinter } from 'react-icons/fi'
+import { FiCheckCircle, FiDownload, FiFilter, FiPrinter } from 'react-icons/fi'
 import DashboardLayout from '@/shared/components/layout/DashboardLayout'
 import MonthlyAttendanceRegister from '@/features/attendance/components/MonthlyAttendanceRegister'
 import AttendanceRegisterNav from '@/features/attendance/components/AttendanceRegisterNav'
 import AttendanceRegisterFilters from '@/features/attendance/components/AttendanceRegisterFilters'
+import MonthYearNavigator from '@/features/attendance/components/MonthYearNavigator'
 import RegisterCellAttendanceModal, {
   type RegisterCellEditContext,
 } from '@/features/attendance/components/RegisterCellAttendanceModal'
@@ -63,6 +64,7 @@ export default function StudentMonthlyRegisterPage() {
   const [migrationRequired, setMigrationRequired] = useState(false)
   const [cellEdit, setCellEdit] = useState<RegisterCellEditContext | null>(null)
   const [cellModalOpen, setCellModalOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     fetch('/api/classes')
@@ -240,12 +242,21 @@ export default function StudentMonthlyRegisterPage() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Monthly Attendance Register</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Attendance Register</h1>
             <p className="text-gray-500 mt-0.5 text-sm">
-              View student attendance by class and month. Default view for teachers and administrators.
+              View student attendance by class and month.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          <button
+              type="button"
+              onClick={() => setExpanded((open) => !open)}
+              className="inline-flex items-center gap-1.5 border border-gray-200 bg-white px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              aria-expanded={expanded}
+            >
+              <FiFilter size={14} />
+              Filter
+            </button>
             <button
               type="button"
               onClick={handlePrint}
@@ -264,19 +275,19 @@ export default function StudentMonthlyRegisterPage() {
               <FiDownload size={14} />
               Download Excel
             </button>
-            <Link
+            {/* <Link
               href="/attendance/students"
               className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-700"
             >
               <FiCheckCircle size={14} />
               Mark Attendance
-            </Link>
+            </Link> */}
           </div>
         </div>
 
-        <AttendanceRegisterNav />
+        {/* <AttendanceRegisterNav /> */}
 
-        <AttendanceRegisterFilters summary={filterSummary}>
+        <AttendanceRegisterFilters expanded={expanded} summary={filterSummary}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <label className="block text-xs font-medium text-gray-600">
               Class
@@ -337,6 +348,18 @@ export default function StudentMonthlyRegisterPage() {
             </label>
           </div>
         </AttendanceRegisterFilters>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-gray-600">{filterSummary}</p>
+          <MonthYearNavigator
+            month={month}
+            year={year}
+            onChange={(nextMonth, nextYear) => {
+              setMonth(nextMonth)
+              setYear(nextYear)
+            }}
+          />
+        </div>
 
         {migrationRequired && (
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs">

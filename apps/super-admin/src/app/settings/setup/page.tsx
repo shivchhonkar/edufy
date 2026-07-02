@@ -464,7 +464,7 @@ export default function SetupWizardPage() {
     <DashboardLayout>
       <div className="mx-auto px-1 space-y-4 min-w-0">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">School Setup Wizard</h1>
+          <h1 className="text-lg font-semibold text-gray-900">School Settings</h1>
           <p className="text-xs text-gray-500">Configure your school in 2 steps</p>
         </div>
 

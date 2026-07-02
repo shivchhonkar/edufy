@@ -65,7 +65,7 @@ export default function AttendanceStatsKpiCard({ stats, onClick }: AttendanceSta
       <div className={`mt-2.5 pt-2.5 ${dashboardStatDividerClass} grid grid-cols-2 gap-2 flex-1 items-end`}>
         <div>
           <p
-            className={`text-xl font-semibold leading-none ${
+            className={`text-xl leading-none ${
               hasData ? 'text-pink-500' : 'text-gray-300'
             }`}
           >
@@ -75,7 +75,7 @@ export default function AttendanceStatsKpiCard({ stats, onClick }: AttendanceSta
         </div>
         <div className="text-right">
           <p
-            className={`text-xl font-semibold leading-none ${
+            className={`text-xl leading-none ${
               hasData ? 'text-green-600' : 'text-gray-300'
             }`}
           >

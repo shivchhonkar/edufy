@@ -599,7 +599,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm"
                 />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white ring-2 ring-white shadow-sm">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white ring-2 ring-white shadow-sm">
                   {getInitials(displayName)}
                 </div>
               )}

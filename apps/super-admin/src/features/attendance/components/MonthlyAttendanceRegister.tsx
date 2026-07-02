@@ -86,10 +86,10 @@ export default function MonthlyAttendanceRegister({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-sm font-semibold text-gray-800">
+      {/* <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-sm font-semibold text-gray-800">
         {classLabel ? <span>Class: {classLabel}</span> : <span />}
         <span>Month: {resolvedMonthLabel}</span>
-      </div>
+      </div> */}
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

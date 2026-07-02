@@ -454,11 +454,11 @@ export default function StaffAttendancePage() {
   return (
     <DashboardLayout>
       <div className="p-2 max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Staff Attendance</h1>
             <p className="text-gray-600 mt-1 text-sm">
-              Mark attendance by department or individually, then review records and punch logs.
+              Mark attendance by department or individually.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -467,7 +467,7 @@ export default function StaffAttendancePage() {
               className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             >
               <FiBarChart2 size={16} />
-              Attendance Reports
+              Reports
             </Link>
             <button
               type="button"

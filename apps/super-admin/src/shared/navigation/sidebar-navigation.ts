@@ -161,7 +161,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
       { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
       
-      { name: 'Timetable', path: '/academics/timetable', icon: FiCalendar },
+      { name: 'Timetable(routine)', path: '/academics/timetable', icon: FiCalendar },
       { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
@@ -322,7 +322,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Settings',
     icon: FiSettings,
     items: [
-      { name: 'School Setup', path: '/settings/setup', icon: FiTool },
+      { name: 'School Settings', path: '/settings/setup', icon: FiTool },
 
 //       School Profile
 // Logo

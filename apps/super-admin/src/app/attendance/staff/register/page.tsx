@@ -7,6 +7,7 @@ import DashboardLayout from '@/shared/components/layout/DashboardLayout'
 import MonthlyAttendanceRegister from '@/features/attendance/components/MonthlyAttendanceRegister'
 import AttendanceRegisterNav from '@/features/attendance/components/AttendanceRegisterNav'
 import AttendanceRegisterFilters from '@/features/attendance/components/AttendanceRegisterFilters'
+import MonthYearNavigator from '@/features/attendance/components/MonthYearNavigator'
 import RegisterCellAttendanceModal, {
   type RegisterCellEditContext,
 } from '@/features/attendance/components/RegisterCellAttendanceModal'
@@ -162,9 +163,9 @@ export default function StaffMonthlyRegisterPage() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Staff Monthly Attendance Register</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Staff Attendance Register</h1>
             <p className="text-gray-500 mt-0.5 text-sm">
-              View attendance for all staff members by month.
+              View staff attendance by month.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
@@ -186,17 +187,17 @@ export default function StaffMonthlyRegisterPage() {
               <FiDownload size={14} />
               Download Excel
             </button>
-            <Link
+            {/* <Link
               href="/attendance/staff"
               className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-700"
             >
               <FiCheckCircle size={14} />
               Mark Attendance
-            </Link>
+            </Link> */}
           </div>
         </div>
 
-        <AttendanceRegisterNav />
+        {/* <AttendanceRegisterNav /> */}
 
         <AttendanceRegisterFilters summary={filterSummary}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
@@ -225,6 +226,18 @@ export default function StaffMonthlyRegisterPage() {
             </label>
           </div>
         </AttendanceRegisterFilters>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-gray-600">{filterSummary}</p>
+          <MonthYearNavigator
+            month={month}
+            year={year}
+            onChange={(nextMonth, nextYear) => {
+              setMonth(nextMonth)
+              setYear(nextYear)
+            }}
+          />
+        </div>
 
         {migrationRequired && (
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs">
