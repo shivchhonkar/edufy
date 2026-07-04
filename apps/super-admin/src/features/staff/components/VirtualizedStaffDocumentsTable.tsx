@@ -81,7 +81,7 @@ export default function VirtualizedStaffDocumentsTable({
       columns={columns}
       getRowKey={(row) => row.id}
       rowHeight={56}
-      maxHeight="calc(100vh - 320px)"
+      maxHeight="calc(100vh - 90px)"
       minWidth={720}
       emptyMessage="No staff members found."
       rowClassName="hover:bg-gray-50/80"

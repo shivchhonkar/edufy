@@ -44,12 +44,12 @@ export default function StaffDocumentsPage() {
     <DashboardLayout>
       <div className="space-y-4">
         <div>
-          <Link
+          {/* <Link
             href="/staff"
             className="mb-2 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
           >
             <FiArrowLeft size={14} /> Back to Staff
-          </Link>
+          </Link> */}
           <h1 className="flex items-center gap-2 text-xl text-gray-900">
             <FiFolder className="text-primary-600" />
             Staff Documents

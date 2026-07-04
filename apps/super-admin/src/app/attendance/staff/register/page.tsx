@@ -160,10 +160,10 @@ export default function StaffMonthlyRegisterPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className="max-w-7xl mx-auto space-y-4 bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Staff Attendance Register</h1>
+            <h1 className="text-lg text-gray-900">Staff Attendance Register</h1>
             <p className="text-gray-500 mt-0.5 text-sm">
               View staff attendance by month.
             </p>

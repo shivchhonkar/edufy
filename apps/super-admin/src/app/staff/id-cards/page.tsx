@@ -14,12 +14,19 @@ import { FiArrowLeft, FiCreditCard, FiPrinter, FiSearch, FiX } from 'react-icons
 
 const STAFF_FETCH_LIMIT = 5000;
 
+interface DepartmentOption {
+  id: number;
+  name: string;
+}
+
 export default function StaffIdCardsPage() {
   const { alert } = useDialog();
   const { settings } = useSettings();
   const [staff, setStaff] = useState<StaffListItem[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [reportSettings, setReportSettings] = useState<{
@@ -36,6 +43,13 @@ export default function StaffIdCardsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.success) setReportSettings(d.data);
+      })
+      .catch(console.error);
+
+    fetch('/api/departments?active_only=true')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setDepartments(d.data);
       })
       .catch(console.error);
   }, []);
@@ -78,6 +92,21 @@ export default function StaffIdCardsPage() {
   useEffect(() => {
     fetchStaff();
   }, [fetchStaff]);
+
+  const filteredStaff = useMemo(() => {
+    if (!departmentId) return staff;
+    const selectedDepartment = departments.find((d) => String(d.id) === departmentId);
+    if (!selectedDepartment) return staff;
+
+    return staff.filter((member) => {
+      const row = member as StaffListItem & { department_id?: number | null };
+      if (row.department_id != null) {
+        return String(row.department_id) === departmentId;
+      }
+      const label = member.department_name || member.department || '';
+      return label === selectedDepartment.name;
+    });
+  }, [staff, departmentId, departments]);
 
   const selectedStaff = useMemo(
     () => staff.filter((s) => selectedIds.has(s.id)),
@@ -156,25 +185,42 @@ export default function StaffIdCardsPage() {
           </div>
         </div>
 
-        <div className="relative max-w-md">
-          <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by name or employee ID..."
-            className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1 max-w-md">
+            <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name or employee ID..."
+              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <label className="block w-full sm:w-auto sm:min-w-[200px] sm:max-w-xs">
+            <span className="sr-only">Department</span>
+            <select
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">All departments</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
           {loading ? (
-            <div className="flex justify-center py-16">
+            <div className="flex h-[calc(100dvh-14rem)] min-h-[480px] items-center justify-center">
               <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary-600" />
             </div>
           ) : (
             <VirtualizedStaffSelectTable
-              staff={staff}
+              staff={filteredStaff}
               selectedIds={selectedIds}
               onToggle={toggleStaff}
               onToggleAll={toggleAll}

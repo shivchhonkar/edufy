@@ -67,7 +67,7 @@ export default function RecordAttendanceModal({
   const filteredStaff = staff.filter(s =>
     `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.department.toLowerCase().includes(searchTerm.toLowerCase())
+    s.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedStaff = staff.find(s => s.id.toString() === formData.staff_id);
@@ -173,7 +173,13 @@ export default function RecordAttendanceModal({
         body: JSON.stringify({
           ...formData,
           staff_id: parseInt(formData.staff_id),
-          created_by: 1, // TODO: Get from auth context
+          check_in_time: formData.check_in_time || null,
+          check_out_time: formData.check_out_time || null,
+          break_start_time: formData.break_start_time || null,
+          break_end_time: formData.break_end_time || null,
+          device_id: formData.device_id || null,
+          location: formData.location || null,
+          remarks: formData.remarks || null,
         }),
       });
 

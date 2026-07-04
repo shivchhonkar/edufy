@@ -14,6 +14,7 @@ interface VirtualizedStaffSelectTableProps {
   selectedIds: Set<number>;
   onToggle: (staffId: number) => void;
   onToggleAll: (staffIds: number[], select: boolean) => void;
+  scrollClassName?: string;
 }
 
 function staffDisplayName(member: StaffListItem) {
@@ -25,6 +26,7 @@ export default function VirtualizedStaffSelectTable({
   selectedIds,
   onToggle,
   onToggleAll,
+  scrollClassName = 'h-[calc(100dvh-14rem)] min-h-[480px]',
 }: VirtualizedStaffSelectTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -106,7 +108,7 @@ export default function VirtualizedStaffSelectTable({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="max-h-[calc(100vh-320px)] overflow-auto"
+        className={`overflow-auto ${scrollClassName}`}
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <div

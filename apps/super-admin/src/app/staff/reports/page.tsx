@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import { FiArrowLeft, FiBarChart2, FiCalendar } from 'react-icons/fi';
+import MonthYearNavigator from '@/features/attendance/components/MonthYearNavigator';
+import { FiBarChart2 } from 'react-icons/fi';
 
 interface AttendanceRecord {
   staff_id: number;
@@ -142,60 +143,49 @@ export default function StaffReportsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <div>
-          {/* <Link
-            href="/staff"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
-          >
-            <FiArrowLeft size={14} /> Back to Staff
-          </Link> */}
-          <h1 className="flex items-center gap-2 text-xl text-gray-900">
-            <FiBarChart2 className="text-primary-600" />
-            Staff Reports
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Staff attendance summary.
-          </p>
-        </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-xl text-gray-900">
+              <FiBarChart2 className="text-primary-600" />
+              Staff Reports
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">Staff attendance summary.</p>
+          </div>
 
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4 shadow-sm">
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-gray-700">Month</span>
-            <div className="flex items-center gap-2">
-              <FiCalendar className="text-gray-400" />
-              <input
-                type="month"
-                value={`${year}-${String(month).padStart(2, '0')}`}
-                onChange={(e) => {
-                  const [y, m] = e.target.value.split('-');
-                  setYear(parseInt(y, 10));
-                  setMonth(parseInt(m, 10));
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Month</span>
+              <MonthYearNavigator
+                month={month}
+                year={year}
+                onChange={(nextMonth, nextYear) => {
+                  setMonth(nextMonth);
+                  setYear(nextYear);
                 }}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-gray-700">Department</span>
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[160px]"
+            <label className="text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Department</span>
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="min-w-[160px] rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Link
+              href="/attendance/staff/register"
+              className="pb-2 text-sm font-medium text-primary-600 hover:text-primary-800"
             >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Link
-            href="/attendance/staff/register"
-            className="ml-auto text-sm font-medium text-primary-600 hover:text-primary-800"
-          >
-            Open staff register →
-          </Link>
+              Open staff register →
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -208,14 +198,14 @@ export default function StaffReportsPage() {
           ].map((card) => (
             <div key={card.label} className="rounded-lg border bg-white p-4 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-gray-500">{card.label}</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{card.value}</p>
+              <p className="mt-1 text-lg text-gray-900">{card.value}</p>
             </div>
           ))}
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
           <div className="border-b px-4 py-3">
-            <h2 className="font-semibold text-gray-900">{monthLabel} — Staff Attendance</h2>
+            <h2 className="text-gray-900">{monthLabel} — Staff Attendance</h2>
           </div>
           {loading ? (
             <div className="flex h-48 items-center justify-center">
@@ -267,7 +257,7 @@ export default function StaffReportsPage() {
                       <td className="px-4 py-3 text-sm text-blue-700">{row.on_leave}</td>
                       <td className="px-4 py-3 text-sm text-amber-700">{row.half_day}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{row.total_marked}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-900">
                         {row.attendance_percentage}%
                       </td>
                     </tr>

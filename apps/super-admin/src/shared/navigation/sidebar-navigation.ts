@@ -126,7 +126,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     icon: FiBriefcase,
     items: [
       { name: 'Employee', path: '/staff', icon: FiUsers },
-      { name: 'Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
+      // { name: 'Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Staff ID Cards', path: '/staff/id-cards', icon: FiCreditCard },
       { name: 'Employee Documents', path: '/staff/documents', icon: FiFolder },
       { name: 'Employee Reports', path: '/staff/reports', icon: FiBarChart2 },
@@ -159,13 +159,14 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       // { name: 'Sections', path: '/academics/classes?tab=sections', icon: FiGrid },
       { name: 'Subjects', path: '/academics/subjects', icon: FiBookOpen },
       { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
+      { name: 'Academics Assignments', path: '/academics/assignments', icon: FiFilePlus },
       { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
       
       { name: 'Timetable(routine)', path: '/academics/timetable', icon: FiCalendar },
       { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
-      { name: 'Academic Calendar', path: '/academics/academic-calendar', icon: FiCalendar },
+      { name: 'Calendar', path: '/academics/academic-calendar', icon: FiCalendar },
     ],
   },
   

@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureHrSchema } from '@/lib/ensure-hr-schema';
-import { requireHrRead, requireHrAdmin } from '@/lib/hr-auth';
+import { requireHrRead, requireHrAdmin, getStaffIdForUser } from '@/lib/hr-auth';
+
+function optionalText(value: unknown): string | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+function optionalTime(value: unknown): string | null {
+  return optionalText(value);
+}
 // GET attendance records with filters
 export async function GET(request: NextRequest) {
   try {
@@ -117,8 +127,18 @@ export async function POST(request: NextRequest) {
       device_id,
       location,
       remarks,
-      created_by,
     } = body;
+
+    const createdByStaffId = await getStaffIdForUser(db, auth.user.id);
+    const normalized = {
+      check_in_time: optionalTime(check_in_time),
+      check_out_time: optionalTime(check_out_time),
+      break_start_time: optionalTime(break_start_time),
+      break_end_time: optionalTime(break_end_time),
+      device_id: optionalText(device_id),
+      location: optionalText(location),
+      remarks: optionalText(remarks),
+    };
 
     // Validation
     if (!staff_id || !attendance_date) {
@@ -151,15 +171,15 @@ export async function POST(request: NextRequest) {
         WHERE staff_id = $10 AND attendance_date = $11
         RETURNING *`,
         [
-          check_in_time,
-          check_out_time,
-          break_start_time,
-          break_end_time,
+          normalized.check_in_time,
+          normalized.check_out_time,
+          normalized.break_start_time,
+          normalized.break_end_time,
           status || 'present',
           attendance_type || 'manual',
-          device_id,
-          location,
-          remarks,
+          normalized.device_id,
+          normalized.location,
+          normalized.remarks,
           staff_id,
           attendance_date,
         ]
@@ -182,16 +202,16 @@ export async function POST(request: NextRequest) {
         [
           staff_id,
           attendance_date,
-          check_in_time,
-          check_out_time,
-          break_start_time,
-          break_end_time,
+          normalized.check_in_time,
+          normalized.check_out_time,
+          normalized.break_start_time,
+          normalized.break_end_time,
           status || 'present',
           attendance_type || 'manual',
-          device_id,
-          location,
-          remarks,
-          created_by,
+          normalized.device_id,
+          normalized.location,
+          normalized.remarks,
+          createdByStaffId,
         ]
       );
 
