@@ -11,6 +11,8 @@ interface AddStaffModalProps {
   onClose: () => void;
   onSuccess: () => void;
   editingStaff?: Staff | null;
+  /** Academics teachers page: lock to Teaching department and shared staff records */
+  teacherMode?: boolean;
 }
 
 type StaffRecord = Staff & {
@@ -107,7 +109,13 @@ function buildFormDataFromStaff(staff: StaffRecord) {
   };
 }
 
-export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff }: AddStaffModalProps) {
+export default function AddStaffModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  editingStaff,
+  teacherMode = false,
+}: AddStaffModalProps) {
   const modalContentRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
@@ -146,6 +154,26 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
       })
       .catch(() => {});
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !teacherMode || editingStaff || departments.length === 0) return;
+    const teachingDept = departments.find(
+      (d) => d.name.toLowerCase() === 'teaching' || (d as { code?: string }).code === 'TCH',
+    );
+    if (!teachingDept) return;
+    setFormData((prev) => ({
+      ...prev,
+      department_id: String(teachingDept.id),
+      department: teachingDept.name,
+      designation: prev.designation || 'Teacher',
+    }));
+    setInitialFormData((prev) => ({
+      ...prev,
+      department_id: String(teachingDept.id),
+      department: teachingDept.name,
+      designation: prev.designation || 'Teacher',
+    }));
+  }, [isOpen, teacherMode, editingStaff, departments]);
 
   // Populate form when adding or editing
   useEffect(() => {
@@ -325,18 +353,32 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
       const url = editingStaff ? `/api/staff/${editingStaff.id}` : '/api/staff';
       const method = editingStaff ? 'PUT' : 'POST';
 
+      let payload: Record<string, unknown> = {
+        ...formData,
+        department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
+        designation_id: formData.designation_id ? parseInt(formData.designation_id, 10) : null,
+        experience_years: formData.experience_years ? parseInt(formData.experience_years, 10) : null,
+        salary: formData.salary ? parseFloat(formData.salary) : null,
+      };
+
+      if (teacherMode) {
+        const teachingDept = departments.find(
+          (d) => d.name.toLowerCase() === 'teaching' || (d as { code?: string }).code === 'TCH',
+        );
+        payload = {
+          ...payload,
+          department: 'Teaching',
+          department_id: teachingDept?.id ?? payload.department_id,
+          designation: (payload.designation as string) || 'Teacher',
+        };
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
-          designation_id: formData.designation_id ? parseInt(formData.designation_id, 10) : null,
-          experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
-          salary: formData.salary ? parseFloat(formData.salary) : null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -360,7 +402,13 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
       <div className={APP_MODAL_PANEL}>
           <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0 sticky top-0 z-10 shrink-0">
             <h2 className="text-xl text-gray-900">
-              {editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
+              {teacherMode
+                ? editingStaff
+                  ? 'Edit Teacher'
+                  : 'Add Teacher'
+                : editingStaff
+                  ? 'Edit Staff Member'
+                  : 'Add Staff Member'}
             </h2>
             <button
               type="button"
@@ -591,12 +639,18 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess, editingStaff
               <div className="space-y-6">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Department & Designation</h3>
+                  {teacherMode && (
+                    <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
+                      Teachers are saved to the shared staff directory under the Teaching department.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                       <select
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white disabled:bg-gray-50 disabled:text-gray-600"
                         value={formData.department_id}
+                        disabled={teacherMode}
                         onChange={(e) => {
                           const dept = departments.find((d) => String(d.id) === e.target.value);
                           const nextDepartmentId = e.target.value;

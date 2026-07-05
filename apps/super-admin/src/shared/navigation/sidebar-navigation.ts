@@ -125,7 +125,8 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Employee Mgmt.',
     icon: FiBriefcase,
     items: [
-      { name: 'Employee', path: '/staff', icon: FiUsers },
+      { name: 'Employee list', path: '/staff', icon: FiUsers },
+      {name: 'Teacher list', path: '/academics/teachers', icon: FiUsers },
       // { name: 'Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Staff ID Cards', path: '/staff/id-cards', icon: FiCreditCard },
       { name: 'Employee Documents', path: '/staff/documents', icon: FiFolder },
@@ -160,6 +161,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Subjects', path: '/academics/subjects', icon: FiBookOpen },
       { name: 'School Houses', path: '/academics/houses', icon: FiFlag },
       { name: 'Academics Assignments', path: '/academics/assignments', icon: FiFilePlus },
+      { name: 'Teachers List', path: '/academics/teachers', icon: FiUsers },
       { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
       
       { name: 'Timetable(routine)', path: '/academics/timetable', icon: FiCalendar },
