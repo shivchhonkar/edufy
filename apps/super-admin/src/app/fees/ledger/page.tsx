@@ -20,6 +20,7 @@ export default function StudentLedgerListPage() {
   const { settings } = useSettings();
   const { students, loading, refresh } = useFeesStudents(settings.academic_year);
   const [searchTerm, setSearchTerm] = useState('');
+  const [feeStatusFilter, setFeeStatusFilter] = useState('');
   const {
     classes,
     sections,
@@ -34,8 +35,14 @@ export default function StudentLedgerListPage() {
   const [showPayment, setShowPayment] = useState(false);
 
   const filtered = useMemo(
-    () => filterFeeStudents(students, { search: searchTerm, classId, sectionId }),
-    [students, searchTerm, classId, sectionId],
+    () =>
+      filterFeeStudents(students, {
+        search: searchTerm,
+        classId,
+        sectionId,
+        feeStatus: feeStatusFilter || undefined,
+      }),
+    [students, searchTerm, classId, sectionId, feeStatusFilter],
   );
 
   const handleView = useCallback(
@@ -76,6 +83,15 @@ export default function StudentLedgerListPage() {
             onSectionChange={setSectionId}
             loadingSections={loadingSections}
           />
+          <select
+            value={feeStatusFilter}
+            onChange={(e) => setFeeStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px]"
+            aria-label="Filter by fee assignment"
+          >
+            <option value="">All Students</option>
+            <option value="not_assigned">Unassigned Fees</option>
+          </select>
           <Link
             href="/fees/collect"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
@@ -93,7 +109,7 @@ export default function StudentLedgerListPage() {
             formatCurrency={formatFeeCurrency}
             onViewFees={handleView}
             onRecordPayment={handlePay}
-            hasActiveFilters={Boolean(searchTerm || hasActiveFilters)}
+            hasActiveFilters={Boolean(searchTerm || hasActiveFilters || feeStatusFilter)}
           />
         )}
       </div>

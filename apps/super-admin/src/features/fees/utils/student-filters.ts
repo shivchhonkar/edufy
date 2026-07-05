@@ -31,14 +31,21 @@ export function matchesStudentSearch(
   );
 }
 
+export interface FeeStudentFilterOptions extends ClassSectionFilter {
+  search?: string;
+  /** When set, only students with this paymentStatus are included (e.g. `not_assigned`). */
+  feeStatus?: string;
+}
+
 export function filterFeeStudents(
   students: FeeStudentRow[],
-  options: ClassSectionFilter & { search?: string },
+  options: FeeStudentFilterOptions,
 ): FeeStudentRow[] {
-  const { search = '', classId, sectionId } = options;
+  const { search = '', classId, sectionId, feeStatus } = options;
   return students.filter(
     (student) =>
       matchesClassSection(student, { classId, sectionId }) &&
-      matchesStudentSearch(student, search),
+      matchesStudentSearch(student, search) &&
+      (!feeStatus || student.paymentStatus === feeStatus),
   );
 }

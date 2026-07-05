@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiAlertTriangle, FiRefreshCw, FiTrash2, FiUserCheck, FiZap } from 'react-icons/fi';
+import { FiAlertTriangle, FiCalendar, FiRefreshCw, FiTrash2, FiUserCheck, FiZap } from 'react-icons/fi';
 import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
 import { useFeesStudents } from '@/features/fees/hooks/useFeesStudents';
@@ -25,41 +25,41 @@ export default function FeesOperationsPanel() {
   };
 
   const operations = [
-    {
-      id: 'generate',
-      title: 'Generate Monthly Fees',
-      description: 'Assign monthly fees from active structures only (current + next 2 months).',
-      icon: FiZap,
-      action: async () => {
-        const ok = await confirm(
-          `Generate monthly fees for all ${students.length} students?`,
-          { title: 'Generate Fees', type: 'info' },
-        );
-        if (!ok) return;
-        const currentMonth = new Date().getMonth() + 1;
-        const months = [currentMonth, currentMonth + 1, currentMonth + 2].filter((m) => m <= 12);
-        const res = await fetch('/api/fees/assign-bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ academic_year: year, months }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          await alert(
-            `Assigned ${data.data.feesAssigned} fee records to ${data.data.studentsProcessed} students.`,
-            { title: 'Success', type: 'success' },
-          );
-          refreshStudents();
-        } else {
-          await alert(data.error, { title: 'Error', type: 'error' });
-        }
-      },
-    },
+    // {
+    //   id: 'generate',
+    //   title: 'Generate Monthly Fees',
+    //   description: 'Assign monthly fees from active structures only (current + next 2 months).',
+    //   icon: FiZap,
+    //   action: async () => {
+    //     const ok = await confirm(
+    //       `Generate monthly fees for all ${students.length} students?`,
+    //       { title: 'Generate Fees', type: 'info' },
+    //     );
+    //     if (!ok) return;
+    //     const currentMonth = new Date().getMonth() + 1;
+    //     const months = [currentMonth, currentMonth + 1, currentMonth + 2].filter((m) => m <= 12);
+    //     const res = await fetch('/api/fees/assign-bulk', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ academic_year: year, months }),
+    //     });
+    //     const data = await res.json();
+    //     if (data.success) {
+    //       await alert(
+    //         `Assigned ${data.data.feesAssigned} fee records to ${data.data.studentsProcessed} students.`,
+    //         { title: 'Success', type: 'success' },
+    //       );
+    //       refreshStudents();
+    //     } else {
+    //       await alert(data.error, { title: 'Error', type: 'error' });
+    //     }
+    //   },
+    // },
     {
       id: 'auto-assign',
-      title: 'Auto Assign Fees',
-      description: 'Assign all active fee structures per class. Disabled fee types are skipped.',
-      icon: FiUserCheck,
+      title: 'Generate Monthly Installments',
+      description: 'Generate monthly installments for all students.',
+      icon: FiCalendar,
       action: async () => {
         const ok = await confirm('Run auto-assign for all students?', { title: 'Auto Assign' });
         if (!ok) return;
@@ -77,31 +77,31 @@ export default function FeesOperationsPanel() {
         }
       },
     },
-    {
-      id: 'assign-missing',
-      title: 'Assign Missing Fees',
-      description: 'Create fee records only for students who have none assigned.',
-      icon: FiUserCheck,
-      action: async () => {
-        const res = await fetch('/api/fees/assign-missing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ academic_year: year }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          await alert(
-            data.data.studentsProcessed === 0
-              ? 'All students already have fees assigned.'
-              : `Assigned fees to ${data.data.studentsProcessed} students.`,
-            { title: 'Done', type: 'info' },
-          );
-          refreshStudents();
-        } else {
-          await alert(data.error, { title: 'Error', type: 'error' });
-        }
-      },
-    },
+    // {
+    //   id: 'assign-missing',
+    //   title: 'Assign Missing Fees',
+    //   description: 'Create fee records only for students who have none assigned.',
+    //   icon: FiUserCheck,
+    //   action: async () => {
+    //     const res = await fetch('/api/fees/assign-missing', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ academic_year: year }),
+    //     });
+    //     const data = await res.json();
+    //     if (data.success) {
+    //       await alert(
+    //         data.data.studentsProcessed === 0
+    //           ? 'All students already have fees assigned.'
+    //           : `Assigned fees to ${data.data.studentsProcessed} students.`,
+    //         { title: 'Done', type: 'info' },
+    //       );
+    //       refreshStudents();
+    //     } else {
+    //       await alert(data.error, { title: 'Error', type: 'error' });
+    //     }
+    //   },
+    // },
     {
       id: 'repair',
       title: 'Full Data Repair',
@@ -221,8 +221,8 @@ export default function FeesOperationsPanel() {
                 <op.icon size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{op.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{op.description}</p>
+                <h3 className="text-gray-900">{op.title}</h3>
+                <p className="text-xs text-gray-600 mt-1">{op.description}</p>
               </div>
             </div>
             <button

@@ -270,8 +270,13 @@ function StudentRow({
         </div>
       </div>
 
-      <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {student.class_name || 'Not Assigned'}
+      <div className="px-6 py-4 whitespace-nowrap text-sm">
+        <div className="font-medium text-gray-900">{student.class_name || 'Not Assigned'}</div>
+        {student.class_name && (
+          <p className="text-xs text-gray-500">
+            {student.section_name || 'N/A'}
+          </p>
+        )}
       </div>
 
       <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.gender}</div>
