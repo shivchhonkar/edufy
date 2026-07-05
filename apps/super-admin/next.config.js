@@ -2,7 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost'],
+    domains: [
+      'localhost',
+      'shribi.com',
+      'www.shribi.com',
+      'api.shribi.com',
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -13,5 +18,3 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
-
-

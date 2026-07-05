@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureTimetableSchema } from '@/lib/ensure-timetable-schema';
+import {
+  categorySchedulingMeta,
+  normalizePeriodCategory,
+} from '@/lib/period-category';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { db } = await getRequestDb(request);
     await ensureTimetableSchema(db);
     const body = await request.json();
-    const { name, start_time, end_time, sort_order } = body;
+    const { name, start_time, end_time, sort_order, period_category } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -37,6 +41,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const category = normalizePeriodCategory(period_category);
+    const scheduling = categorySchedulingMeta(category);
 
     let order = sort_order;
     if (order == null) {
@@ -47,10 +54,18 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await db.query(
-      `INSERT INTO timetable_periods (name, start_time, end_time, sort_order, is_active)
-       VALUES ($1, $2, $3, $4, true)
+      `INSERT INTO timetable_periods (name, start_time, end_time, sort_order, is_active, slot_type, is_schedulable, period_category)
+       VALUES ($1, $2, $3, $4, true, $5, $6, $7)
        RETURNING *`,
-      [name.trim(), start_time || null, end_time || null, order]
+      [
+        name.trim(),
+        start_time || null,
+        end_time || null,
+        order,
+        scheduling.slot_type,
+        scheduling.is_schedulable,
+        category,
+      ]
     );
 
     return NextResponse.json(

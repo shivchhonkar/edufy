@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureTimetableSchema } from '@/lib/ensure-timetable-schema';
+import {
+  categorySchedulingMeta,
+  normalizePeriodCategory,
+} from '@/lib/period-category';
 
 export async function PUT(
   request: NextRequest,
@@ -10,7 +14,7 @@ export async function PUT(
     const { db } = await getRequestDb(request);
     await ensureTimetableSchema(db);
     const body = await request.json();
-    const { name, start_time, end_time, sort_order, is_active } = body;
+    const { name, start_time, end_time, sort_order, is_active, period_category } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -19,14 +23,20 @@ export async function PUT(
       );
     }
 
+    const category = normalizePeriodCategory(period_category);
+    const scheduling = categorySchedulingMeta(category);
+
     const result = await db.query(
       `UPDATE timetable_periods SET
         name = $1,
         start_time = $2,
         end_time = $3,
         sort_order = COALESCE($4, sort_order),
-        is_active = COALESCE($5, is_active)
-       WHERE id = $6
+        is_active = COALESCE($5, is_active),
+        slot_type = $6,
+        is_schedulable = $7,
+        period_category = $8
+       WHERE id = $9
        RETURNING *`,
       [
         name.trim(),
@@ -34,6 +44,9 @@ export async function PUT(
         end_time || null,
         sort_order ?? null,
         is_active ?? null,
+        scheduling.slot_type,
+        scheduling.is_schedulable,
+        category,
         params.id,
       ]
     );

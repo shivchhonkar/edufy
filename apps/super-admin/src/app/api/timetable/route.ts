@@ -3,6 +3,11 @@ import { getRequestDb } from '@/lib/request-db';
 import { ensureTimetableSchema } from '@/lib/ensure-timetable-schema';
 import { ensureClassSubjectsSchema } from '@/lib/ensure-class-subjects-schema';
 import { upsertClassTimetableEntry } from '@/lib/timetable-upsert';
+import {
+  resolveRoomForSubject,
+  resolveTeacherForSubject,
+  validateTimetablePlacement,
+} from '@/lib/timetable-conflicts';
 
 const ENTRY_SELECT = `
   SELECT ct.*, tp.name AS period_name, tp.start_time, tp.end_time, tp.sort_order,
@@ -166,6 +171,21 @@ export async function POST(request: NextRequest) {
     await ensureClassSubjectsSchema(db);
     const body = await request.json();
 
+    if (body.action === 'validate') {
+      const conflicts = await validateTimetablePlacement(db, {
+        class_id: parseInt(String(body.class_id), 10),
+        section_id: body.section_id ? parseInt(String(body.section_id), 10) : null,
+        day_of_week: parseInt(String(body.day_of_week), 10),
+        period_id: parseInt(String(body.period_id), 10),
+        subject_id: body.subject_id ? parseInt(String(body.subject_id), 10) : null,
+        staff_id: body.staff_id ? parseInt(String(body.staff_id), 10) : null,
+        room: body.room || null,
+        academic_year: body.academic_year || null,
+        exclude_entry_id: body.exclude_entry_id ? parseInt(String(body.exclude_entry_id), 10) : null,
+      });
+      return NextResponse.json({ success: true, data: { conflicts } });
+    }
+
     if (body.action === 'apply_to_sections') {
       const class_id = parseInt(String(body.class_id), 10);
       if (!class_id) {
@@ -259,9 +279,10 @@ export async function POST(request: NextRequest) {
       day_of_week,
       period_id,
       subject_id,
-      staff_id,
-      room,
+      staff_id: bodyStaffId,
+      room: bodyRoom,
       academic_year,
+      auto_assign = true,
     } = body;
 
     if (class_id == null || day_of_week == null || period_id == null) {
@@ -271,15 +292,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (subject_id) {
+    const parsedClassId = parseInt(String(class_id), 10);
+    const parsedSectionId = section_id ? parseInt(String(section_id), 10) : null;
+    const parsedSubjectId = subject_id ? parseInt(String(subject_id), 10) : null;
+    let parsedStaffId = bodyStaffId ? parseInt(String(bodyStaffId), 10) : null;
+    let parsedRoom = bodyRoom || null;
+
+    if (parsedSubjectId) {
       const allowed = await db.query(
         'SELECT 1 FROM class_subjects WHERE class_id = $1 AND subject_id = $2 LIMIT 1',
-        [class_id, subject_id]
+        [parsedClassId, parsedSubjectId]
       );
       if (!allowed.rows.length) {
         const anyAssigned = await db.query(
           'SELECT 1 FROM class_subjects WHERE class_id = $1 LIMIT 1',
-          [class_id]
+          [parsedClassId]
         );
         if (anyAssigned.rows.length) {
           return NextResponse.json(
@@ -290,14 +317,60 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const existing = await db.query(
+      `SELECT id FROM class_timetable
+       WHERE class_id = $1
+         AND day_of_week = $2
+         AND period_id = $3
+         AND section_id IS NOT DISTINCT FROM $4
+         AND academic_year IS NOT DISTINCT FROM $5
+       ORDER BY id LIMIT 1`,
+      [parsedClassId, day_of_week, period_id, parsedSectionId, academic_year || null]
+    );
+    const excludeEntryId = (existing.rows[0] as { id: number } | undefined)?.id ?? null;
+
+    if (auto_assign && parsedSubjectId) {
+      if (!parsedStaffId) {
+        parsedStaffId = await resolveTeacherForSubject(
+          db,
+          parsedClassId,
+          parsedSectionId,
+          parsedSubjectId,
+          academic_year || null,
+        );
+      }
+      if (!parsedRoom) {
+        parsedRoom = await resolveRoomForSubject(db, parsedClassId, parsedSubjectId);
+      }
+    }
+
+    const conflicts = await validateTimetablePlacement(db, {
+      class_id: parsedClassId,
+      section_id: parsedSectionId,
+      day_of_week: parseInt(String(day_of_week), 10),
+      period_id: parseInt(String(period_id), 10),
+      subject_id: parsedSubjectId,
+      staff_id: parsedStaffId,
+      room: parsedRoom,
+      academic_year: academic_year || null,
+      exclude_entry_id: excludeEntryId,
+    });
+
+    if (conflicts.length) {
+      return NextResponse.json(
+        { success: false, error: conflicts[0].message, conflicts },
+        { status: 409 },
+      );
+    }
+
     const result = await upsertClassTimetableEntry(db, {
-      class_id,
-      section_id: section_id || null,
-      day_of_week,
-      period_id,
-      subject_id: subject_id || null,
-      staff_id: staff_id || null,
-      room: room || null,
+      class_id: parsedClassId,
+      section_id: parsedSectionId,
+      day_of_week: parseInt(String(day_of_week), 10),
+      period_id: parseInt(String(period_id), 10),
+      subject_id: parsedSubjectId,
+      staff_id: parsedStaffId,
+      room: parsedRoom,
       academic_year: academic_year || null,
     });
 

@@ -43,7 +43,7 @@ export default function LandingHero() {
               <div className="bg-white rounded-xl p-2.5 shadow-lg">
                 <div className="relative w-full h-[340px] xl:h-[400px] 2xl:h-[440px] overflow-hidden rounded-lg">
                   <Image
-                    src="/dashboard-shribi.png"
+                    src="https://www.shribi.com/assets/thumbnails/Shribi_Edufy_school_ERP.png"
                     alt="Shribi Edufy school dashboard preview"
                     fill
                     className="object-cover object-top"

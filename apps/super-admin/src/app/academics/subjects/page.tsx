@@ -4,6 +4,7 @@ import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import QuickAddSubjectsPanel from '@/features/subjects/components/QuickAddSubjectsPanel';
+import { sortClassesByName } from '@/lib/class-sort';
 import { useDialog } from '@/shared/context/DialogContext';
 import {
   FiBook,
@@ -61,6 +62,8 @@ export default function SubjectsPage() {
     code: '',
     description: '',
   });
+  const [subjectModalClassIds, setSubjectModalClassIds] = useState<number[]>([]);
+  const [savingSubject, setSavingSubject] = useState(false);
 
   const [classSubjectSelections, setClassSubjectSelections] = useState<Record<number, number[]>>({});
 
@@ -123,11 +126,22 @@ export default function SubjectsPage() {
   const hasActiveFilters = Boolean(search);
   const listCount = activeTab === 'subjects' ? filteredSubjects.length : filteredClasses.length;
   const totalCount = activeTab === 'subjects' ? subjects.length : classes.length;
+  const sortedClasses = useMemo(() => sortClassesByName(classes), [classes]);
 
   const openAddSubjectModal = () => {
     setEditingSubject(null);
     setSubjectForm({ name: '', code: '', description: '' });
+    setSubjectModalClassIds([]);
     setShowSubjectModal(true);
+  };
+
+  const saveSubjectClassAssignments = async (subjectId: number, classIds: number[]) => {
+    const response = await fetch('/api/class-subjects/by-subject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject_id: subjectId, class_ids: classIds }),
+    });
+    return response.json();
   };
 
   const handleSaveSubject = async () => {
@@ -136,6 +150,7 @@ export default function SubjectsPage() {
       return;
     }
 
+    setSavingSubject(true);
     try {
       const url = editingSubject ? `/api/subjects/${editingSubject.id}` : '/api/subjects';
       const method = editingSubject ? 'PUT' : 'POST';
@@ -147,17 +162,32 @@ export default function SubjectsPage() {
       });
 
       const data = await response.json();
-      if (data.success) {
-        setShowSubjectModal(false);
-        setEditingSubject(null);
-        setSubjectForm({ name: '', code: '', description: '' });
-        fetchData();
-      } else {
+      if (!data.success) {
         await alert(data.error || 'Failed to save subject', { title: 'Error', type: 'error' });
+        return;
       }
+
+      const subjectId = editingSubject?.id ?? data.data?.id;
+      if (subjectId) {
+        const assignmentData = await saveSubjectClassAssignments(subjectId, subjectModalClassIds);
+        if (!assignmentData.success) {
+          await alert(
+            assignmentData.error || 'Subject saved but class assignments failed',
+            { title: 'Warning', type: 'warning' },
+          );
+        }
+      }
+
+      setShowSubjectModal(false);
+      setEditingSubject(null);
+      setSubjectForm({ name: '', code: '', description: '' });
+      setSubjectModalClassIds([]);
+      fetchData();
     } catch (error) {
       console.error('Error saving subject:', error);
       await alert('Failed to save subject', { title: 'Error', type: 'error' });
+    } finally {
+      setSavingSubject(false);
     }
   };
 
@@ -190,7 +220,24 @@ export default function SubjectsPage() {
       code: subject.code,
       description: subject.description,
     });
+    setSubjectModalClassIds(
+      classSubjects.filter((cs) => cs.subject_id === subject.id).map((cs) => cs.class_id),
+    );
     setShowSubjectModal(true);
+  };
+
+  const toggleSubjectModalClass = (classId: number) => {
+    setSubjectModalClassIds((prev) =>
+      prev.includes(classId) ? prev.filter((id) => id !== classId) : [...prev, classId],
+    );
+  };
+
+  const selectAllModalClasses = () => {
+    setSubjectModalClassIds(sortedClasses.map((cls) => cls.id));
+  };
+
+  const clearAllModalClasses = () => {
+    setSubjectModalClassIds([]);
   };
 
   const handleToggleSubjectForClass = (classId: number, subjectId: number) => {
@@ -371,6 +418,8 @@ export default function SubjectsPage() {
 
         {activeTab === 'subjects' && (
           <QuickAddSubjectsPanel
+            existingSubjectNames={subjects.map((subject) => subject.name)}
+            existingSubjectCodes={subjects.map((subject) => subject.code)}
             onSubjectsAdded={fetchData}
             onNotify={async (message, type) => {
               await alert(message, {
@@ -419,6 +468,9 @@ export default function SubjectsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase w-12">
+                        S.N.
+                      </th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
                         Subject
                       </th>
@@ -429,7 +481,7 @@ export default function SubjectsPage() {
                         Description
                       </th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
-                        Classes
+                        Assigned To Classes
                       </th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">
                         Actions
@@ -437,10 +489,11 @@ export default function SubjectsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredSubjects.map((subject) => {
+                    {filteredSubjects.map((subject, index) => {
                       const assigned = getAssignedClasses(subject.id);
                       return (
                         <tr key={subject.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2.5 text-sm text-gray-500 tabular-nums">{index + 1}</td>
                           <td className="px-4 py-2.5">
                             <div className="text-sm font-medium text-gray-900">{subject.name}</div>
                           </td>
@@ -623,7 +676,7 @@ export default function SubjectsPage() {
 
       {showSubjectModal && (
         <AppModal open={showSubjectModal} onClose={() => { setShowSubjectModal(false); setEditingSubject(null); }}>
-      <div className={APP_MODAL_PANEL}>
+      <div className={`${APP_MODAL_PANEL} max-w-2xl`}>
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="text-lg font-semibold">
                 {editingSubject ? 'Edit Subject' : 'Add Subject'}
@@ -638,7 +691,7 @@ export default function SubjectsPage() {
                 <FiX size={20} />
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4">
+            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Subject Name <span className="text-red-500">*</span>
@@ -673,6 +726,62 @@ export default function SubjectsPage() {
                   placeholder="Brief description"
                 />
               </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Assign to classes
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {subjectModalClassIds.length} of {sortedClasses.length} selected
+                    </p>
+                  </div>
+                  {sortedClasses.length > 0 && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllModalClasses}
+                        className="px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 rounded"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearAllModalClasses}
+                        className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {sortedClasses.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No classes available. Create classes first.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    {sortedClasses.map((cls) => {
+                      const isChecked = subjectModalClassIds.includes(cls.id);
+                      return (
+                        <button
+                          key={cls.id}
+                          type="button"
+                          onClick={() => toggleSubjectModalClass(cls.id)}
+                          className={`px-2.5 py-2 rounded-md border text-xs font-medium text-left transition-colors ${
+                            isChecked
+                              ? 'bg-primary-600 text-white border-primary-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
+                          }`}
+                        >
+                          {isChecked && <FiCheck className="inline mr-1" size={12} />}
+                          {cls.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex justify-end gap-3 px-5 py-4 border-t">
               <button
@@ -680,15 +789,17 @@ export default function SubjectsPage() {
                   setShowSubjectModal(false);
                   setEditingSubject(null);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm"
+                disabled={savingSubject}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveSubject}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
+                disabled={savingSubject}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
               >
-                {editingSubject ? 'Update' : 'Create'}
+                {savingSubject ? 'Saving...' : editingSubject ? 'Update' : 'Create'}
               </button>
             </div>
           </div>
