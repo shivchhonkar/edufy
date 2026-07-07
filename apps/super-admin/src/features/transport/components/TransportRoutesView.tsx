@@ -160,7 +160,7 @@ export default function TransportRoutesView() {
   const loading = loadingRoutes || loadingRouteAssignments;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <TransportPageHeader
         title="Routes & Stops"
         description="Create routes, pickup stops, and assign vehicles"

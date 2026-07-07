@@ -4,7 +4,7 @@ import AssignRouteToStudentsPanel from '@/features/transport/components/AssignRo
 
 export default function TransportStudentAssignmentsView() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 p-4">
       <AssignRouteToStudentsPanel />
     </div>
   );

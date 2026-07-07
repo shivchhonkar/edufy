@@ -69,7 +69,7 @@ export default function TransportVehiclesView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <TransportPageHeader
         title="Vehicles"
         description="Manage buses, vans, and driver details"

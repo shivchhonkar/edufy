@@ -13,7 +13,7 @@ export function PortalPageShell({ title, subtitle, greeting, children }: PortalP
   const headerContent = (
     <div className="min-w-0">
       {greeting && <p className="portal-page-header-muted text-xs">{greeting}</p>}
-      <h1 className="text-lg sm:text-xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-lg sm:text-xl tracking-tight">{title}</h1>
       {subtitle && <p className="portal-page-header-muted text-xs sm:text-sm">{subtitle}</p>}
     </div>
   )

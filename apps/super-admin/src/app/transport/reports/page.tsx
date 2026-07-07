@@ -32,7 +32,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 space-y-6">
       {loading ? (
         <div className="text-center py-8">Loading reports...</div>
       ) : stats ? (

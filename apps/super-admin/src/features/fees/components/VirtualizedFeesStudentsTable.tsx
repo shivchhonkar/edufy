@@ -1,18 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  FiAlertCircle,
-  FiEye,
-  FiUserCheck,
-} from 'react-icons/fi';
+import { FiAlertCircle, FiEye, FiMoreVertical } from 'react-icons/fi';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
+import { studentInitials } from '@/features/students/utils/student-profile';
 
-const ROW_HEIGHT = 72;
+const ROW_HEIGHT = 76;
 const OVERSCAN = 12;
 
 const GRID_COLUMNS =
-  'minmax(10rem,1.5fr) minmax(8rem,1fr) minmax(7rem,0.9fr) minmax(7rem,0.9fr) minmax(10rem,1.1fr) minmax(15rem,1.6fr)';
+  'minmax(12rem,1.6fr) minmax(9rem,1.15fr) minmax(8rem,0.95fr) minmax(8.5rem,0.95fr) minmax(7rem,0.75fr) minmax(14rem,1.55fr)';
 
 export interface FeeStudentRow {
   id: number;
@@ -25,6 +22,7 @@ export interface FeeStudentRow {
   class_name?: string | null;
   section_name?: string | null;
   parent_phone?: string | null;
+  photo_url?: string | null;
   paymentStatus?: string;
   pendingAmount?: number;
 }
@@ -90,11 +88,11 @@ export default function VirtualizedFeesStudentsTable({
 
   if (students.length === 0) {
     return (
-      <div className="px-4 py-8 text-center text-gray-500">
-        <p className="text-lg font-medium">No students found</p>
+      <div className="px-4 py-12 text-center text-gray-500">
+        <p className="text-base font-medium text-gray-700">No students found</p>
         <p className="text-sm mt-1">
           {hasActiveFilters
-            ? 'Try adjusting your search filters'
+            ? 'Try adjusting your search or filters'
             : 'No students are currently enrolled'}
         </p>
       </div>
@@ -104,13 +102,13 @@ export default function VirtualizedFeesStudentsTable({
   return (
     <div>
       <div
-        className="grid items-center bg-gray-50 border-b"
+        className="grid items-center bg-gray-50 border-b border-gray-200"
         style={{ gridTemplateColumns: GRID_COLUMNS }}
       >
         <HeaderCell>Student</HeaderCell>
-        <HeaderCell>Parent</HeaderCell>
-        <HeaderCell>Class</HeaderCell>
-        <HeaderCell>Contact</HeaderCell>
+        <HeaderCell>Parent / Guardian</HeaderCell>
+        <HeaderCell>Class &amp; Section</HeaderCell>
+        <HeaderCell>Outstanding</HeaderCell>
         <HeaderCell>Status</HeaderCell>
         <HeaderCell className="text-right">Actions</HeaderCell>
       </div>
@@ -118,7 +116,7 @@ export default function VirtualizedFeesStudentsTable({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="overflow-auto max-h-[calc(100vh-240px)]"
+        className="overflow-auto max-h-[calc(100vh-420px)]"
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <div
@@ -156,7 +154,7 @@ function HeaderCell({
 }) {
   return (
     <div
-      className={`px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}
+      className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide ${className}`}
     >
       {children}
     </div>
@@ -178,99 +176,174 @@ function StudentRow({
   onRecordPayment,
   style,
 }: StudentRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const outstanding = getOutstandingDisplay(student, formatCurrency);
+  const status = getStatusDisplay(student);
+
   return (
     <div
-      className="grid items-center border-b border-gray-200 hover:bg-gray-50 bg-white"
+      className="grid items-center border-b border-gray-100 hover:bg-gray-50/80 bg-white"
       style={{ gridTemplateColumns: GRID_COLUMNS, ...style }}
     >
       <div className="px-4 py-2 overflow-hidden">
-        <p className="text-sm text-gray-900 truncate">
-          {student.first_name} {student.last_name}
+        <div className="flex items-center gap-3 min-w-0">
+          {student.photo_url ? (
+            <img
+              src={student.photo_url}
+              alt=""
+              className="h-9 w-9 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 text-xs font-semibold">
+              {studentInitials(student)}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {student.first_name} {student.last_name}
+            </p>
+            <p className="text-xs text-gray-500 truncate">{student.admission_number}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-2 overflow-hidden">
+        <p className="text-sm font-medium text-gray-900 truncate">{student.parent_name || '—'}</p>
+        <p className="text-xs text-gray-500 truncate mt-0.5">{student.parent_phone || '—'}</p>
+      </div>
+
+      <div className="px-4 py-2 overflow-hidden">
+        <p className="text-sm text-gray-900 truncate">{student.class_name || '—'}</p>
+        <p className="text-xs text-gray-500 truncate mt-0.5">
+          {student.section_name ? `Section: ${student.section_name}` : 'Section: —'}
         </p>
-        <p className="text-sm text-gray-600 truncate">{student.admission_number}</p>
       </div>
 
-      <div className="px-4 py-2 overflow-hidden">
-        <p className="text-sm text-gray-900 truncate">{student.parent_name || 'N/A'}</p>
-      </div>
+      <div className="px-4 py-2">{outstanding}</div>
 
-      <div className="px-4 py-2 overflow-hidden">
-        <p className="text-xs text-gray-900 truncate">{student.class_name || 'N/A'}</p>
-        {student.section_name && (
-          <p className="text-xs text-gray-600 truncate">Section: {student.section_name}</p>
-        )}
-      </div>
-
-      <div className="px-4 py-2 overflow-hidden">
-        <p className="text-sm text-gray-600 truncate">{student.parent_phone || 'N/A'}</p>
+      <div className="px-4 py-2">
+        <span
+          className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${status.className}`}
+        >
+          {status.label}
+        </span>
       </div>
 
       <div className="px-4 py-2">
-        <PaymentStatusBadge student={student} formatCurrency={formatCurrency} />
-      </div>
-
-      <div className="px-4 py-2">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end items-center gap-1.5">
           <button
+            type="button"
             onClick={() => onViewFees(student)}
-            className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1 transition-colors text-[10px] font-medium whitespace-nowrap"
+            className="px-2.5 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex items-center gap-1 transition-colors text-xs font-medium whitespace-nowrap"
           >
             <FiEye size={14} />
-            View Fees
+            View & Collect Fees
           </button>
-          <button
+          {/* <button
+            type="button"
             onClick={() => onRecordPayment(student)}
-            className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center gap-1 transition-colors text-[10px] font-medium whitespace-nowrap"
+            className="px-2.5 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex items-center gap-1 transition-colors text-xs font-medium whitespace-nowrap"
           >
             <RupeeIcon size={14} />
             Record Payment
-          </button>
+          </button> */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              aria-label="More actions"
+            >
+              <FiMoreVertical size={16} />
+            </button>
+            {menuOpen && (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-10"
+                  aria-label="Close menu"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg border border-gray-200 bg-white shadow-lg py-1 text-xs">
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onViewFees(student);
+                    }}
+                  >
+                    Open ledger
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onRecordPayment(student);
+                    }}
+                  >
+                    Collect payment
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PaymentStatusBadge({
-  student,
-  formatCurrency,
-}: {
-  student: FeeStudentRow;
-  formatCurrency: (amount: number | string | null | undefined) => string;
-}) {
+function getOutstandingDisplay(
+  student: FeeStudentRow,
+  formatCurrency: (amount: number | string | null | undefined) => string,
+) {
+  if (student.paymentStatus === 'not_assigned') {
+    return <span className="text-xs text-gray-400">—</span>;
+  }
+
   if (student.paymentStatus === 'completed') {
     return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full">
-        {/* <FiUserCheck size={14} /> */}
-        <span className="text-[10px] font-medium">Completed</span>
+      <div className="inline-flex flex-col items-start px-2.5 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100">
+        <span className="text-xs font-semibold leading-tight">{formatCurrency(0)}</span>
+        <span className="text-[10px] font-medium leading-tight">Paid</span>
       </div>
     );
   }
 
   if (student.paymentStatus === 'pending') {
     return (
-      <div className="inline-flex flex-col items-start gap-0.5 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg">
+      <div className="inline-flex flex-col items-start px-2.5 py-1.5 bg-amber-50 text-amber-900 rounded-lg border border-amber-100">
         <span className="text-xs font-semibold leading-tight">
           {formatCurrency(student.pendingAmount || 0)}
         </span>
-        <span className="text-[10px] font-medium leading-tight">Pending</span>
-      </div>
-    );
-  }
-
-  if (student.paymentStatus === 'not_assigned') {
-    return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full">
-        <FiAlertCircle size={14} />
-        <span className="text-[10px] font-medium">No Fees Assigned</span>
+        <span className="text-[10px] font-medium leading-tight text-amber-700">Pending</span>
       </div>
     );
   }
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full">
-      <FiAlertCircle size={14} />
-      <span className="text-[10px] font-medium">Unknown</span>
+    <div className="inline-flex items-center gap-1 text-xs text-gray-500">
+      <FiAlertCircle size={12} />
+      Unknown
     </div>
   );
+}
+
+function getStatusDisplay(student: FeeStudentRow) {
+  if (student.paymentStatus === 'not_assigned') {
+    return { label: 'Unassigned', className: 'bg-orange-100 text-orange-700' };
+  }
+  if (student.paymentStatus === 'completed') {
+    return { label: 'Paid', className: 'bg-green-100 text-green-700' };
+  }
+  if (student.paymentStatus === 'pending') {
+    const amount = student.pendingAmount || 0;
+    if (amount > 0) {
+      return { label: 'Overdue', className: 'bg-red-100 text-red-700' };
+    }
+    return { label: 'Due Soon', className: 'bg-orange-100 text-orange-700' };
+  }
+  return { label: 'Unknown', className: 'bg-gray-100 text-gray-600' };
 }

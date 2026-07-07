@@ -11,36 +11,55 @@ export async function GET(request: NextRequest) {
 
     const vehicleDriversResult = await db.query(
       `SELECT DISTINCT
-        driver_name as name,
-        driver_phone as phone,
-        driver_license as license_number,
-        NULL as license_expiry,
-        NULL as address,
-        'active' as status,
-        NULL as id,
+        COALESCE(NULLIF(TRIM(driver_name), ''), NULLIF(TRIM(owner_name), '')) AS name,
+        COALESCE(NULLIF(TRIM(driver_phone), ''), NULLIF(TRIM(owner_phone), '')) AS phone,
+        driver_license AS license_number,
+        NULL AS license_expiry,
+        NULL AS address,
+        status,
         vehicle_number,
-        vehicle_type
-       FROM vehicles 
-       WHERE driver_name IS NOT NULL 
-       AND driver_name != ''
-       ORDER BY driver_name`,
+        vehicle_type,
+        CASE
+          WHEN driver_name IS NOT NULL AND TRIM(driver_name) <> '' THEN 'driver'
+          ELSE 'owner'
+        END AS role
+       FROM vehicles
+       WHERE (
+         (driver_name IS NOT NULL AND TRIM(driver_name) <> '')
+         OR (owner_name IS NOT NULL AND TRIM(owner_name) <> '')
+       )
+       ORDER BY name`,
     );
 
     const allDrivers = [...driversResult.rows];
-    const existingPhones = new Set(
-      driversResult.rows.map((d: { phone?: string | null }) => d.phone),
+    const existingKeys = new Set(
+      driversResult.rows.map((d: { phone?: string | null; name?: string | null }) =>
+        String(d.phone || d.name || '')
+          .trim()
+          .toLowerCase(),
+      ),
     );
 
     vehicleDriversResult.rows.forEach((vd: Record<string, unknown>) => {
-      const phone = vd.phone as string | undefined;
-      if (phone && !existingPhones.has(phone)) {
-        allDrivers.push({
-          ...vd,
-          source: 'vehicle',
-          id: `v-${vd.vehicle_number}`,
-        });
-        existingPhones.add(phone);
-      }
+      const name = String(vd.name || '').trim();
+      if (!name) return;
+
+      const phone = String(vd.phone || '').trim();
+      const vehicleNumber = String(vd.vehicle_number || '').trim();
+      const dedupeKey = phone
+        ? phone.toLowerCase()
+        : `${name.toLowerCase()}::${vehicleNumber}`.toLowerCase();
+
+      if (existingKeys.has(dedupeKey)) return;
+
+      allDrivers.push({
+        ...vd,
+        name,
+        phone: phone || null,
+        source: 'vehicle',
+        id: `v-${vehicleNumber || name}`,
+      });
+      existingKeys.add(dedupeKey);
     });
 
     return NextResponse.json({ success: true, data: allDrivers });

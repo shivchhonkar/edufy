@@ -44,7 +44,7 @@ export const PORTAL_NAV: Record<PortalId, PortalNavItem[]> = {
     { name: 'Vehicles', path: '/transport/vehicles', icon: FiTruck },
     { name: 'Drivers', path: '/transport/driver-management', icon: FiUser },
     { name: 'Routes', path: '/transport/routes', icon: FiMap },
-    { name: 'Students', path: '/transport/students', icon: FiUsers },
+    { name: 'Transport Students', path: '/transport/students', icon: FiUsers },
     { name: 'Assignments', path: '/transport/current-assignments', icon: FiUsers },
     { name: 'Route Plans', path: '/transport/route-assignments', icon: FiMap },
     { name: 'Reports', path: '/transport/reports', icon: FiClipboard },

@@ -33,8 +33,22 @@ export function matchesStudentSearch(
 
 export interface FeeStudentFilterOptions extends ClassSectionFilter {
   search?: string;
-  /** When set, only students with this paymentStatus are included (e.g. `not_assigned`). */
+  /** Filter by fee assignment / payment status. */
   feeStatus?: string;
+}
+
+function matchesFeeStatus(student: FeeStudentRow, feeStatus: string): boolean {
+  if (!feeStatus) return true;
+
+  if (feeStatus === 'overdue') {
+    return student.paymentStatus === 'pending' && (student.pendingAmount || 0) > 0;
+  }
+
+  if (feeStatus === 'due_soon') {
+    return student.paymentStatus === 'pending' && (student.pendingAmount || 0) <= 0;
+  }
+
+  return student.paymentStatus === feeStatus;
 }
 
 export function filterFeeStudents(
@@ -46,6 +60,6 @@ export function filterFeeStudents(
     (student) =>
       matchesClassSection(student, { classId, sectionId }) &&
       matchesStudentSearch(student, search) &&
-      (!feeStatus || student.paymentStatus === feeStatus),
+      matchesFeeStatus(student, feeStatus || ''),
   );
 }

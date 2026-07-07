@@ -60,7 +60,7 @@ export default function HrDashboardView() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <HrNav />
+      {/* <HrNav /> */}
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>

@@ -27,7 +27,7 @@ export default function StatCard({ title, value, icon: Icon, color = 'blue', tre
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-slate-600 truncate">{title}</p>
-          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mt-2 break-words leading-tight" title={String(value)}>
+          <p className="text-lg sm:text-xl lg:text-xl text-slate-900 mt-2 break-words leading-tight" title={String(value)}>
             {value}
           </p>
           {trend && (

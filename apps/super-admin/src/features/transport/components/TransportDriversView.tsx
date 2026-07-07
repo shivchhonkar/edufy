@@ -20,17 +20,13 @@ export default function TransportDriversView() {
     try {
       const res = await fetch('/api/transport/drivers');
       const data = await res.json();
-      console.log('Drivers API Response:', data); // Debug log
       if (data.success) {
-        console.log('Drivers data:', data.data); // Debug log
         setDrivers(data.data);
       } else {
         console.error('API returned error:', data.error);
-        alert(`Error loading drivers: ${data.error}`);
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);
-      alert(`Failed to load drivers: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -54,7 +50,7 @@ export default function TransportDriversView() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6 p-4">
       <div className="mb-6 flex justify-end">
         <Button onClick={() => { setEditingDriver(null); setShowModal(true); }}>
           <FiPlus className="mr-2" />Add Driver
@@ -88,12 +84,15 @@ export default function TransportDriversView() {
                         <div>
                           <div className="font-medium text-gray-900">{driver.name}</div>
                           {driver.source === 'vehicle' && (
-                            <span className="text-xs text-blue-600">From Vehicle Record</span>
+                            <span className="text-xs text-blue-600">
+                              From Vehicle Record
+                              {driver.role === 'owner' ? ' (Owner)' : ''}
+                            </span>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{driver.phone}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{driver.phone || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{driver.license_number || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {driver.license_expiry ? formatDate(new Date(driver.license_expiry)) : '-'}

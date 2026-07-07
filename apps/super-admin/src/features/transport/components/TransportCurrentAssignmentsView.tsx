@@ -193,7 +193,7 @@ export default function TransportCurrentAssignmentsView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <TransportPageHeader
         title="Current Assignments"
         description="View and manage all student transport route assignments"
