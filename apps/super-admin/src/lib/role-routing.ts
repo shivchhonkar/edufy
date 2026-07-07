@@ -7,7 +7,7 @@ export const PORTAL_HOME: Record<PortalId, string> = {
   transport: '/transport',
 };
 
-const ADMIN_ROLES = new Set([
+const SCHOOL_ADMIN_ROLES = new Set([
   'super_admin',
   'admin',
   'administrator',
@@ -15,7 +15,11 @@ const ADMIN_ROLES = new Set([
   'inventory_manager',
 ]);
 
-/** Path prefixes each portal role may access (admin may access everything). */
+const ORG_ROLES = new Set(['org_owner', 'org_admin', 'org_viewer']);
+const ORG_FULL_ACCESS_ROLES = new Set(['org_owner', 'org_admin']);
+
+const ADMIN_ROLES = new Set([...SCHOOL_ADMIN_ROLES, ...ORG_FULL_ACCESS_ROLES]);
+
 export const PORTAL_ALLOWED_PREFIXES: Record<Exclude<PortalId, 'admin'>, string[]> = {
   teacher: ['/teacher'],
   parent: ['/parent'],
@@ -27,6 +31,10 @@ export function normalizeRole(role: string | null | undefined): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '_');
+}
+
+export function isOrgRole(role: string | null | undefined): boolean {
+  return ORG_ROLES.has(normalizeRole(role));
 }
 
 export function isAdminRole(role: string | null | undefined): boolean {
@@ -43,6 +51,10 @@ export function getPortalForRole(role: string | null | undefined): PortalId {
 }
 
 export function getRoleHomePath(role: string | null | undefined): string {
+  const r = normalizeRole(role);
+  if (r === 'org_viewer' || r === 'org_owner' || r === 'org_admin') {
+    return '/org/dashboard';
+  }
   return PORTAL_HOME[getPortalForRole(role)];
 }
 
@@ -54,7 +66,6 @@ export function getPortalFromPath(pathname: string): PortalId | null {
   return null;
 }
 
-/** Legacy super-admin routes that only admin roles may use. */
 const LEGACY_ADMIN_PREFIXES = [
   '/admin',
   '/dashboard',
@@ -80,6 +91,8 @@ const LEGACY_ADMIN_PREFIXES = [
   '/teachers',
   '/transport',
   '/setup',
+  '/org',
+  '/platform',
   '/fix-exams',
   '/test-migration',
 ];
@@ -89,6 +102,18 @@ function matchesPrefix(pathname: string, prefix: string): boolean {
 }
 
 export function canRoleAccessPath(role: string | null | undefined, pathname: string): boolean {
+  const r = normalizeRole(role);
+
+  if (matchesPrefix(pathname, '/org') || matchesPrefix(pathname, '/platform')) {
+    if (r === 'org_viewer') return matchesPrefix(pathname, '/org');
+    if (ORG_ROLES.has(r) || isAdminRole(role)) return true;
+    return false;
+  }
+
+  if (r === 'org_viewer') {
+    return pathname === '/login' || pathname === '/';
+  }
+
   if (isAdminRole(role)) return true;
 
   const portal = getPortalForRole(role);

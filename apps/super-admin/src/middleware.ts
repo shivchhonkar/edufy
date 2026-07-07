@@ -31,6 +31,8 @@ const PUBLIC_API_PATHS = [
   '/api/auth/login',
   '/api/tenant/check',
   '/api/tenant/branding',
+  '/api/org/branding',
+  '/api/org/schools/public',
   '/api/platform/schools/register',
   '/api/platform/schools/check-slug',
   '/api/marksheets/verify',

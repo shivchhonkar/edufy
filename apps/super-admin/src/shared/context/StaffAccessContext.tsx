@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { PortalPermissionMap } from '@/lib/portal-access'
 import { getClientUser } from '@/lib/client-auth'
+import { useActiveSchoolId } from '@/hooks/use-active-school-id'
 
 type StaffAccessState = {
   loaded: boolean
@@ -22,6 +23,7 @@ const StaffAccessContext = createContext<StaffAccessState>(defaultState)
 
 export function StaffAccessProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StaffAccessState>(defaultState)
+  const activeSchoolId = useActiveSchoolId()
 
   useEffect(() => {
     const user = getClientUser()
@@ -37,7 +39,9 @@ export function StaffAccessProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    fetch('/api/access/staff-portal/me')
+    setState({ ...defaultState, loaded: false })
+
+    fetch('/api/access/staff-portal/me', { cache: 'no-store', credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -52,7 +56,7 @@ export function StaffAccessProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => setState({ ...defaultState, loaded: true }))
-  }, [])
+  }, [activeSchoolId])
 
   return (
     <StaffAccessContext.Provider value={state}>{children}</StaffAccessContext.Provider>

@@ -50,6 +50,19 @@ async function main() {
     } else {
       console.log('Control schema already present.');
     }
+
+    const orgMigrationPath = path.join(__dirname, '../database/migrations/control/001_organizations.sql');
+    if (fs.existsSync(orgMigrationPath)) {
+      const orgCheck = await control.query(
+        "SELECT to_regclass('public.organizations') AS reg",
+      );
+      if (!orgCheck.rows[0].reg) {
+        console.log('Applying organization migration...');
+        const orgSql = fs.readFileSync(orgMigrationPath, 'utf8');
+        await control.query(orgSql);
+        console.log('Organization migration applied.');
+      }
+    }
   } finally {
     await control.end();
   }

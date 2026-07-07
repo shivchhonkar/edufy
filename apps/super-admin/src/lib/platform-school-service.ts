@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { hashPassword } from '@/lib/auth';
 import { ensureControlDatabase } from '@/lib/ensure-control-db';
+import { ensureOrganizationsSchema } from '@/lib/ensure-organizations-schema';
 import { getDefaultAcademicYearConfig } from '@/lib/academic-year-utils';
 import {
   REGISTER_SCHOOL_MIGRATION_FILES,
@@ -26,9 +27,11 @@ export interface RegisterSchoolInput {
   academic_year_name?: string;
   academic_year_start?: string;
   academic_year_end?: string;
+  city?: string;
 }
 
 export interface RegisterSchoolResult {
+  organization_id: number;
   tenant_id: number;
   slug: string;
   db_name: string;
@@ -39,6 +42,34 @@ export interface RegisterSchoolResult {
 export async function registerSchool(
   input: RegisterSchoolInput
 ): Promise<RegisterSchoolResult> {
+  await ensureControlDatabase();
+  const control = createPlatformPool(getControlDbConfig());
+  try {
+    await ensureOrganizationsSchema(control);
+    const orgResult = await control.query(
+      `INSERT INTO organizations (slug, name, type, is_active)
+       VALUES ($1, $2, 'single', true)
+       RETURNING id`,
+      [
+        input.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+        input.school_name,
+      ],
+    );
+    return registerSchoolUnderOrganization(orgResult.rows[0].id, input, control, {
+      isPrimary: true,
+    });
+  } finally {
+    await control.end();
+  }
+}
+
+/** Add a campus to an existing organization (multi-school groups). */
+export async function registerSchoolUnderOrganization(
+  organizationId: number,
+  input: RegisterSchoolInput,
+  existingControl?: ReturnType<typeof createPlatformPool>,
+  options?: { isPrimary?: boolean },
+): Promise<RegisterSchoolResult> {
   const slug = input.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!slug || slug.length < 3) {
     throw new Error('School slug must be at least 3 characters (letters, numbers, hyphens)');
@@ -48,7 +79,8 @@ export async function registerSchool(
 
   await ensureControlDatabase();
 
-  const control = createPlatformPool(getControlDbConfig());
+  const ownsControl = !existingControl;
+  const control = existingControl ?? createPlatformPool(getControlDbConfig());
 
   const existing = await control.query(
     'SELECT id FROM tenants WHERE slug = $1 OR db_name = $2',
@@ -159,25 +191,37 @@ export async function registerSchool(
     await schoolDb.end();
   }
 
+  await ensureOrganizationsSchema(control);
+
   const tenantResult = await control.query(
-    `INSERT INTO tenants (slug, name, db_name, is_active)
-     VALUES ($1, $2, $3, true) RETURNING id`,
-    [slug, input.school_name, dbName]
+    `INSERT INTO tenants (organization_id, slug, name, db_name, is_active, is_primary, city)
+     VALUES ($1, $2, $3, $4, true, $5, $6) RETURNING id`,
+    [
+      organizationId,
+      slug,
+      input.school_name,
+      dbName,
+      options?.isPrimary ?? false,
+      input.city || null,
+    ],
   );
   const tenantId = tenantResult.rows[0].id;
 
   await control.query(
     `INSERT INTO tenant_branding (tenant_id, subdomain, primary_color, secondary_color)
      VALUES ($1, $2, $3, '#1e40af')`,
-    [tenantId, slug, input.primary_color || '#2563eb']
+    [tenantId, slug, input.primary_color || '#2563eb'],
   );
 
-  await control.end();
+  if (ownsControl) {
+    await control.end();
+  }
 
   const baseDomain = process.env.APP_BASE_DOMAIN || 'localhost:7000';
   const loginUrl = `http://${slug}.${baseDomain}/login`;
 
   return {
+    organization_id: organizationId,
     tenant_id: tenantId,
     slug,
     db_name: dbName,

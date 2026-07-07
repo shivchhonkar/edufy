@@ -1,5 +1,6 @@
 import { createPlatformPool, getControlDbConfig } from '@/lib/platform-db-config';
 import { readDatabaseSql } from '@/lib/database-files';
+import { ensureOrganizationsSchema } from '@/lib/ensure-organizations-schema';
 
 /**
  * Ensures the multi-tenant control database exists and has the registry schema.
@@ -30,6 +31,8 @@ export async function ensureControlDatabase(): Promise<void> {
       const schemaSql = readDatabaseSql('control_schema.sql');
       await control.query(schemaSql);
     }
+
+    await ensureOrganizationsSchema(control);
   } finally {
     await control.end();
   }

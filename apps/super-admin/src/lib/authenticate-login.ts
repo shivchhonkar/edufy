@@ -1,7 +1,8 @@
 import { verifyPassword, generateToken } from '@edulakhya/auth';
-import type { User } from '@edulakhya/types';
+import type { User, Tenant } from '@edulakhya/types';
 import type { RequestDb } from '@/lib/request-db';
 import { signParentToken } from '@/lib/parent-auth';
+import { enrichSchoolLoginToken } from '@/lib/org-auth';
 import {
   findPortalLoginCandidates,
   verifyPortalPassword,
@@ -55,7 +56,7 @@ export async function authenticateUnifiedLogin(
   db: RequestDb,
   login: string,
   password: string,
-  tenant?: { id: number; slug: string } | null,
+  tenant?: Pick<Tenant, 'id' | 'slug' | 'organization_id'> | null,
 ): Promise<AuthenticatedLoginResult | { error: string; status: number }> {
   const trimmedLogin = login.trim();
 
@@ -70,16 +71,16 @@ export async function authenticateUnifiedLogin(
       return { error: 'Invalid credentials', status: 401 };
     }
 
-    const tokenPayload: Parameters<typeof generateToken>[0] = {
+    const tokenPayload = {
       id: staffUser.id,
       email: staffUser.email,
       role: staffUser.role,
       full_name: staffUser.full_name,
     };
-    if (tenant) {
-      tokenPayload.tenant_id = tenant.id;
-      tokenPayload.tenant_slug = tenant.slug;
-    }
+
+    const token = tenant
+      ? await enrichSchoolLoginToken(tokenPayload, tenant)
+      : generateToken({ ...tokenPayload, user_type: 'school_local' });
 
     const { password_hash: _p, ...userWithoutPassword } = staffUser as User & {
       password_hash?: string;
@@ -88,7 +89,7 @@ export async function authenticateUnifiedLogin(
     return {
       kind: 'staff',
       user: userWithoutPassword as User,
-      token: generateToken(tokenPayload),
+      token,
     };
   }
 

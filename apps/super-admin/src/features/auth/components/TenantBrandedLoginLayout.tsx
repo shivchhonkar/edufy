@@ -19,16 +19,22 @@ const BW = {
 interface TenantBrandedLoginLayoutProps {
   branding: TenantLoginBranding;
   children: ReactNode;
+  heading?: string;
+  subheading?: string;
+  footerLabel?: string | null;
 }
 
 export default function TenantBrandedLoginLayout({
   branding,
   children,
+  heading = 'Welcome!',
+  subheading = 'Kindly enter your credentials to access your account.',
+  footerLabel,
 }: TenantBrandedLoginLayoutProps) {
   const { school, branding: theme } = branding;
   const supportPhone = theme.support_phone || school.phone;
   const supportEmail = theme.support_email || school.email;
-  const schoolCode = theme.subdomain.toUpperCase();
+  const schoolCode = (footerLabel ?? theme.subdomain).toUpperCase();
 
   const themeStyle = {
     '--theme-primary-600': BW.black,
@@ -143,10 +149,8 @@ export default function TenantBrandedLoginLayout({
             </div>
 
             <div className="mb-6">
-              <h2 className="text-2xl text-gray-900">Welcome!</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Kindly enter your credentials to access your account.
-              </p>
+              <h2 className="text-2xl text-gray-900">{heading}</h2>
+              <p className="text-sm text-gray-500 mt-1">{subheading}</p>
             </div>
 
             <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 sm:p-8">
@@ -180,10 +184,12 @@ export default function TenantBrandedLoginLayout({
               </div>
             )}
 
-            <p className="mt-4 text-center text-xs font-semibold text-gray-500">
-              School code for mobile app:{' '}
-              <span className="font-bold text-gray-900">{schoolCode}</span>
-            </p>
+            {footerLabel !== null && (
+              <p className="mt-4 text-center text-xs font-semibold text-gray-500">
+                School code for mobile app:{' '}
+                <span className="font-bold text-gray-900">{schoolCode}</span>
+              </p>
+            )}
           </div>
         </div>
 

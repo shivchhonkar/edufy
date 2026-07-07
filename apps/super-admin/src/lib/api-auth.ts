@@ -3,13 +3,23 @@ import { getUserFromToken, hasRole, verifyToken } from '@edulakhya/auth';
 
 export type AuthUser = NonNullable<ReturnType<typeof getUserFromToken>> & {
   id: number;
+  user_type?: 'school_local' | 'organization' | 'parent';
+  organization_id?: number;
+  organization_slug?: string;
   tenant_id?: number;
   tenant_slug?: string;
+  school_id?: number;
+  school_slug?: string;
+  accessible_school_ids?: number[];
 };
 
 /** API routes that do not require authentication */
 export const PUBLIC_API_PATHS = [
   '/api/auth/login',
+  '/api/tenant/check',
+  '/api/tenant/branding',
+  '/api/org/branding',
+  '/api/org/schools/public',
   '/api/platform/schools/register',
   '/api/platform/schools/check-slug',
   '/api/marksheets/verify',

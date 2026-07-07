@@ -50,7 +50,7 @@ export default function TodayCollectionKpiCard({ stats, onClick }: TodayCollecti
       <div className={`mt-2.5 pt-2.5 ${dashboardStatDividerClass} grid grid-cols-2 gap-2 flex-1 items-end`}>
         <div>
           <p
-            className={`text-lg font-semibold leading-none ${
+            className={`text-lg leading-none ${
               hasData ? 'text-green-600' : 'text-gray-300'
             }`}
           >
@@ -63,7 +63,7 @@ export default function TodayCollectionKpiCard({ stats, onClick }: TodayCollecti
         </div>
         <div className="text-right">
           <p
-            className={`text-lg font-semibold leading-none ${
+            className={`text-lg leading-none ${
               hasData ? 'text-[var(--theme-primary-600)]' : 'text-gray-300'
             }`}
           >

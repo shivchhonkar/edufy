@@ -1,5 +1,12 @@
 import { Pool, QueryResult, QueryResultRow } from 'pg';
-import type { Tenant, TenantBranding, TenantContext } from '@edulakhya/types';
+import type {
+  Tenant,
+  TenantBranding,
+  TenantContext,
+  Organization,
+  OrganizationBranding,
+  OrganizationContext,
+} from '@edulakhya/types';
 
 const controlPool = new Pool({
   host: process.env.CONTROL_DB_HOST || process.env.DB_HOST || 'localhost',
@@ -37,6 +44,21 @@ export interface TenantDbConfig {
   database: string;
   user: string;
   password: string;
+}
+
+function normalizeHost(host: string): string {
+  return host.replace(/^www\./, '').toLowerCase().split(':')[0];
+}
+
+function extractHostSubdomain(hostLower: string): string | null {
+  const parts = hostLower.split('.');
+  if (parts.length >= 2 && parts[parts.length - 1] === 'localhost') {
+    return parts[0] || null;
+  }
+  if (parts.length >= 3) {
+    return parts[0] || null;
+  }
+  return parts.length >= 2 ? parts[0] : null;
 }
 
 /**
@@ -93,15 +115,113 @@ async function controlQuery<T extends QueryResultRow = QueryResultRow>(
   return controlPool.query<T>(text, params);
 }
 
+// =============================================================================
+// Organization (school group) resolution
+// =============================================================================
+
+/**
+ * Resolve organization from request host (org portal subdomain or custom domain).
+ * Does not match school (tenant) subdomains — those use getTenantByHost.
+ */
+export async function getOrganizationByHost(host: string): Promise<Organization | null> {
+  const hostLower = normalizeHost(host);
+  const subdomain = extractHostSubdomain(hostLower);
+
+  if (subdomain) {
+    const bySubdomain = await controlQuery<Organization>(
+      `SELECT o.* FROM organizations o
+       INNER JOIN organization_branding b ON b.organization_id = o.id
+       WHERE o.is_active = true
+         AND b.subdomain IS NOT NULL
+         AND LOWER(b.subdomain) = $1`,
+      [subdomain],
+    );
+    if (bySubdomain.rows.length > 0) return bySubdomain.rows[0];
+  }
+
+  const byCustomDomain = await controlQuery<Organization>(
+    `SELECT o.* FROM organizations o
+     INNER JOIN organization_branding b ON b.organization_id = o.id
+     WHERE o.is_active = true AND LOWER(b.custom_domain) = $1`,
+    [hostLower],
+  );
+  if (byCustomDomain.rows.length > 0) return byCustomDomain.rows[0];
+
+  return null;
+}
+
+export async function getOrganizationById(id: number): Promise<Organization | null> {
+  const result = await controlQuery<Organization>(
+    'SELECT * FROM organizations WHERE id = $1 AND is_active = true',
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function getOrganizationBySlug(slug: string): Promise<Organization | null> {
+  const result = await controlQuery<Organization>(
+    'SELECT * FROM organizations WHERE slug = $1 AND is_active = true',
+    [slug],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function getOrganizationBranding(
+  organizationId: number,
+): Promise<OrganizationBranding | null> {
+  const result = await controlQuery<OrganizationBranding>(
+    'SELECT * FROM organization_branding WHERE organization_id = $1',
+    [organizationId],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function getOrganizationContext(
+  host: string,
+  organizationId?: number,
+): Promise<OrganizationContext | null> {
+  let organization: Organization | null = null;
+  if (host) organization = await getOrganizationByHost(host);
+  if (!organization && organizationId) {
+    organization = await getOrganizationById(organizationId);
+  }
+  if (!organization) return null;
+  const branding = await getOrganizationBranding(organization.id);
+  return { organization, branding };
+}
+
+/**
+ * All active schools (tenants) belonging to an organization.
+ */
+export async function getSchoolsForOrganization(organizationId: number): Promise<Tenant[]> {
+  const result = await controlQuery<Tenant>(
+    `SELECT * FROM tenants
+     WHERE organization_id = $1 AND is_active = true
+     ORDER BY is_primary DESC, name ASC`,
+    [organizationId],
+  );
+  return result.rows;
+}
+
+export async function listOrganizations(): Promise<Organization[]> {
+  const result = await controlQuery<Organization>(
+    'SELECT * FROM organizations WHERE is_active = true ORDER BY name',
+  );
+  return result.rows;
+}
+
+// =============================================================================
+// School (tenant) resolution — unchanged behavior for school subdomains
+// =============================================================================
+
 /**
  * Resolve tenant from request host.
  * - subdomain: schoola.edulakhya.com → subdomain 'schoola'
  * - custom domain: schoola.com → custom_domain match
  */
 export async function getTenantByHost(host: string): Promise<Tenant | null> {
-  const hostLower = host.replace(/^www\./, '').toLowerCase().split(':')[0];
-  const parts = hostLower.split('.');
-  const subdomain = parts.length >= 2 ? parts[0] : null;
+  const hostLower = normalizeHost(host);
+  const subdomain = extractHostSubdomain(hostLower);
 
   const bySubdomain = subdomain
     ? await controlQuery<Tenant>(
@@ -167,7 +287,7 @@ export async function getTenantContext(
 }
 
 /**
- * List all active tenants (for platform admin / onboarding).
+ * List all active tenants (schools) for platform admin / onboarding.
  */
 export async function listTenants(): Promise<Tenant[]> {
   const result = await controlQuery<Tenant>(
@@ -195,4 +315,11 @@ export async function getTenantFromRequest(
 }
 
 export { controlPool };
-export type { Tenant, TenantBranding, TenantContext };
+export type {
+  Tenant,
+  TenantBranding,
+  TenantContext,
+  Organization,
+  OrganizationBranding,
+  OrganizationContext,
+};

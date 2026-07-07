@@ -1,8 +1,78 @@
-// Multi-tenant: tenant (school) registry lives in control DB; each school has its own DB
-export interface Tenant {
+// Multi-tenant control plane: organization (school group) → schools (tenants) → school DBs
+
+/** Organization = school group / trust / franchise (product "tenant"). */
+export type OrganizationType = 'single' | 'trust' | 'franchise' | 'chain';
+
+export interface Organization {
   id: number;
   slug: string;
   name: string;
+  type: OrganizationType;
+  is_active: boolean;
+  max_schools: number | null;
+  subscription_plan: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OrganizationBranding {
+  organization_id: number;
+  logo_url: string | null;
+  favicon_url: string | null;
+  primary_color: string;
+  secondary_color: string;
+  support_email: string | null;
+  support_phone: string | null;
+  custom_domain: string | null;
+  subdomain: string | null;
+  tagline: string | null;
+  footer_text: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OrganizationContext {
+  organization: Organization;
+  branding: OrganizationBranding | null;
+}
+
+export type OrganizationUserRole = 'org_owner' | 'org_admin' | 'org_viewer' | 'org_billing';
+
+export interface OrganizationUser {
+  id: number;
+  organization_id: number;
+  email: string;
+  password_hash: string;
+  full_name: string;
+  role: OrganizationUserRole;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export type UserSchoolAccessRole = 'school_admin' | 'school_viewer' | 'fee_manager' | 'viewer';
+
+export interface UserSchoolAccess {
+  id: number;
+  organization_user_id: number;
+  tenant_id: number;
+  role: UserSchoolAccessRole;
+  is_default: boolean;
+  permissions: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/** School campus / branch — maps to control DB `tenants` table. */
+export interface Tenant {
+  id: number;
+  organization_id: number | null;
+  slug: string;
+  name: string;
+  code: string | null;
+  city: string | null;
+  state: string | null;
+  is_primary: boolean;
   db_name: string;
   db_host: string | null;
   db_port: number | null;
@@ -12,6 +82,9 @@ export interface Tenant {
   created_at: Date;
   updated_at: Date;
 }
+
+/** Alias for Tenant — school = campus under an organization. */
+export type School = Tenant;
 
 export interface TenantBranding {
   tenant_id: number;

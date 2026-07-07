@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { SetupChecklist } from '@/features/setup/constants/setup-checklist';
+import { useActiveSchoolId } from '@/hooks/use-active-school-id';
 
 const EMPTY_CHECKLIST: SetupChecklist = {
   school_profile: false,
@@ -12,6 +13,7 @@ const EMPTY_CHECKLIST: SetupChecklist = {
 };
 
 export function useSchoolSetupChecklist(enabled = true) {
+  const activeSchoolId = useActiveSchoolId();
   const [checklist, setChecklist] = useState<SetupChecklist>(EMPTY_CHECKLIST);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(enabled);
@@ -19,7 +21,7 @@ export function useSchoolSetupChecklist(enabled = true) {
   const refresh = useCallback(async () => {
     if (!enabled) return;
     try {
-      const res = await fetch('/api/setup/progress');
+      const res = await fetch('/api/setup/progress', { cache: 'no-store', credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setChecklist({ ...EMPTY_CHECKLIST, ...data.data.checklist });
@@ -33,8 +35,9 @@ export function useSchoolSetupChecklist(enabled = true) {
   }, [enabled]);
 
   useEffect(() => {
+    setLoading(true);
     refresh();
-  }, [refresh]);
+  }, [refresh, activeSchoolId]);
 
   const hasPending = !isComplete && Object.values(checklist).some((v) => !v);
 

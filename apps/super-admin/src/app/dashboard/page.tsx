@@ -31,6 +31,7 @@ import {
 import SchoolSetupWelcomeModal from '@/features/setup/components/SchoolSetupWelcomeModal';
 import { useSchoolSetupChecklist } from '@/features/setup/hooks/useSchoolSetupChecklist';
 import { SETUP_CHECKLIST_ITEMS } from '@/features/setup/constants/setup-checklist';
+import { useActiveSchoolId } from '@/hooks/use-active-school-id';
 
 function formatCurrency(amount: number) {
   if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
@@ -181,6 +182,7 @@ function ModuleCard({
 
 export default function DashboardPage() {
   const router = useRouter();
+  const activeSchoolId = useActiveSchoolId();
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +190,10 @@ export default function DashboardPage() {
   const { checklist, hasPending, loading: setupLoading } = useSchoolSetupChecklist();
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    setLoading(true);
+    setError(null);
+
+    fetch('/api/dashboard/stats', { cache: 'no-store' })
       .then(async (r) => {
         const data = await r.json();
         if (r.ok && data.success && data.data) {
@@ -203,7 +208,7 @@ export default function DashboardPage() {
         setStats(EMPTY_DASHBOARD);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeSchoolId]);
 
   const attendanceComposition = useMemo(() => {
     if (!stats) return [];

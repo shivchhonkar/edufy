@@ -7,6 +7,7 @@ import AuthInput from '@/features/auth/components/AuthInput';
 import AuthAlert from '@/features/auth/components/AuthAlert';
 import { setClientSession, getClientUserRole } from '@/lib/client-auth';
 import { getRoleHomePath } from '@/lib/role-routing';
+import { setLastSelectedSchoolId } from '@/lib/selected-school';
 
 function formatLoginError(message: string): string {
   const normalized = message.trim().toLowerCase();
@@ -25,6 +26,10 @@ interface LoginFormProps {
   passwordLabel?: string;
   /** Use text input — phone, email, or student ID (no browser email validation). */
   identifierMode?: 'email' | 'user-id';
+  schoolId?: number;
+  selectedSchoolName?: string;
+  orgSlug?: string;
+  onChangeSchool?: () => void;
 }
 
 export default function LoginForm({
@@ -35,6 +40,10 @@ export default function LoginForm({
   emailLabel = 'Email address',
   passwordLabel = 'Password',
   identifierMode = 'email',
+  schoolId,
+  selectedSchoolName,
+  orgSlug,
+  onChangeSchool,
 }: LoginFormProps) {
   const [formData, setFormData] = useState({ login: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -53,6 +62,7 @@ export default function LoginForm({
         body: JSON.stringify({
           login: formData.login.trim(),
           password: formData.password,
+          ...(schoolId != null ? { school_id: schoolId } : {}),
         }),
       });
 
@@ -64,8 +74,35 @@ export default function LoginForm({
       }
 
       if (data.success) {
+        if (orgSlug && schoolId != null) {
+          setLastSelectedSchoolId(orgSlug, schoolId);
+        } else if (orgSlug && data.data?.activeSchool?.id) {
+          setLastSelectedSchoolId(orgSlug, data.data.activeSchool.id);
+        } else if (orgSlug && data.data?.tenant?.id) {
+          setLastSelectedSchoolId(orgSlug, data.data.tenant.id);
+        }
+
         setClientSession(data.data.token, data.data.user);
         const role = String(data.data.user?.role || getClientUserRole() || '');
+
+        if (data.data.requires_school_selection) {
+          window.location.href = '/org/select-school';
+          return;
+        }
+
+        if (data.data.organization && !data.data.activeSchool && data.data.schools?.length > 1) {
+          window.location.href = '/org/select-school';
+          return;
+        }
+
+        if (
+          (role === 'org_admin' || role === 'org_owner' || role === 'org_viewer') &&
+          data.data.activeSchool
+        ) {
+          window.location.href = '/admin';
+          return;
+        }
+
         window.location.href = getRoleHomePath(role);
       } else {
         setError(formatLoginError(data.error || 'Invalid user ID or password. Please try again.'));
@@ -79,6 +116,24 @@ export default function LoginForm({
 
   return (
     <>
+      {selectedSchoolName && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">School</p>
+            <p className="truncate text-sm font-medium text-gray-900">{selectedSchoolName}</p>
+          </div>
+          {onChangeSchool && (
+            <button
+              type="button"
+              onClick={onChangeSchool}
+              className="shrink-0 text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Change school
+            </button>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <AuthAlert type="error" title="Sign in failed">
