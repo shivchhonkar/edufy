@@ -41,21 +41,49 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [settings, years, classes, subjects, feeStructures] = await Promise.all([
-      db.query('SELECT school_name FROM system_settings LIMIT 1'),
-      db.query('SELECT COUNT(*)::int AS count FROM academic_years').catch(() => ({ rows: [{ count: 0 }] })),
+    const [settings, activeYears, classes, sections, subjects, feeStructures] = await Promise.all([
+      db.query(
+        `SELECT school_name, school_phone, school_email, school_address
+         FROM system_settings LIMIT 1`,
+      ),
+      db
+        .query(
+          `SELECT COUNT(*)::int AS count FROM academic_years WHERE is_active = true`,
+        )
+        .catch(() => ({ rows: [{ count: 0 }] })),
       db.query('SELECT COUNT(*)::int AS count FROM classes').catch(() => ({ rows: [{ count: 0 }] })),
+      db.query('SELECT COUNT(*)::int AS count FROM sections').catch(() => ({ rows: [{ count: 0 }] })),
       db.query('SELECT COUNT(*)::int AS count FROM subjects').catch(() => ({ rows: [{ count: 0 }] })),
       db.query('SELECT COUNT(*)::int AS count FROM fee_structures').catch(() => ({ rows: [{ count: 0 }] })),
     ]);
 
+    const profile = settings.rows[0];
+    const hasSchoolProfile =
+      !!profile?.school_name?.trim() &&
+      !!profile?.school_phone?.trim() &&
+      !!profile?.school_address?.trim();
+
     const checklist = {
-      school_profile: !!(settings.rows[0]?.school_name),
-      academic_year: (years.rows[0]?.count ?? 0) > 0,
-      classes_sections: (classes.rows[0]?.count ?? 0) > 0,
+      school_profile: hasSchoolProfile,
+      academic_year: (activeYears.rows[0]?.count ?? 0) > 0,
+      classes_sections:
+        (classes.rows[0]?.count ?? 0) > 0 && (sections.rows[0]?.count ?? 0) > 0,
       subjects: (subjects.rows[0]?.count ?? 0) > 0,
       fee_setup: (feeStructures.rows[0]?.count ?? 0) > 0,
     };
+
+    const isComplete = Object.values(checklist).every(Boolean);
+
+    if (isComplete && !progress.rows[0]?.is_complete) {
+      await db.query(
+        `UPDATE school_setup_progress SET
+          is_complete = true,
+          completed_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [progress.rows[0].id],
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -63,6 +91,7 @@ export async function GET(request: NextRequest) {
         progress: progress.rows[0],
         steps: SETUP_STEPS,
         checklist,
+        is_complete: isComplete,
       },
     });
   } catch (error) {

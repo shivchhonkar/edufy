@@ -28,6 +28,9 @@ import {
   FiBook,
   FiChevronRight,
 } from 'react-icons/fi';
+import SchoolSetupWelcomeModal from '@/features/setup/components/SchoolSetupWelcomeModal';
+import { useSchoolSetupChecklist } from '@/features/setup/hooks/useSchoolSetupChecklist';
+import { SETUP_CHECKLIST_ITEMS } from '@/features/setup/constants/setup-checklist';
 
 function formatCurrency(amount: number) {
   if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
@@ -181,6 +184,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [setupModalDismissed, setSetupModalDismissed] = useState(false);
+  const { checklist, hasPending, loading: setupLoading } = useSchoolSetupChecklist();
 
   useEffect(() => {
     fetch('/api/dashboard/stats')
@@ -278,7 +283,27 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
+      <SchoolSetupWelcomeModal
+        open={!setupLoading && hasPending && !setupModalDismissed}
+        checklist={checklist}
+        onDismiss={() => setSetupModalDismissed(true)}
+      />
+
       <div className="space-y-4">
+        {!setupLoading && hasPending && setupModalDismissed && (
+          <button
+            type="button"
+            onClick={() => setSetupModalDismissed(false)}
+            className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900 hover:bg-amber-100/80"
+          >
+            <span className="font-medium">School setup incomplete</span>
+            <span className="text-amber-800">
+              {' '}
+              — {SETUP_CHECKLIST_ITEMS.filter((i) => !checklist[i.id]).length} steps pending. Click
+              to open the setup checklist.
+            </span>
+          </button>
+        )}
         {error && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {error}. Showing empty dashboard — refresh or check your connection.
