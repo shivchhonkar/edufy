@@ -158,11 +158,11 @@ export default function TransportDashboardPage() {
   const barOverdue = fee.overdue_percent;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6 p-4 sm:p-4 lg:p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl text-gray-900">Transport Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">Overview of your transport operations</p>
+          <h1 className="text-lg text-gray-900">Transport Dashboard</h1>
+          <p className="text-xs text-gray-600 mt-1">Overview of your transport operations</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">

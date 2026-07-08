@@ -176,9 +176,9 @@ export default function TransportRoutesView() {
       />
 
       <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b">
+        {/* <div className="p-4 border-b">
           <h3 className="text-base font-semibold text-gray-900">Routes & Stops</h3>
-        </div>
+        </div> */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>

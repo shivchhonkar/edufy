@@ -194,23 +194,26 @@ export default function TransportCurrentAssignmentsView() {
 
   return (
     <div className="space-y-6 p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <TransportPageHeader
         title="Current Assignments"
         description="View and manage all student transport route assignments"
       />
-
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="text-base font-semibold text-gray-900">Current Assignments</h3>
-          <button
+        <button
             onClick={printAssignments}
             disabled={assignments.length === 0}
-            className="flex items-center space-x-2 px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center space-x-2 px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiPrinter size={16} />
             <span>Print Route-wise</span>
           </button>
-        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow">
+        {/* <div className="p-4 border-b flex justify-between items-center">
+          {/* <h3 className="text-base font-semibold text-gray-900">Current Assignments</h3> *
+          
+        </div> */}
 
         <div className="p-4 border-b bg-gray-50">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

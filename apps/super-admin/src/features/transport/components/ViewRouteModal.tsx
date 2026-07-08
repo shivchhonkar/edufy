@@ -31,7 +31,7 @@ export default function ViewRouteModal({ isOpen, onClose, route }: ViewRouteModa
         <div className="p-4 sm:p-6 space-y-6">
           {/* Route Information */}
           <div className="bg-white rounded-lg border border-gray-200">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shrink-0">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 top-0 z-10 shrink-0">
               <h3 className="text-base font-semibold text-gray-900">Route Information</h3>
             </div>
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">

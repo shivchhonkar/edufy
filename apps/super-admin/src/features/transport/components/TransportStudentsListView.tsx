@@ -412,7 +412,7 @@ function StatCard({
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-medium text-gray-500">{label}</p>
-        <p className="text-xl font-semibold text-gray-900 mt-1">{value}</p>
+        <p className="text-xl text-gray-900 mt-1">{value}</p>
       </div>
       <div className="h-10 w-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
         {icon}

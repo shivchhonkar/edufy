@@ -52,7 +52,7 @@ export default function TransportDriversView() {
   return (
     <div className="space-y-6 p-4">
       <div className="mb-6 flex justify-end">
-        <Button onClick={() => { setEditingDriver(null); setShowModal(true); }}>
+        <Button className="bg-primary-700" onClick={() => { setEditingDriver(null); setShowModal(true); }}>
           <FiPlus className="mr-2" />Add Driver
         </Button>
       </div>
