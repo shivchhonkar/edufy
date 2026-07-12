@@ -249,7 +249,7 @@ export default function StudentLedgerListPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100 space-y-3">
-          <div
+          {/* <div
             className={`flex flex-wrap items-center gap-2 ${
               hasAnyFilter ? 'justify-between' : 'justify-end'
             }`}
@@ -261,7 +261,7 @@ export default function StudentLedgerListPage() {
               </p>
             )}
             
-          </div>
+          </div> */}
 
           {filtersExpanded && (
             <div className="space-y-3">
