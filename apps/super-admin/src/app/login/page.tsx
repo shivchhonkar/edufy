@@ -147,7 +147,7 @@ export default function LoginPage() {
 
         {showLogin && (
           <LoginForm
-            showRegisterLink={!isOrgFlow}
+            showRegisterLink= {false} //{!isOrgFlow}
             submitLabel="Login"
             emailLabel="User ID"
             identifierMode="user-id"

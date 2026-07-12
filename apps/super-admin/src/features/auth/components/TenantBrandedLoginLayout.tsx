@@ -1,10 +1,18 @@
 'use client';
 
 import type { CSSProperties, ReactNode } from 'react';
-import { FiBookOpen, FiCalendar, FiClock, FiMail, FiPhone, FiSettings } from 'react-icons/fi';
-import LandingLogo from '@/features/landing/components/LandingLogo';
+import Image from 'next/image';
+import { FiMail, FiPhone } from 'react-icons/fi';
+import loginLeftBg from '@/assets/auth/left-section-bg.png';
+import { SHRIBI_BRAND_LOGO_URL, SHRIBI_WEBSITE_URL } from '@/lib/site-seo';
 import type { TenantLoginBranding } from '@/features/auth/types/tenant-login-branding';
 
+/** Sampled from left-section-bg.png edges for seamless letterboxing */
+const LOGIN_LEFT_PANEL_BG = {
+  top: '#010928',
+  mid: '#010F35',
+  bottom: '#03143C',
+} as const;
 /** Fixed monochrome palette for tenant login — independent of school theme colors. */
 const BW = {
   black: '#111827',
@@ -46,19 +54,33 @@ export default function TenantBrandedLoginLayout({
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white" style={themeStyle}>
-      {/* Left — monochrome brand panel */}
+      {/* Left — branded panel with background image */}
       <div
         className="hidden lg:flex lg:w-[42%] xl:w-[40%] relative overflow-hidden flex-col justify-between p-8 xl:p-10 text-white"
         style={{
-          background: `linear-gradient(160deg, ${BW.black} 0%, ${BW.charcoal} 45%, ${BW.slate} 100%)`,
+          background: `linear-gradient(180deg, ${LOGIN_LEFT_PANEL_BG.top} 0%, ${LOGIN_LEFT_PANEL_BG.mid} 46%, ${LOGIN_LEFT_PANEL_BG.bottom} 100%)`,
         }}
       >
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute -top-10 -left-10 h-56 w-56 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-10 right-0 h-64 w-64 rounded-full bg-gray-400 blur-3xl" />
-        </div>
+        <Image
+          src={loginLeftBg}
+          alt=""
+          fill
+          priority
+          quality={100}
+          unoptimized
+          sizes="(min-width: 1280px) 40vw, 42vw"
+          className="object-contain object-center"
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#010928]/80 via-[#010928]/20 to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#03143C]/70 via-[#03143C]/15 to-transparent"
+          aria-hidden
+        />
 
-        <div className="relative flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3">
           {school.logo_url ? (
             <img
               src={school.logo_url}
@@ -71,37 +93,20 @@ export default function TenantBrandedLoginLayout({
             </div>
           )}
           <div>
-            <p className="text-lg font-bold leading-snug">{school.name}</p>
+            <p className="text-lg font-bold leading-snug drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)]">
+              {school.name}
+            </p>
             {school.address && (
-              <p className="text-sm text-gray-300 mt-0.5 max-w-xs">{school.address}</p>
+              <p className="mt-0.5 max-w-xs text-sm text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
+                {school.address}
+              </p>
             )}
           </div>
         </div>
 
-        <div className="relative my-8">
-          {/* <div className="rounded-2xl bg-white shadow-xl p-6 max-w-md mx-auto ring-1 ring-gray-200">
-            <div className="grid grid-cols-2 gap-3 text-center text-xs text-gray-600">
-              <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
-                <FiCalendar className="mx-auto mb-1 text-gray-900" size={20} />
-                Time Table
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
-                <FiBookOpen className="mx-auto mb-1 text-gray-900" size={20} />
-                Homework
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
-                <FiClock className="mx-auto mb-1 text-gray-900" size={20} />
-                Attendance
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
-                <FiSettings className="mx-auto mb-1 text-gray-900" size={20} />
-                Admin Portal
-              </div>
-            </div>
-          </div> */}
-        </div>
+        <div className="relative z-10 flex-1" aria-hidden />
 
-        <p className="relative text-sm text-gray-300">
+        <p className="relative z-10 text-sm text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
           {theme.tagline || 'Secure school management portal for staff and administrators.'}
         </p>
       </div>
@@ -193,12 +198,31 @@ export default function TenantBrandedLoginLayout({
           </div>
         </div>
 
-        <div className="pb-6 px-4 flex flex-col items-center gap-2 text-xs text-gray-400">
-          <div className="flex items-center gap-2 grayscale">
-            <span>Powered by</span>
-            <LandingLogo size={22} />
+        <div className="pb-6 px-4 flex flex-col items-center gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="text-gray-600 font-medium">Powered by</span>
+            <a
+              href={SHRIBI_WEBSITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              aria-label="Visit Shribi website"
+            >
+              <Image
+                src={SHRIBI_BRAND_LOGO_URL}
+                alt="Shribi"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
+              <span className="text-base font-semibold tracking-tight text-gray-900">
+                Shribi Technologies Pvt Ltd
+              </span>
+            </a>
           </div>
-          <p>&copy; {new Date().getFullYear()} Shribi Edufy. All rights reserved.</p>
+          <p className="text-gray-500">
+            &copy; {new Date().getFullYear()} Shribi Edufy. All rights reserved.
+          </p>
         </div>
       </div>
     </div>

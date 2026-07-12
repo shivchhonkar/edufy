@@ -5,17 +5,17 @@ import { LOGO_SRC } from '@/lib/site-seo';
 interface LandingLogoProps {
   size?: number;
   showText?: boolean;
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'default';
   className?: string;
 }
 
 export default function LandingLogo({
   size = 40,
   showText = true,
-  variant = 'light',
+  variant = 'default',
   className = '',
 }: LandingLogoProps) {
-  const isDark = variant === 'dark';
+  const isDark = variant === 'dark' || variant === 'default';
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>

@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 export const SITE_NAME = 'Shribi Edufy';
 export const SITE_TAGLINE = 'Best School ERP Software in India';
 export const LOGO_SRC = '/shribi-smart-school-logo.png';
+export const SHRIBI_BRAND_LOGO_URL = 'https://www.shribi.com/assets/shribi-logo.png';
+export const SHRIBI_WEBSITE_URL = 'https://www.shribi.com';
 
 export const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:7000';

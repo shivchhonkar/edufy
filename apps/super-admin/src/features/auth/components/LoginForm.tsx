@@ -1,20 +1,45 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiArrowRight, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import AuthInput from '@/features/auth/components/AuthInput';
 import AuthAlert from '@/features/auth/components/AuthAlert';
+import LoginTurnstileField, {
+  isLoginTurnstileEnabled,
+} from '@/features/auth/components/LoginTurnstileField';
 import { setClientSession, getClientUserRole } from '@/lib/client-auth';
 import { getRoleHomePath } from '@/lib/role-routing';
 import { setLastSelectedSchoolId } from '@/lib/selected-school';
 
-function formatLoginError(message: string): string {
+type LoginGuardState = {
+  failures: number;
+  requiresTurnstile: boolean;
+  isLocked: boolean;
+  lockedUntil: number | null;
+  retryAfterSeconds: number | null;
+};
+
+function formatLoginError(message: string, guard?: LoginGuardState | null): string {
   const normalized = message.trim().toLowerCase();
+  if (guard?.isLocked) {
+    return message;
+  }
+  if (normalized.includes('security check')) {
+    return message;
+  }
   if (normalized === 'invalid credentials' || normalized === 'invalid email or password') {
     return 'The user ID or password you entered is incorrect. Please check your details and try again.';
   }
   return message;
+}
+
+function formatRetryLabel(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  if (seconds === 0) return `${minutes} min`;
+  return `${minutes} min ${seconds}s`;
 }
 
 interface LoginFormProps {
@@ -24,7 +49,6 @@ interface LoginFormProps {
   buttonStyle?: CSSProperties;
   emailLabel?: string;
   passwordLabel?: string;
-  /** Use text input — phone, email, or student ID (no browser email validation). */
   identifierMode?: 'email' | 'user-id';
   schoolId?: number;
   selectedSchoolName?: string;
@@ -49,9 +73,68 @@ export default function LoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [guard, setGuard] = useState<LoginGuardState | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [retrySeconds, setRetrySeconds] = useState<number | null>(null);
+
+  const isLocked = Boolean(guard?.isLocked && retrySeconds && retrySeconds > 0);
+  const showTurnstile =
+    isLoginTurnstileEnabled() && Boolean(guard?.requiresTurnstile) && !isLocked;
+  const turnstileReady = !showTurnstile || Boolean(turnstileToken);
+
+  useEffect(() => {
+    if (!guard?.isLocked || !guard.retryAfterSeconds) {
+      setRetrySeconds(null);
+      return;
+    }
+
+    setRetrySeconds(guard.retryAfterSeconds);
+    const timer = window.setInterval(() => {
+      setRetrySeconds((prev) => {
+        if (prev == null || prev <= 1) {
+          window.clearInterval(timer);
+          setGuard((current) =>
+            current?.isLocked
+              ? {
+                  failures: 0,
+                  requiresTurnstile: false,
+                  isLocked: false,
+                  lockedUntil: null,
+                  retryAfterSeconds: null,
+                }
+              : current,
+          );
+          setTurnstileToken('');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [guard?.isLocked, guard?.retryAfterSeconds]);
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    setTurnstileKey((value) => value + 1);
+  }, []);
+
+  const handleTurnstileToken = useCallback((token: string) => {
+    setTurnstileToken(token);
+    if (token) {
+      setError('');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
+    if (!turnstileReady) {
+      setError('Please complete the quick security check below, then try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -63,10 +146,14 @@ export default function LoginForm({
           login: formData.login.trim(),
           password: formData.password,
           ...(schoolId != null ? { school_id: schoolId } : {}),
+          ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
       });
 
       const data = await response.json();
+      if (data.guard) {
+        setGuard(data.guard as LoginGuardState);
+      }
 
       if (response.status === 404) {
         window.location.href = '/';
@@ -74,6 +161,9 @@ export default function LoginForm({
       }
 
       if (data.success) {
+        setGuard(null);
+        setTurnstileToken('');
+
         if (orgSlug && schoolId != null) {
           setLastSelectedSchoolId(orgSlug, schoolId);
         } else if (orgSlug && data.data?.activeSchool?.id) {
@@ -105,7 +195,10 @@ export default function LoginForm({
 
         window.location.href = getRoleHomePath(role);
       } else {
-        setError(formatLoginError(data.error || 'Invalid user ID or password. Please try again.'));
+        if (data.guard?.requiresTurnstile) {
+          resetTurnstile();
+        }
+        setError(formatLoginError(data.error || 'Invalid user ID or password. Please try again.', data.guard));
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -135,10 +228,31 @@ export default function LoginForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
+        {isLocked && retrySeconds != null && (
+          <AuthAlert type="error" title="Sign-in paused temporarily">
+            Too many incorrect attempts. Please wait{' '}
+            <span className="font-semibold">{formatRetryLabel(retrySeconds)}</span> before trying
+            again. If you forgot your password, contact your school office for help.
+          </AuthAlert>
+        )}
+
+        {error && !isLocked && (
           <AuthAlert type="error" title="Sign in failed">
             {error}
           </AuthAlert>
+        )}
+
+        {showTurnstile && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
+            <div className="flex items-start gap-2 text-sm text-amber-950">
+              <FiShield className="mt-0.5 shrink-0" size={16} aria-hidden />
+              <p>
+                For your security, please confirm you are a real person. This quick check usually
+                takes just a second.
+              </p>
+            </div>
+            <LoginTurnstileField key={turnstileKey} onTokenChange={handleTurnstileToken} />
+          </div>
         )}
 
         <AuthInput
@@ -154,6 +268,7 @@ export default function LoginForm({
           }
           value={formData.login}
           onChange={(e) => setFormData({ ...formData, login: e.target.value })}
+          disabled={isLocked}
         />
 
         <div>
@@ -172,12 +287,14 @@ export default function LoginForm({
               placeholder="Enter your password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white transition-colors placeholder:text-gray-400 focus:ring-2 focus:ring-brand/30 focus:border-brand outline-none hover:border-gray-300"
+              disabled={isLocked}
+              className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white transition-colors placeholder:text-gray-400 focus:ring-2 focus:ring-brand/30 focus:border-brand outline-none hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              disabled={isLocked}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
@@ -187,7 +304,7 @@ export default function LoginForm({
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || isLocked || !turnstileReady}
           className={buttonClassName}
           style={buttonStyle}
         >

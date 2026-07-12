@@ -4,6 +4,13 @@ import {
   authenticateOrganizationLogin,
   resolveOrganizationFromHost,
 } from '@/lib/org-auth';
+import {
+  buildLoginGuardKey,
+  clearLoginGuard,
+  enforceLoginGuard,
+  failLoginGuard,
+  type LoginGuardState,
+} from '@/lib/login-guard';
 import { getRequestDb, TenantResolutionError } from '@/lib/request-db';
 import { resolveHostContext } from '@/lib/host-context';
 import { getOrganizationById, getSchoolsForOrganization } from '@edulakhya/tenant';
@@ -15,6 +22,23 @@ function setLoginCookie(response: NextResponse, token: string) {
     sameSite: 'lax',
   });
   return response;
+}
+
+function guardJson(
+  status: number,
+  error: string,
+  state: LoginGuardState,
+  extra?: Record<string, unknown>,
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      error,
+      guard: state,
+      ...extra,
+    },
+    { status },
+  );
 }
 
 async function loginOnOrganizationHost(
@@ -48,6 +72,7 @@ async function loginOnOrganizationHost(
 
   const schoolResult = await authenticateUnifiedLogin(db, login, password, tenant);
   if (!('error' in schoolResult)) {
+    clearLoginGuard(buildLoginGuardKey(request, login));
     const response = NextResponse.json({
       success: true,
       data: {
@@ -86,6 +111,7 @@ async function loginOnOrganizationHost(
       preferredSchoolId: schoolId,
     });
     if (!('error' in orgResult)) {
+      clearLoginGuard(buildLoginGuardKey(request, login));
       const response = NextResponse.json({
         success: true,
         data: {
@@ -109,10 +135,8 @@ async function loginOnOrganizationHost(
     }
   }
 
-  return NextResponse.json(
-    { success: false, error: schoolResult.error },
-    { status: schoolResult.status },
-  );
+  const failed = failLoginGuard(request, login);
+  return guardJson(failed.status, failed.error, failed.state);
 }
 
 export async function POST(request: NextRequest) {
@@ -120,9 +144,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const login = String(body.login ?? body.email ?? body.user_id ?? '').trim();
     const password = String(body.password ?? '');
+    const turnstileToken = String(body.turnstile_token ?? body.turnstileToken ?? '').trim() || undefined;
     const host = request.headers.get('host');
     const requestedSchoolId = parseInt(String(body.school_id ?? body.tenant_id ?? ''), 10);
     const schoolId = Number.isFinite(requestedSchoolId) ? requestedSchoolId : undefined;
+
+    const guardCheck = await enforceLoginGuard(request, login, turnstileToken);
+    if (!guardCheck.ok) {
+      const { status, error, state } = guardCheck.response;
+      return guardJson(status, error, state);
+    }
 
     const hostCtx = await resolveHostContext(host);
 
@@ -161,6 +192,7 @@ export async function POST(request: NextRequest) {
             { preferredSchoolId: tenant.id },
           );
           if (!('error' in orgResult)) {
+            clearLoginGuard(buildLoginGuardKey(request, login));
             const response = NextResponse.json({
               success: true,
               data: {
@@ -185,9 +217,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
+      const failed = failLoginGuard(request, login);
+      return guardJson(failed.status, failed.error, failed.state);
     }
 
+    clearLoginGuard(buildLoginGuardKey(request, login));
     const response = NextResponse.json({
       success: true,
       data: {

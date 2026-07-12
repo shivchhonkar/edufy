@@ -185,6 +185,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|shribi-smart-school-logo.png|dashboard-shribi.png|edulakhya-logo.png|uploads/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|shribi-smart-school-logo.png|dashboard-shribi.png|edulakhya-logo.png|left-section-bg.png|uploads/).*)',
   ],
 };
