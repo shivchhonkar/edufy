@@ -380,9 +380,9 @@ export default function StudentAttendancePage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Student Attendance</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">
+            {/* <p className="text-gray-500 mt-0.5 text-sm">
               Mark attendance by class or individually, then review today&apos;s records and history.
-            </p>
+            </p> */}
           </div>
           <button
             type="button"

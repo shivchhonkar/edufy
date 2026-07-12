@@ -50,13 +50,13 @@ export default function StaffDocumentsPage() {
           >
             <FiArrowLeft size={14} /> Back to Staff
           </Link> */}
-          <h1 className="flex items-center gap-2 text-xl text-gray-900">
-            <FiFolder className="text-primary-600" />
+          <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
+            {/* <FiFolder className="text-primary-600" /> */}
             Staff Documents
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          {/* <p className="mt-1 text-sm text-gray-600">
             Upload and manage documents for each staff member.
-          </p>
+          </p> */}
         </div>
 
         <div className="relative max-w-md">

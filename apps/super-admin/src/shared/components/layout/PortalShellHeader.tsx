@@ -8,6 +8,7 @@ import {
   getClientUser,
   getClientUserRole,
 } from '@/lib/client-auth';
+import HeaderSchoolBrand from '@/shared/components/layout/HeaderSchoolBrand';
 import type { PortalId } from '@/lib/role-routing';
 import { PORTAL_TITLES } from '@/shared/navigation/portal-navigation';
 import {
@@ -20,9 +21,18 @@ import {
 interface PortalShellHeaderProps {
   portalId: PortalId;
   onMenuClick?: () => void;
+  schoolName?: string;
+  schoolLogo?: string;
+  schoolHomeHref?: string;
 }
 
-export default function PortalShellHeader({ portalId, onMenuClick }: PortalShellHeaderProps) {
+export default function PortalShellHeader({
+  portalId,
+  onMenuClick,
+  schoolName,
+  schoolLogo,
+  schoolHomeHref,
+}: PortalShellHeaderProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<Record<string, unknown> | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -103,26 +113,33 @@ export default function PortalShellHeader({ portalId, onMenuClick }: PortalShell
   }, [onMenuClick]);
 
   return (
-    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-1.5 sm:py-2 shrink-0">
+    <header className="theme-header z-40 w-full shrink-0 border-b px-4 sm:px-6 py-2.5">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 shrink items-center gap-2">
+        <div className="flex min-w-0 shrink items-center gap-2 lg:gap-3 lg:min-w-[14rem]">
           <button
             type="button"
             onClick={handleSidebarToggle}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            className="theme-header-icon-btn inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
             aria-label="Toggle sidebar"
           >
             <FiMenu className="h-4 w-4" />
           </button>
-          <div className="min-w-0 shrink max-w-[min(42vw,9rem)] sm:max-w-[12rem] md:max-w-[14rem] lg:max-w-[15rem] xl:max-w-[17rem]">
+          {schoolName ? (
+            <HeaderSchoolBrand
+              schoolName={schoolName}
+              schoolLogo={schoolLogo}
+              homeHref={schoolHomeHref}
+            />
+          ) : null}
+          <div className="hidden min-w-0 shrink max-w-[12rem] lg:block xl:max-w-[14rem]">
             <h1
-              className="flex min-w-0 items-center text-sm font-semibold leading-tight text-gray-900"
+              className="theme-header-title flex min-w-0 items-center text-sm font-semibold leading-tight"
               title={welcomeText}
             >
               <span className="truncate">{welcomeText}</span>
             </h1>
             <p
-              className="truncate text-[10px] leading-tight text-gray-500"
+              className="theme-header-subtitle truncate text-[10px] leading-tight"
               suppressHydrationWarning
             >
               {mounted ? formatPortalHeaderDate(new Date()) : 'Loading date...'}

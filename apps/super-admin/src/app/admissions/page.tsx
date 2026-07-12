@@ -194,8 +194,8 @@ export default function AdmissionsPage() {
       <div className="space-y-3 min-w-0 w-full max-w-full">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--theme-brand-dark)] flex items-center gap-2">
-              <FiClipboard className="text-[var(--theme-primary-600)] shrink-0" size={22} />
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              {/* <FiClipboard className="text-[var(--theme-primary-600)] shrink-0" size={22} /> */}
               Admission Inquiries
               <span
                 className="text-gray-400 cursor-help"
@@ -204,9 +204,9 @@ export default function AdmissionsPage() {
                 <FiInfo size={16} />
               </span>
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            {/* <p className="text-sm text-gray-500 mt-0.5">
               Track leads from first contact through enrollment
-            </p>
+            </p> */}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button

@@ -33,6 +33,7 @@ export interface SchoolVisitor {
   id_proof_type?: string | null;
   id_proof_number?: string | null;
   vehicle_number?: string | null;
+  photo_url?: string | null;
   check_in_at: string;
   check_out_at?: string | null;
   status: 'checked_in' | 'checked_out';

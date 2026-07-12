@@ -19,6 +19,8 @@ import {
 } from 'react-icons/fi'
 import { clearClientSession, getClientUser, getClientUserRole, isAdminRole } from '@/lib/client-auth'
 import { getTimeOfDayGreeting } from '@edulakhya/utils'
+import HeaderSchoolBrand from '@/shared/components/layout/HeaderSchoolBrand'
+import { useSettings } from '@/shared/SettingsContext'
 import {
   getReadTransactionIds,
   markAllTransactionsRead,
@@ -118,6 +120,9 @@ const ADMIN_PROFILE_LINKS = [
 
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter()
+  const { settings } = useSettings()
+  const schoolName = settings.school_name?.trim() || 'School CRM'
+  const schoolLogo = settings.logo_url
   const searchRef = useRef<HTMLInputElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -329,29 +334,27 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="theme-header border-b border-gray-200/80 px-4 sm:px-6 py-1.5 sm:py-2">
+    <header className="theme-header z-40 w-full shrink-0 border-b px-4 sm:px-6 py-2.5">
       <div className="flex items-center gap-2 lg:gap-4">
-        <div className="flex min-w-0 shrink items-center gap-2">
+        <div className="flex min-w-0 shrink items-center gap-2 lg:gap-3 lg:min-w-[14rem] xl:min-w-[16rem]">
           <button
             type="button"
             onClick={handleSidebarToggle}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            className="theme-header-icon-btn inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
             aria-label="Toggle sidebar"
           >
             <FiMenu className="h-4 w-4" />
           </button>
-          <div className="min-w-0 shrink max-w-[min(42vw,9rem)] sm:max-w-[12rem] md:max-w-[14rem] lg:max-w-[15rem] xl:max-w-[17rem]">
+          <HeaderSchoolBrand schoolName={schoolName} schoolLogo={schoolLogo} homeHref="/admin" />
+          <div className="hidden min-w-0 shrink max-w-[12rem] lg:block xl:max-w-[14rem]">
             <h1
-              className="flex min-w-0 items-center text-sm leading-tight text-gray-900"
+              className="theme-header-title flex min-w-0 items-center text-sm leading-tight"
               title={welcomeText}
             >
               <span className="truncate">{welcomeText}</span>
-              {/* <span aria-hidden className="ml-1 shrink-0">
-              👋
-            </span> */}
             </h1>
             <p
-              className="truncate text-[10px] leading-tight text-gray-500"
+              className="theme-header-subtitle truncate text-[10px] leading-tight"
               suppressHydrationWarning
             >
               {mounted ? formatHeaderDate(new Date()) : 'Loading date...'}
@@ -361,9 +364,9 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <form
           onSubmit={handleSearchSubmit}
-          className="hidden md:flex flex-none justify-center w-full max-w-[21.6rem] mx-auto"
+          className="hidden min-w-0 flex-1 md:flex md:justify-center"
         >
-          <div ref={searchContainerRef} className="relative w-full">
+          <div ref={searchContainerRef} className="relative w-full max-w-xl">
             <FiSearch
               className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
               aria-hidden
@@ -377,7 +380,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 if (searchResults.length > 0) setSearchOpen(true)
               }}
               placeholder="Search students & staff by name, phone, parent..."
-              className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-9 pr-14 text-xs text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50/80 py-2 pl-9 pr-14 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100"
               aria-label="Search students and staff"
               autoComplete="off"
             />

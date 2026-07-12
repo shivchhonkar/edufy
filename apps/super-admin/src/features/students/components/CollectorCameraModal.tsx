@@ -9,6 +9,7 @@ interface CollectorCameraModalProps {
   onClose: () => void;
   onCapture: (file: File) => void;
   uploading?: boolean;
+  title?: string;
 }
 
 export default function CollectorCameraModal({
@@ -16,6 +17,7 @@ export default function CollectorCameraModal({
   onClose,
   onCapture,
   uploading = false,
+  title = 'Capture collector photo',
 }: CollectorCameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,7 +137,7 @@ export default function CollectorCameraModal({
     <AppModal open={isOpen} onClose={handleClose}>
       <div className={APP_MODAL_PANEL}>
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-base font-semibold text-gray-900">Capture collector photo</h2>
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button
             type="button"
             onClick={handleClose}

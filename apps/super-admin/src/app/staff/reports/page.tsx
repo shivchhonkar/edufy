@@ -146,15 +146,20 @@ export default function StaffReportsPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="flex items-center gap-2 text-xl text-gray-900">
-              <FiBarChart2 className="text-primary-600" />
-              Staff Reports
+              {/* <FiBarChart2 className="text-primary-600" /> */}
+              Staff Reports <Link
+              href="/attendance/staff/register"
+              className="text-xs text-primary-600 hover:text-primary-800"
+            >
+              Staff Register →
+            </Link>
             </h1>
-            <p className="mt-1 text-sm text-gray-600">Staff attendance summary.</p>
+            {/* <p className="mt-1 text-sm text-gray-600">Staff attendance summary.</p> */}
           </div>
 
           <div className="flex flex-wrap items-end gap-3">
             <div className="text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Month</span>
+              {/* <span className="mb-1 block font-medium text-gray-700">Month</span> */}
               <MonthYearNavigator
                 month={month}
                 year={year}
@@ -165,7 +170,7 @@ export default function StaffReportsPage() {
               />
             </div>
             <label className="text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Department</span>
+              {/* <span className="mb-1 block font-medium text-gray-700">Department</span> */}
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
@@ -179,12 +184,7 @@ export default function StaffReportsPage() {
                 ))}
               </select>
             </label>
-            <Link
-              href="/attendance/staff/register"
-              className="pb-2 text-sm font-medium text-primary-600 hover:text-primary-800"
-            >
-              Open staff register →
-            </Link>
+            
           </div>
         </div>
 

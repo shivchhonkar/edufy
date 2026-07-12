@@ -109,17 +109,17 @@ export default function TeachersPage() {
         <div className="flex flex-wrap justify-between items-start gap-3">
           <div>
             <h1 className="text-xl flex items-center gap-2 text-gray-900">
-              <FiUsers className="text-primary-600" />
+              {/* <FiUsers className="text-primary-600" /> */}
               Teachers
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            {/* <p className="text-sm text-gray-600 mt-1">
               Teaching staff only (Teaching department). Records stay in sync with{' '}
               <Link href="/staff" className="text-primary-600 hover:underline inline-flex items-center gap-1">
                 Staff Management
                 <FiExternalLink className="w-3.5 h-3.5" />
               </Link>
               .
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -148,12 +148,12 @@ export default function TeachersPage() {
           </div>
         </div>
 
-        <div className="flex items-start gap-2 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+        {/* <div className="flex items-start gap-2 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
           <p className="text-xs">
             Only employees in the <strong>Teaching</strong> department appear here. Clerks, principals,
             drivers, and other non-teaching staff are managed under Employee Management.
           </p>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">

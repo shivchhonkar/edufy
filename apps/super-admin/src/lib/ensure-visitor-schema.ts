@@ -40,5 +40,7 @@ export async function ensureVisitorSchema(db: RequestDb): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_school_visitors_number
       ON school_visitors (visitor_number);
+
+    ALTER TABLE school_visitors ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);
   `);
 }

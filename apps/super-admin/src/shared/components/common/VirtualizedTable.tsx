@@ -9,7 +9,8 @@ export interface VirtualizedTableColumn<T> {
   headerClassName?: string;
   cellClassName?: string;
   width?: string;
-  render: (item: T) => React.ReactNode;
+  compact?: boolean;
+  render: (item: T, index: number) => React.ReactNode;
 }
 
 interface VirtualizedTableProps<T> {
@@ -20,7 +21,7 @@ interface VirtualizedTableProps<T> {
   maxHeight?: number | string;
   minWidth?: number | string;
   emptyMessage?: string;
-  rowClassName?: string;
+  rowClassName?: string | ((item: T, index: number) => string);
 }
 
 export default function VirtualizedTable<T>({
@@ -50,7 +51,7 @@ export default function VirtualizedTable<T>({
   }
 
   return (
-    <div ref={scrollRef} className="overflow-auto" style={{ maxHeight }}>
+    <div ref={scrollRef} className="overflow-auto h-full" style={{ maxHeight }}>
       <div style={{ minWidth }}>
         <div
           className="sticky top-0 z-10 grid bg-gray-50 text-gray-600 text-sm border-b border-gray-200"
@@ -59,7 +60,11 @@ export default function VirtualizedTable<T>({
           {columns.map((column) => (
             <div
               key={column.key}
-              className={`px-3 py-2 text-xs font-medium whitespace-nowrap ${column.headerClassName ?? 'text-left'}`}
+              className={`px-3 py-2 text-xs font-medium ${
+                column.compact
+                  ? 'whitespace-normal break-words leading-tight text-center'
+                  : 'whitespace-nowrap'
+              } ${column.headerClassName ?? 'text-left'}`}
             >
               {column.header}
             </div>
@@ -72,12 +77,16 @@ export default function VirtualizedTable<T>({
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
+            const resolvedRowClassName =
+              typeof rowClassName === 'function'
+                ? rowClassName(row, virtualRow.index)
+                : rowClassName;
             return (
               <div
                 key={getRowKey(row, virtualRow.index)}
                 data-index={virtualRow.index}
                 ref={rowVirtualizer.measureElement}
-                className={`absolute left-0 grid w-full border-b border-gray-100 text-sm ${rowClassName}`}
+                className={`absolute left-0 grid w-full border-b border-gray-100 text-sm ${resolvedRowClassName}`}
                 style={{
                   gridTemplateColumns,
                   height: `${virtualRow.size}px`,
@@ -87,9 +96,11 @@ export default function VirtualizedTable<T>({
                 {columns.map((column) => (
                   <div
                     key={column.key}
-                    className={`px-5 py-3 flex items-center min-w-0 ${column.cellClassName ?? 'text-left'}`}
+                    className={`min-w-0 flex ${
+                      column.compact ? 'items-stretch p-0' : 'items-center px-3 py-2'
+                    } ${column.cellClassName ?? 'text-left'}`}
                   >
-                    {column.render(row)}
+                    {column.render(row, virtualRow.index)}
                   </div>
                 ))}
               </div>

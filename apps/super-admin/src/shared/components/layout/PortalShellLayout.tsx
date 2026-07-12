@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useSettings } from '@/shared/SettingsContext';
-import SidebarBrandHeader from '@/shared/components/layout/SidebarBrandHeader';
+import CollapsedNavGroupFlyout from '@/shared/components/layout/CollapsedNavGroupFlyout';
 import PortalShellHeader from '@/shared/components/layout/PortalShellHeader';
 import { PORTAL_NAV, type PortalNavItem } from '@/shared/navigation/portal-navigation';
 import type { PortalId } from '@/lib/role-routing';
@@ -141,25 +141,26 @@ export default function PortalShellLayout({ portalId, children }: PortalShellLay
   };
 
   return (
-    <div className="flex h-[100dvh] theme-workspace overflow-hidden">
-      <PortalSidebarBackdrop open={mobileOpen} onClose={closeMobile} />
+    <div className="flex h-[100dvh] flex-col theme-workspace overflow-hidden">
+      <PortalShellHeader
+        portalId={portalId}
+        onMenuClick={openMobile}
+        schoolName={schoolName}
+        schoolLogo={schoolLogo}
+        schoolHomeHref={portalHomeHref}
+      />
 
-      <aside
-        className={`sidebar-container flex-shrink-0 h-full overflow-y-auto overflow-x-hidden transition-transform duration-300 z-50 text-xs shadow-sm fixed inset-y-0 left-0 lg:relative ${
-          displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
-        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
-        <SidebarBrandHeader
-          schoolName={schoolName}
-          schoolLogo={schoolLogo}
-          homeHref={portalHomeHref}
-          collapsed={displayCollapsed}
-          onToggle={toggleSidebar}
-        />
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <PortalSidebarBackdrop open={mobileOpen} onClose={closeMobile} />
 
-        <nav className={`flex-1 overflow-y-auto ${displayCollapsed ? 'px-1.5 py-2' : 'px-2 py-2'}`}>
-          {navItems.map(renderNavLink)}
-        </nav>
+        <aside
+          className={`sidebar-container flex-shrink-0 h-full overflow-y-auto overflow-x-hidden transition-transform duration-300 z-50 text-xs shadow-sm fixed top-14 bottom-0 left-0 lg:static lg:top-auto lg:bottom-auto lg:h-full ${
+            displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
+          } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        >
+          <nav className={`flex-1 overflow-y-auto ${displayCollapsed ? 'px-1.5 py-3' : 'px-2 py-3'}`}>
+            {navItems.map(renderNavLink)}
+          </nav>
 
         <div className={`border-t border-gray-200 ${displayCollapsed ? 'px-1.5 py-2' : 'px-2 py-2'}`}>
           {displayCollapsed ? (
@@ -184,9 +185,7 @@ export default function PortalShellLayout({ portalId, children }: PortalShellLay
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col min-h-0">
-        <PortalShellHeader portalId={portalId} onMenuClick={openMobile} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-h-0">{children}</main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

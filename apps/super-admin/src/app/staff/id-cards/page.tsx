@@ -156,12 +156,12 @@ export default function StaffIdCardsPage() {
             </Link> */}
             <div className='flex flex-col gap-1'>
             <h1 className="flex items-center gap-2 text-lg text-gray-900">
-              <FiCreditCard className="text-primary-600" />
+              {/* <FiCreditCard className="text-primary-600" /> */}
               Staff ID Cards
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            {/* <p className="mt-1 text-sm text-gray-600">
               Select staff members and print identity cards.
-            </p>
+            </p> */}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

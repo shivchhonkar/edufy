@@ -3,34 +3,39 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiSearch, FiUser } from 'react-icons/fi';
 
-export interface StaffSearchOption {
+export type HostSearchOptionType = 'staff' | 'student';
+
+export interface HostSearchOption {
+  type: HostSearchOptionType;
   id: number;
   name: string;
   phone: string;
-  employee_id: string;
+  subtitle: string;
   department_name?: string | null;
-  designation_name?: string | null;
 }
 
-interface StaffSearchFieldProps {
+/** @deprecated Use HostSearchOption */
+export type StaffSearchOption = HostSearchOption;
+
+interface HostSearchFieldProps {
   value: string;
   onChange: (name: string) => void;
-  onSelect: (staff: StaffSearchOption) => void;
+  onSelect: (option: HostSearchOption) => void;
   required?: boolean;
   placeholder?: string;
 }
 
-export default function StaffSearchField({
+export default function HostSearchField({
   value,
   onChange,
   onSelect,
   required,
-  placeholder = 'Search staff by name, ID, or phone...',
-}: StaffSearchFieldProps) {
+  placeholder = 'Search staff or student by name...',
+}: HostSearchFieldProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<StaffSearchOption[]>([]);
+  const [results, setResults] = useState<HostSearchOption[]>([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,7 +60,7 @@ export default function StaffSearchField({
     const timer = setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/visitors/staff-search?q=${encodeURIComponent(query)}&limit=10`,
+          `/api/visitors/host-search?q=${encodeURIComponent(query)}&limit=10`,
         );
         const result = await response.json();
         if (response.ok && result.success) {
@@ -73,8 +78,8 @@ export default function StaffSearchField({
     return () => clearTimeout(timer);
   }, [value]);
 
-  const handleSelect = (staff: StaffSearchOption) => {
-    onSelect(staff);
+  const handleSelect = (option: HostSearchOption) => {
+    onSelect(option);
     setOpen(false);
   };
 
@@ -102,31 +107,40 @@ export default function StaffSearchField({
       {showDropdown && (
         <div className="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-60 overflow-y-auto">
           {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-500">Searching staff...</div>
+            <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
           ) : results.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500">
-              No staff found. You can still enter a name manually.
+              No staff or students found. You can still enter a name manually.
             </div>
           ) : (
-            results.map((staff) => (
+            results.map((option) => (
               <button
-                key={staff.id}
+                key={`${option.type}-${option.id}`}
                 type="button"
-                onClick={() => handleSelect(staff)}
+                onClick={() => handleSelect(option)}
                 className="w-full text-left px-3 py-2.5 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-50 last:border-b-0"
               >
                 <div className="w-8 h-8 shrink-0 bg-primary-50 rounded-full flex items-center justify-center">
                   <FiUser className="w-4 h-4 text-primary-600" />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-gray-900 truncate">{staff.name}</div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {[staff.designation_name, staff.department_name, staff.employee_id]
-                      .filter(Boolean)
-                      .join(' · ')}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-900 truncate">{option.name}</span>
+                    <span
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                        option.type === 'staff'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-violet-100 text-violet-700'
+                      }`}
+                    >
+                      {option.type}
+                    </span>
                   </div>
-                  {staff.phone && (
-                    <div className="text-xs text-gray-400 mt-0.5">{staff.phone}</div>
+                  {option.subtitle && (
+                    <div className="text-xs text-gray-500 truncate">{option.subtitle}</div>
+                  )}
+                  {option.phone && (
+                    <div className="text-xs text-gray-400 mt-0.5">{option.phone}</div>
                   )}
                 </div>
               </button>

@@ -6,16 +6,14 @@ import { studentFullName, studentInitials, getStudentContactPhone } from '@/feat
 import { FiCheckSquare, FiEdit, FiSquare, FiTrash, FiEye } from 'react-icons/fi';
 import StudentRowMoreActions from '@/features/students/components/StudentRowMoreActions';
 
-const ROW_HEIGHT = 73;
-const OVERSCAN = 10;
+const ROW_HEIGHT = 44;
+const OVERSCAN = 12;
 
-const ACTIONS_COLUMN = 'minmax(10rem, 1.1fr)';
+const ACTIONS_COLUMN = 'minmax(7.5rem, 0.95fr)';
 
-const GRID_COLUMNS =
-  `minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) ${ACTIONS_COLUMN}`;
+const GRID_COLUMNS = `minmax(6.5rem, 0.85fr) minmax(11rem, 2fr) minmax(5rem, 0.75fr) minmax(3.5rem, 0.5fr) minmax(4rem, 0.6fr) ${ACTIONS_COLUMN}`;
 
-const GRID_COLUMNS_WITH_SELECT =
-  `2.75rem minmax(7rem,0.9fr) minmax(14rem,2fr) minmax(6rem,0.9fr) minmax(5rem,0.7fr) minmax(7rem,0.9fr) minmax(5.5rem,0.7fr) ${ACTIONS_COLUMN}`;
+const GRID_COLUMNS_WITH_SELECT = `2.25rem minmax(6.5rem, 0.85fr) minmax(11rem, 2fr) minmax(5rem, 0.75fr) minmax(3.5rem, 0.5fr) minmax(4rem, 0.6fr) ${ACTIONS_COLUMN}`;
 
 interface VirtualizedStudentsTableProps {
   students: Student[];
@@ -95,7 +93,7 @@ export default function VirtualizedStudentsTable({
 
   if (students.length === 0) {
     return (
-      <div className="px-6 py-12 text-center text-gray-500">
+      <div className="px-4 py-8 text-center text-sm text-gray-500">
         No students found. Click &quot;Add Student&quot; to get started.
       </div>
     );
@@ -116,25 +114,24 @@ export default function VirtualizedStudentsTable({
                 !allSelected
               )
             }
-            className="px-3 py-3 flex items-center justify-center text-gray-600 hover:text-primary-600"
+            className="px-2 py-2 flex items-center justify-center text-gray-600 hover:text-primary-600"
             title={allSelected ? 'Deselect all' : 'Select all'}
           >
-            {allSelected ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
+            {allSelected ? <FiCheckSquare size={15} /> : <FiSquare size={15} />}
           </button>
         )}
-        <HeaderCell>Admission No.</HeaderCell>
-        <HeaderCell>Student Name</HeaderCell>
+        <HeaderCell>Admission</HeaderCell>
+        <HeaderCell>Student</HeaderCell>
         <HeaderCell>Class</HeaderCell>
         <HeaderCell>Gender</HeaderCell>
-        <HeaderCell>Contact</HeaderCell>
         <HeaderCell>Status</HeaderCell>
-        <HeaderCell className="pr-5">Actions</HeaderCell>
+        <HeaderCell className="pr-3">Actions</HeaderCell>
       </div>
 
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="overflow-auto max-h-[calc(100vh-240px)]"
+        className="overflow-auto max-h-[calc(100vh-180px)]"
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <div
@@ -167,7 +164,7 @@ export default function VirtualizedStudentsTable({
       </div>
 
       {selectionEnabled && someSelected && !allSelected && (
-        <p className="px-4 py-2 text-xs text-gray-500 border-t bg-gray-50">
+        <p className="px-3 py-1.5 text-xs text-gray-500 border-t bg-gray-50">
           {selectedIds!.size} selected · use header checkbox to select all {students.length} loaded
         </p>
       )}
@@ -184,7 +181,7 @@ function HeaderCell({
 }) {
   return (
     <div
-      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}
+      className={`px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wide ${className}`}
     >
       {children}
     </div>
@@ -219,16 +216,19 @@ function StudentRow({
   style,
 }: StudentRowProps) {
   const contactPhone = getStudentContactPhone(student);
+  const classLabel = student.class_name
+    ? [student.class_name, student.section_name].filter(Boolean).join('-')
+    : '—';
 
   return (
     <div
-      className={`grid w-full min-w-0 items-center border-b border-gray-200 hover:bg-gray-50 ${
+      className={`grid w-full min-w-0 items-center border-b border-gray-100 hover:bg-gray-50 ${
         selected ? 'bg-primary-50/60' : 'bg-white'
       }`}
       style={{ gridTemplateColumns: gridColumns, ...style }}
     >
       {onToggleSelect && (
-        <div className="px-3 flex items-center justify-center">
+        <div className="px-2 flex items-center justify-center">
           <button
             type="button"
             onClick={() => onToggleSelect(student.id)}
@@ -236,56 +236,54 @@ function StudentRow({
             aria-label={selected ? 'Deselect student' : 'Select student'}
           >
             {selected ? (
-              <FiCheckSquare className="text-primary-600" size={18} />
+              <FiCheckSquare className="text-primary-600" size={15} />
             ) : (
-              <FiSquare className="text-gray-400" size={18} />
+              <FiSquare className="text-gray-400" size={15} />
             )}
           </button>
         </div>
       )}
-      <div className="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
-        {student.admission_number}
-        <p className="text-xs text-gray-500">Roll No.: {student.roll_number || 'N/A'}</p>
+
+      <div className="px-3 py-1.5 min-w-0">
+        <div className="truncate text-xs font-medium text-gray-900">{student.admission_number}</div>
+        <div className="truncate text-[11px] text-gray-500">
+          Roll {student.roll_number || '—'}
+        </div>
       </div>
 
-      <div className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
+      <div className="px-3 py-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {student.photo_url ? (
             <img
               src={student.photo_url}
               alt={studentFullName(student)}
-              className="h-10 w-10 rounded-full object-cover mr-3"
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-              <span className="text-sm font-medium text-gray-600">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
+              <span className="text-[10px] font-medium text-gray-600">
                 {studentInitials(student)}
               </span>
             </div>
           )}
-          <div>
-            <div className="text-sm font-medium text-gray-900">{studentFullName(student)}</div>
-            <div className="text-sm text-gray-500">{contactPhone}</div>
+          <div className="min-w-0">
+            <div className="truncate text-xs font-medium text-gray-900">
+              {studentFullName(student)}
+            </div>
+            <div className="truncate text-[11px] text-gray-500">{contactPhone || '—'}</div>
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-4 whitespace-nowrap text-sm">
-        <div className="font-medium text-gray-900">{student.class_name || 'Not Assigned'}</div>
-        {student.class_name && (
-          <p className="text-xs text-gray-500">
-            {student.section_name || 'N/A'}
-          </p>
-        )}
+      <div className="px-3 py-1.5 truncate text-xs text-gray-700">{classLabel}</div>
+
+      <div className="px-3 py-1.5 truncate text-xs text-gray-500 capitalize">
+        {student.gender || '—'}
       </div>
 
-      <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.gender}</div>
-
-      <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{contactPhone}</div>
-
-      <div className="px-6 py-4 whitespace-nowrap">
+      <div className="px-3 py-1.5">
         <span
-          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          className={`px-1.5 py-0.5 inline-flex text-[10px] font-medium rounded ${
             student.status === 'active'
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
@@ -295,36 +293,37 @@ function StudentRow({
         </span>
       </div>
 
-      <div className="flex h-full min-w-0 items-center justify-end gap-0.5 pl-3 pr-5">
+      <div className="flex h-full min-w-0 items-center justify-end gap-0 pl-2 pr-3">
         <button
           type="button"
           onClick={() => onView(student)}
-          className="inline-flex shrink-0 items-center justify-center p-1 text-primary-600 hover:text-primary-900"
+          className="inline-flex shrink-0 items-center justify-center p-0.5 text-primary-600 hover:text-primary-900"
           title="View Details"
         >
-          <FiEye size={18} />
+          <FiEye size={15} />
         </button>
         <button
           type="button"
           onClick={() => onEdit(student)}
-          className="inline-flex shrink-0 items-center justify-center p-1 text-blue-600 hover:text-blue-900"
+          className="inline-flex shrink-0 items-center justify-center p-0.5 text-blue-600 hover:text-blue-900"
           title="Edit"
         >
-          <FiEdit size={18} />
+          <FiEdit size={15} />
         </button>
         <button
           type="button"
           onClick={() => onDelete(student)}
-          className="inline-flex shrink-0 items-center justify-center p-1 text-red-600 hover:text-red-900"
+          className="inline-flex shrink-0 items-center justify-center p-0.5 text-red-600 hover:text-red-900"
           title="Delete"
         >
-          <FiTrash size={18} />
+          <FiTrash size={15} />
         </button>
         <StudentRowMoreActions
           student={student}
           onGenerateTc={onGenerateTc}
           onGatePass={onGatePass}
           onIdCard={onIdCard}
+          compact
         />
       </div>
     </div>

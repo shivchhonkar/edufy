@@ -10,6 +10,7 @@ interface StudentRowMoreActionsProps {
   onGenerateTc?: (student: Student) => void;
   onGatePass?: (student: Student) => void;
   onIdCard?: (student: Student) => void;
+  compact?: boolean;
 }
 
 const MENU_ITEMS = [
@@ -35,6 +36,7 @@ export default function StudentRowMoreActions({
   onGenerateTc,
   onGatePass,
   onIdCard,
+  compact = false,
 }: StudentRowMoreActionsProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -126,13 +128,15 @@ export default function StudentRowMoreActions({
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex shrink-0 items-center justify-center p-1 text-gray-500 hover:text-gray-700"
+        className={`inline-flex shrink-0 items-center justify-center text-gray-500 hover:text-gray-700 ${
+          compact ? 'p-0.5' : 'p-1'
+        }`}
         title="More actions"
         aria-label="More actions"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <FiMoreVertical size={18} />
+        <FiMoreVertical size={compact ? 15 : 18} />
       </button>
       {menu}
     </>

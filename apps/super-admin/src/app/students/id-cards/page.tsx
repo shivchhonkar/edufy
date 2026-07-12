@@ -2,7 +2,6 @@
 
 import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
-import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
 import { usePreselectStudentIdsFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
@@ -12,7 +11,6 @@ import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
 import type { Student } from '@/shared/types';
 import {
-  FiArrowLeft,
   FiChevronDown,
   FiChevronUp,
   FiCreditCard,
@@ -25,6 +23,7 @@ import {
 
 const STUDENTS_FETCH_LIMIT = 50000;
 const UNASSIGNED_CLASS_FILTER = 'unassigned';
+const MAX_ID_CARD_SELECTION = 10;
 
 interface Class {
   id: number;
@@ -55,6 +54,7 @@ function StudentIdCardsPageContent() {
   const { alert } = useDialog();
   const { settings } = useSettings();
   const [students, setStudents] = useState<Student[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -62,7 +62,7 @@ function StudentIdCardsPageContent() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [reportSettings, setReportSettings] = useState<{
     counsellor_name?: string;
@@ -109,6 +109,7 @@ function StudentIdCardsPageContent() {
         search,
         limit: String(STUDENTS_FETCH_LIMIT),
         page: '1',
+        status: 'active',
       });
       if (classFilter) params.set('class_id', classFilter);
       if (sectionFilter && classFilter !== UNASSIGNED_CLASS_FILTER) {
@@ -119,6 +120,7 @@ function StudentIdCardsPageContent() {
       const data = await response.json();
       if (data.success) {
         setStudents(data.data);
+        setTotalStudents(data.pagination?.total ?? data.data.length);
       }
     } catch (error) {
       console.error(error);
@@ -141,8 +143,18 @@ function StudentIdCardsPageContent() {
   const toggleStudent = (id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        return next;
+      }
+      if (next.size >= MAX_ID_CARD_SELECTION) {
+        void alert(`You can select up to ${MAX_ID_CARD_SELECTION} students at a time for ID cards.`, {
+          title: 'Selection limit',
+          type: 'warning',
+        });
+        return prev;
+      }
+      next.add(id);
       return next;
     });
   };
@@ -150,9 +162,23 @@ function StudentIdCardsPageContent() {
   const toggleAll = (ids: number[], select: boolean) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
+      if (!select) {
+        for (const id of ids) next.delete(id);
+        return next;
+      }
+      let limitReached = false;
       for (const id of ids) {
-        if (select) next.add(id);
-        else next.delete(id);
+        if (next.size >= MAX_ID_CARD_SELECTION) {
+          limitReached = true;
+          break;
+        }
+        next.add(id);
+      }
+      if (limitReached) {
+        void alert(`You can select up to ${MAX_ID_CARD_SELECTION} students at a time for ID cards.`, {
+          title: 'Selection limit',
+          type: 'warning',
+        });
       }
       return next;
     });
@@ -184,21 +210,21 @@ function StudentIdCardsPageContent() {
   };
 
   const hasActiveFilters = Boolean(search || classFilter || sectionFilter);
+  const listScopeLabel = hasActiveFilters
+    ? `${students.length} shown`
+    : `${totalStudents} student${totalStudents !== 1 ? 's' : ''} · all classes`;
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
+      <div className="flex min-h-[calc(100dvh-7rem)] flex-col gap-3">
+        <div className="flex shrink-0 flex-wrap items-start justify-between gap-3 print:hidden">
           <div>
-            <Link
-              href="/students"
-              className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 mb-1"
-            >
-              <FiArrowLeft size={14} /> Students
-            </Link>
-            <h1 className="text-xl text-gray-900 flex items-center gap-2">
-              <FiCreditCard className="text-primary-600" />
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              {/* <FiCreditCard className="text-primary-600" /> */}
               Student ID Cards
+              {!loading && (
+                <span className="text-xs font-normal text-gray-500">{listScopeLabel}</span>
+              )}
               <span className="relative group/tip">
                 <button
                   type="button"
@@ -211,39 +237,17 @@ function StudentIdCardsPageContent() {
                   role="tooltip"
                   className="absolute left-0 top-full z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-normal text-gray-700 shadow-lg opacity-0 pointer-events-none transition-opacity group-hover/tip:opacity-100 group-hover/tip:pointer-events-auto group-focus-within/tip:opacity-100 group-focus-within/tip:pointer-events-auto"
                 >
-                  Tip: Filter by class, select students, then print. Cards are sized for CR80
-                  (credit-card) format — use &quot;Actual size&quot; in print settings for best
-                  results.
+                  Tip: Select up to {MAX_ID_CARD_SELECTION} students at a time, then preview or
+                  print. Cards are sized for CR80 (credit-card) format — use &quot;Actual
+                  size&quot; in print settings for best results.
                 </span>
               </span>
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            {/* <p className="text-sm text-gray-600 mt-1">
               Select students and print standard CR80 identity cards.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePreview}
-              disabled={selectedStudents.length === 0}
-              className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
-            >
-              Preview Cards
-              {selectedStudents.length > 0 ? ` (${selectedStudents.length})` : ''}
-            </button>
-            <button
-              type="button"
-              onClick={handlePrint}
-              disabled={selectedStudents.length === 0}
-              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm disabled:opacity-40"
-            >
-              <FiPrinter size={16} />
-              Print {selectedStudents.length > 0 ? `(${selectedStudents.length})` : ''}
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3 print:hidden">
           <button
             type="button"
             onClick={() => setFiltersExpanded((p) => !p)}
@@ -258,6 +262,33 @@ function StudentIdCardsPageContent() {
             {filtersExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
           </button>
 
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={selectedStudents.length === 0}
+              className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+            >
+              Preview Cards
+              {selectedStudents.length > 0
+                ? ` (${selectedStudents.length}/${MAX_ID_CARD_SELECTION})`
+                : ''}
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={selectedStudents.length === 0}
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm disabled:opacity-40"
+            >
+              <FiPrinter size={16} />
+              Print
+              {selectedStudents.length > 0
+                ? ` (${selectedStudents.length}/${MAX_ID_CARD_SELECTION})`
+                : ''}
+            </button>
+          </div>
+        </div>
+
+        <div className="shrink-0 space-y-3 print:hidden">
           {filtersExpanded && (
             <div className="bg-white border rounded-lg px-4 py-3 grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2 relative">
@@ -313,9 +344,9 @@ function StudentIdCardsPageContent() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow print:hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow print:hidden">
           {loading ? (
-            <div className="flex justify-center py-16">
+            <div className="flex flex-1 items-center justify-center py-16">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
             </div>
           ) : (
@@ -324,6 +355,8 @@ function StudentIdCardsPageContent() {
               selectedIds={selectedIds}
               onToggle={toggleStudent}
               onToggleAll={toggleAll}
+              fillHeight
+              maxSelection={MAX_ID_CARD_SELECTION}
             />
           )}
         </div>
@@ -332,9 +365,9 @@ function StudentIdCardsPageContent() {
       {showPreviewModal && selectedStudents.length > 0 && (
         <AppModal open={showPreviewModal} onClose={() => setShowPreviewModal(false)}>
           <div className={APP_MODAL_PANEL}>
-            <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 print:hidden">
+            <div className="flex shrink-0 items-center justify-between border-b px-4 print:hidden">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">ID Card Preview</h2>
+                <h2 className="text-lg font-medium text-gray-900">ID Card Preview</h2>
                 <p className="text-sm text-gray-500">
                   {selectedStudents.length} card{selectedStudents.length !== 1 ? 's' : ''} selected
                 </p>

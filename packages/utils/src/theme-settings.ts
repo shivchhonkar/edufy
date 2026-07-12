@@ -22,7 +22,7 @@ export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   surface_color: '#ffffff',
   font_color: '#111827',
   muted_font_color: '#6b7280',
-  sidebar_background: '#0D3D75',
+  sidebar_background: '#0F172A',
   sidebar_text_color: '#ffffff',
   sidebar_active_background: 'rgba(77, 196, 240, 0.18)',
   sidebar_active_text: '#4DC4F0',
@@ -287,6 +287,26 @@ function buildPrimaryScale(base: string): Record<string, string> {
   }
 }
 
+function isDarkHex(hex: string): boolean {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return false
+  const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255
+  return luminance < 0.45
+}
+
+function resolveHeaderThemeVars(theme: ThemeSettings) {
+  const headerBg = theme.header_background
+  const dark = isDarkHex(headerBg)
+
+  return {
+    headerBg,
+    headerText: dark ? '#ffffff' : theme.font_color,
+    headerMuted: dark ? 'rgba(255, 255, 255, 0.78)' : theme.muted_font_color,
+    headerBorder: dark ? 'rgba(255, 255, 255, 0.14)' : '#e5e7eb',
+    headerHover: dark ? 'rgba(255, 255, 255, 0.1)' : '#f3f4f6',
+  }
+}
+
 export function mergeThemeSettings(raw: unknown): ThemeSettings {
   const input = raw && typeof raw === 'object' ? (raw as Partial<ThemeSettings>) : {}
   const merged = { ...DEFAULT_THEME_SETTINGS }
@@ -324,5 +344,11 @@ export function applyThemeToDocument(theme: ThemeSettings): void {
   root.style.setProperty('--theme-sidebar-text', theme.sidebar_text_color)
   root.style.setProperty('--theme-sidebar-active-bg', theme.sidebar_active_background)
   root.style.setProperty('--theme-sidebar-active-text', theme.sidebar_active_text)
-  root.style.setProperty('--theme-header-bg', theme.header_background)
+
+  const headerTheme = resolveHeaderThemeVars(theme)
+  root.style.setProperty('--theme-header-bg', headerTheme.headerBg)
+  root.style.setProperty('--theme-header-text', headerTheme.headerText)
+  root.style.setProperty('--theme-header-muted', headerTheme.headerMuted)
+  root.style.setProperty('--theme-header-border', headerTheme.headerBorder)
+  root.style.setProperty('--theme-header-hover', headerTheme.headerHover)
 }

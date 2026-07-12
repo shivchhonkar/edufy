@@ -74,12 +74,12 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
   {
     id: 'dashboard',
     title: 'Dashboard',
-    icon: FiHome,
+    icon: FiGrid,
     items: [
       { name: 'Dashboard', path: '/admin', icon: FiGrid },
       // { name: 'Analytics', path: '/dashboard/analytics', icon: FiBarChart2 },
       // { name: 'Reports', path: '/settings/reports', icon: FiFileText },
-      { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: FiActivity },
+      // { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: FiActivity },
     ],
   },
   {
@@ -117,7 +117,8 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       // { name: 'Student Health Records', path: '/students?hint=medical', icon: FiHeart },
       { name: 'Student ID Cards', path: '/students/id-cards', icon: FiCreditCard },
       { name: 'Gate Pass Exit', path: '/students/gate-pass', icon: FiShield },
-      
+      // reports
+      { name: 'Student Reports', path: '/students/reports', icon: FiBarChart2 },
     ],
   },
   {

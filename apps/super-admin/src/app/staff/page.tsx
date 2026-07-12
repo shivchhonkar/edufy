@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { FiPlus, FiSearch, FiUpload } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiFilter, FiPlus, FiSearch, FiUpload, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import AddStaffModal from '@/features/staff/components/AddStaffModal';
 import ViewStaffModal from '@/features/staff/components/ViewStaffModal';
@@ -54,6 +54,7 @@ export default function StaffPage() {
   }>({});
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   useEffect(() => {
     // Check if user is super admin
@@ -191,67 +192,154 @@ export default function StaffPage() {
     setEditingStaff(null);
   };
 
+  const hasActiveFilters = Boolean(
+    search || (isSuperAdmin && statusFilter !== 'active'),
+  );
+  const activeFilterCount = [
+    search,
+    isSuperAdmin && statusFilter !== 'active' ? statusFilter : '',
+  ].filter(Boolean).length;
+
+  const statusFilterLabel =
+    statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('active');
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-wrap justify-between items-start gap-3">
-          <div>
-            <h1 className="text-xl text-gray-900">Staff Management</h1>
-            <p className="text-sm text-gray-600 mt-0.5">Manage staff members and their details</p>
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-lg font-medium text-gray-900">Staff Management</h1>
+              {!loading && (
+                <span className="text-xs text-gray-500">
+                  {totalStaff} total
+                  {staff.length < totalStaff ? ` · ${staff.length} loaded` : ''}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFiltersExpanded((prev) => !prev)}
+                aria-expanded={filtersExpanded}
+                className={`border px-2.5 py-1.5 rounded-md flex items-center gap-1.5 text-xs transition-colors ${
+                  filtersExpanded || hasActiveFilters
+                    ? 'border-primary-300 bg-primary-50 text-primary-700'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                <FiFilter size={15} />
+                <span>Filters</span>
+                {hasActiveFilters && (
+                  <span className="text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+                {filtersExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+              </button>
+              <button
+                onClick={() => setShowImport(true)}
+                className="border px-2.5 py-1.5 rounded-md hover:bg-gray-50 flex items-center gap-1.5 text-xs"
+              >
+                <FiUpload size={14} />
+                <span>Import CSV</span>
+              </button>
+              <button
+                onClick={handleAddStaff}
+                className="bg-primary-600 text-white px-2.5 py-1.5 rounded-md hover:bg-primary-700 flex items-center gap-1.5 text-xs font-medium"
+              >
+                <FiPlus size={14} />
+                <span>Add Staff</span>
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowImport(true)}
-              className="border px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
-            >
-              <FiUpload size={15} />
-              <span>Import CSV</span>
-            </button>
-            <button
-              onClick={handleAddStaff}
-              className="bg-primary-600 text-white px-3 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm font-medium"
-            >
-              <FiPlus size={15} />
-              <span>Add Staff</span>
-            </button>
-          </div>
+
+          {filtersExpanded && (
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2.5 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className={`relative ${isSuperAdmin ? 'md:col-span-2' : 'md:col-span-3'}`}>
+                  <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
+                  <input
+                    type="text"
+                    placeholder="Search by name, employee ID, or phone..."
+                    className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-xs text-gray-900 bg-white"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                {isSuperAdmin && (
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-xs text-gray-900 bg-white"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="resigned">Resigned</option>
+                    <option value="terminated">Terminated</option>
+                  </select>
+                )}
+              </div>
+              {hasActiveFilters && (
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center flex-wrap gap-2">
+                    {search && (
+                      <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs">
+                        Search: &quot;{search}&quot;
+                      </span>
+                    )}
+                    {isSuperAdmin && statusFilter !== 'active' && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                        Status: {statusFilterLabel}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                  >
+                    <FiX size={14} />
+                    Clear all
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!filtersExpanded && hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-gray-500">Filtered:</span>
+              {search && (
+                <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full">
+                  &quot;{search}&quot;
+                </span>
+              )}
+              {isSuperAdmin && statusFilter !== 'active' && (
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                  {statusFilterLabel}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-gray-500 hover:text-gray-800 underline"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-3 sm:px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex-1 relative min-w-0">
-              <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-              <input
-                type="text"
-                placeholder="Search by name, employee ID, or phone..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            {isSuperAdmin && (
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full sm:w-40 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="resigned">Resigned</option>
-                <option value="terminated">Terminated</option>
-              </select>
-            )}
-            {!loading && (
-              <p className="text-sm text-gray-500 sm:whitespace-nowrap">
-                {staff.length}
-                {totalStaff > staff.length ? ` of ${totalStaff}` : ''} staff
-              </p>
-            )}
-          </div>
-
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-48">
+            <div className="flex items-center justify-center h-40">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
             </div>
           ) : (

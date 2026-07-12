@@ -20,11 +20,15 @@
   --theme-surface: #ffffff;
   --theme-font: #111827;
   --theme-muted-font: #6b7280;
-  --theme-sidebar-bg: #0D3D75;
+  --theme-sidebar-bg: #0F172A;
   --theme-sidebar-text: #ffffff;
   --theme-sidebar-active-bg: rgba(77, 196, 240, 0.18);
   --theme-sidebar-active-text: #4DC4F0;
   --theme-header-bg: #ffffff;
+  --theme-header-text: #111827;
+  --theme-header-muted: #6b7280;
+  --theme-header-border: #e5e7eb;
+  --theme-header-hover: #f3f4f6;
 }
 
 body {
@@ -46,6 +50,28 @@ input, textarea, select {
 
 .theme-header {
   background-color: var(--theme-header-bg) !important;
+  color: var(--theme-header-text);
+  border-bottom-color: var(--theme-header-border) !important;
+}
+
+.theme-header .theme-header-title {
+  color: var(--theme-header-text);
+}
+
+.theme-header .theme-header-subtitle {
+  color: var(--theme-header-muted);
+}
+
+.theme-header .theme-header-icon-btn {
+  color: var(--theme-header-text);
+}
+
+.theme-header .theme-header-icon-btn:hover {
+  background-color: var(--theme-header-hover);
+}
+
+.theme-header .theme-header-school:hover {
+  background-color: var(--theme-header-hover);
 }
 
 .theme-workspace {

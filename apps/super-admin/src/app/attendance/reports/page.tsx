@@ -688,9 +688,9 @@ export default function StudentAttendanceReportsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Student Attendance Reports</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">
+            {/* <p className="text-gray-500 mt-0.5 text-sm">
               Review detailed attendance by student, class, section, or date range.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
           <Link

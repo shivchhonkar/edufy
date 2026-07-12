@@ -16,6 +16,8 @@ interface VirtualizedStudentSelectTableProps {
   selectedIds: Set<number>;
   onToggle: (studentId: number) => void;
   onToggleAll: (studentIds: number[], select: boolean) => void;
+  fillHeight?: boolean;
+  maxSelection?: number;
 }
 
 export default function VirtualizedStudentSelectTable({
@@ -23,6 +25,8 @@ export default function VirtualizedStudentSelectTable({
   selectedIds,
   onToggle,
   onToggleAll,
+  fillHeight = false,
+  maxSelection,
 }: VirtualizedStudentSelectTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -38,7 +42,7 @@ export default function VirtualizedStudentSelectTable({
     const observer = new ResizeObserver(updateHeight);
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [fillHeight, students.length]);
 
   const handleScroll = useCallback(() => {
     if (containerRef.current) {
@@ -49,6 +53,9 @@ export default function VirtualizedStudentSelectTable({
   const allSelected =
     students.length > 0 && students.every((s) => selectedIds.has(s.id));
   const someSelected = students.some((s) => selectedIds.has(s.id));
+  const atSelectionLimit =
+    maxSelection !== undefined && selectedIds.size >= maxSelection;
+  const showSelectAll = maxSelection === undefined;
 
   const { startIndex, endIndex, totalHeight, offsetY } = useMemo(() => {
     if (students.length === 0) {
@@ -81,24 +88,30 @@ export default function VirtualizedStudentSelectTable({
   }
 
   return (
-    <div>
+    <div className={fillHeight ? 'flex h-full min-h-0 flex-col' : undefined}>
       <div
-        className="grid items-center bg-gray-50 border-b"
+        className="grid shrink-0 items-center bg-gray-50 border-b"
         style={{ gridTemplateColumns: GRID_COLUMNS }}
       >
-        <button
-          type="button"
-          onClick={() =>
-            onToggleAll(
-              students.map((s) => s.id),
-              !allSelected
-            )
-          }
-          className="px-3 py-3 flex items-center justify-center text-gray-600 hover:text-primary-600"
-          title={allSelected ? 'Deselect all' : 'Select all'}
-        >
-          {allSelected ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
-        </button>
+        {showSelectAll ? (
+          <button
+            type="button"
+            onClick={() =>
+              onToggleAll(
+                students.map((s) => s.id),
+                !allSelected
+              )
+            }
+            className="px-3 py-3 flex items-center justify-center text-gray-600 hover:text-primary-600"
+            title={allSelected ? 'Deselect all' : 'Select all'}
+          >
+            {allSelected ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
+          </button>
+        ) : (
+          <div className="px-3 py-3 flex items-center justify-center text-gray-300" title="Select students individually (max limit applies)">
+            <FiSquare size={18} />
+          </div>
+        )}
         <HeaderCell>Admission No.</HeaderCell>
         <HeaderCell>Name</HeaderCell>
         <HeaderCell>Class</HeaderCell>
@@ -108,7 +121,11 @@ export default function VirtualizedStudentSelectTable({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="overflow-auto max-h-[calc(100vh-320px)]"
+        className={
+          fillHeight
+            ? 'min-h-0 flex-1 overflow-auto'
+            : 'overflow-auto max-h-[calc(100vh-320px)]'
+        }
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <div
@@ -125,6 +142,7 @@ export default function VirtualizedStudentSelectTable({
                 key={student.id}
                 student={student}
                 selected={selectedIds.has(student.id)}
+                disabled={atSelectionLimit && !selectedIds.has(student.id)}
                 onToggle={onToggle}
                 style={{ height: ROW_HEIGHT }}
               />
@@ -133,9 +151,21 @@ export default function VirtualizedStudentSelectTable({
         </div>
       </div>
 
-      {someSelected && !allSelected && (
-        <p className="px-4 py-2 text-xs text-gray-500 border-t bg-gray-50">
-          {selectedIds.size} selected · use header checkbox to select all {students.length} loaded
+      {(someSelected || maxSelection !== undefined) && (
+        <p className="shrink-0 px-4 py-2 text-xs text-gray-500 border-t bg-gray-50">
+          {maxSelection !== undefined ? (
+            <>
+              {selectedIds.size}/{maxSelection} selected
+              {atSelectionLimit ? ' · maximum reached' : ''}
+              {' · '}
+              {students.length} students (virtualized list)
+            </>
+          ) : someSelected && !allSelected ? (
+            <>
+              {selectedIds.size} selected · use header checkbox to select all {students.length}{' '}
+              loaded
+            </>
+          ) : null}
         </p>
       )}
     </div>
@@ -153,25 +183,37 @@ function HeaderCell({ children }: { children: React.ReactNode }) {
 function SelectRow({
   student,
   selected,
+  disabled = false,
   onToggle,
   style,
 }: {
   student: Student;
   selected: boolean;
+  disabled?: boolean;
   onToggle: (id: number) => void;
   style?: React.CSSProperties;
 }) {
+  const handleToggle = () => {
+    if (disabled && !selected) return;
+    onToggle(student.id);
+  };
+
   return (
     <div
-      className={`grid items-center border-b cursor-pointer transition-colors ${
-        selected ? 'bg-primary-50/60 hover:bg-primary-50' : 'bg-white hover:bg-gray-50'
+      className={`grid items-center border-b transition-colors ${
+        disabled && !selected
+          ? 'cursor-not-allowed opacity-50 bg-white'
+          : selected
+            ? 'cursor-pointer bg-primary-50/60 hover:bg-primary-50'
+            : 'cursor-pointer bg-white hover:bg-gray-50'
       }`}
       style={{ gridTemplateColumns: GRID_COLUMNS, ...style }}
-      onClick={() => onToggle(student.id)}
-      onKeyDown={(e) => e.key === 'Enter' && onToggle(student.id)}
+      onClick={handleToggle}
+      onKeyDown={(e) => e.key === 'Enter' && handleToggle()}
       role="checkbox"
       aria-checked={selected}
-      tabIndex={0}
+      aria-disabled={disabled && !selected}
+      tabIndex={disabled && !selected ? -1 : 0}
     >
       <div className="px-3 flex items-center justify-center">
         {selected ? (

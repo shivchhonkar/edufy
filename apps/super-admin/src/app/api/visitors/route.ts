@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
       id_proof_type,
       id_proof_number,
       vehicle_number,
+      photo_url,
       notes,
       send_sms = true,
     } = body;
@@ -165,11 +166,11 @@ export async function POST(request: NextRequest) {
       `INSERT INTO school_visitors (
         visitor_number, visitor_name, phone, email, purpose, person_to_meet,
         host_phone, department, id_proof_type, id_proof_number, vehicle_number,
-        status, sms_status, created_by, created_by_name, notes
+        photo_url, status, sms_status, created_by, created_by_name, notes
       ) VALUES (
         $1, $2, $3, $4, $5, $6,
         $7, $8, $9, $10, $11,
-        'checked_in', $12, $13, $14, $15
+        $12, 'checked_in', $13, $14, $15, $16
       ) RETURNING *`,
       [
         visitorNumber,
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest) {
         id_proof_type || null,
         id_proof_number?.trim() || null,
         vehicle_number?.trim() || null,
+        photo_url?.trim() || null,
         send_sms && notifyPhone ? 'pending' : 'skipped',
         user.id,
         createdByName,

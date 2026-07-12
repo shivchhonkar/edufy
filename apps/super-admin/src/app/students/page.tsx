@@ -309,8 +309,8 @@ function StudentsPageContent() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="space-y-3">
+      <div className="space-y-3">
+        <div className="space-y-2">
           {pageHint === 'documents' && (
             <p className="text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
               Open a student profile and use the <strong>Documents</strong> tab for transfer
@@ -322,17 +322,22 @@ function StudentsPageContent() {
               Open a student profile and use the <strong>Medical</strong> tab for health records.
             </p>
           )}
-          <div className="flex flex-wrap justify-between items-start gap-3">
-            <div>
-              <h1 className="text-xl text-gray-900">Students</h1>
-              <p className="text-gray-600 mt-1 text-sm">Manage student information and records</p>
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-lg font-medium text-gray-900">Students</h1>
+              {!loading && (
+                <span className="text-xs text-gray-500">
+                  {totalStudents} total
+                  {students.length < totalStudents && ` · ${students.length} loaded`}
+                </span>
+              )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setFiltersExpanded((prev) => !prev)}
                 aria-expanded={filtersExpanded}
-                className={`border px-3 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors ${
+                className={`border px-2.5 py-1.5 rounded-md flex items-center gap-1.5 text-xs transition-colors ${
                   filtersExpanded || hasActiveFilters
                     ? 'border-primary-300 bg-primary-50 text-primary-700'
                     : 'hover:bg-gray-50 text-gray-700'
@@ -349,43 +354,43 @@ function StudentsPageContent() {
               </button>
               <Link
                 href="/students/bulk-edit"
-                className="border px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm"
+                className="border px-2.5 py-1.5 rounded-md hover:bg-gray-50 flex items-center gap-1.5 text-xs"
               >
-                <FiEdit />
+                <FiEdit size={14} />
                 <span>Bulk Edit</span>
               </Link>
               <button
                 onClick={() => setShowImport(true)}
-                className="border px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm"
+                className="border px-2.5 py-1.5 rounded-md hover:bg-gray-50 flex items-center gap-1.5 text-xs"
               >
-                <FiUpload />
+                <FiUpload size={14} />
                 <span>Import CSV</span>
               </button>
               <button
                 onClick={() => setShowModal(true)}
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm"
+                className="bg-primary-600 text-white px-2.5 py-1.5 rounded-md hover:bg-primary-700 flex items-center gap-1.5 text-xs"
               >
-                <FiPlus />
+                <FiPlus size={14} />
                 <span>Add Student</span>
               </button>
             </div>
           </div>
 
           {filtersExpanded && (
-            <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2.5 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                 <div className="md:col-span-2 relative">
-                  <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+                  <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
                   <input
                     type="text"
                     placeholder="Search by name, admission no., or phone..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm text-gray-900 bg-white"
+                    className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-xs text-gray-900 bg-white"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm text-gray-900 bg-white"
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-xs text-gray-900 bg-white"
                   value={classFilter}
                   onChange={(e) => setClassFilter(e.target.value)}
                 >
@@ -400,7 +405,7 @@ function StudentsPageContent() {
                   ))}
                 </select>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm text-gray-900 bg-white"
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-xs text-gray-900 bg-white"
                   value={sectionFilter}
                   onChange={(e) => setSectionFilter(e.target.value)}
                   disabled={!classFilter || classFilter === UNASSIGNED_CLASS_FILTER}
@@ -489,10 +494,10 @@ function StudentsPageContent() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <div className="flex items-center justify-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           ) : (
             <VirtualizedStudentsTable
@@ -506,29 +511,6 @@ function StudentsPageContent() {
             />
           )}
         </div>
-
-        {/* Total Count */}
-        {!loading && (
-          <div className="flex justify-end items-center mt-2 px-2">
-            <div className="text-sm text-gray-600">
-              Total Students: <span className="font-semibold text-gray-900">{totalStudents}</span>
-              {students.length < totalStudents && (
-                <span className="ml-2 text-xs text-gray-500">
-                  (Loaded {students.length} of {totalStudents})
-                </span>
-              )}
-              {classFilter && (
-                <span className="ml-2 text-xs text-gray-500">
-                  (Filtered by{' '}
-                  {classFilter === UNASSIGNED_CLASS_FILTER
-                    ? 'unassigned students'
-                    : classes.find((c) => c.id.toString() === classFilter)?.name}
-                  )
-                </span>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Add/Edit Student Modal */}
         <AddStudentModal

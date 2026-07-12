@@ -716,22 +716,22 @@ function GatePassPageContent() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        <div>
-          <Link
+        {/* <div> */}
+          {/* <Link
             href="/students"
             className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 mb-1"
           >
             <FiArrowLeft size={14} /> Students
-          </Link>
+          </Link> */}
           <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <FiShield className="text-primary-600" />
+            {/* <FiShield className="text-primary-600" /> */}
             Gate Pass Exit
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          {/* <p className="text-sm text-gray-500 mt-1">
             Authorize early student exit with parent OTP or principal/staff approval. Full audit
             trail maintained.
-          </p>
-        </div>
+          </p> */}
+        {/* </div> */}
 
         <div className="flex gap-2 border-b">
           {(['issue', 'history'] as const).map((tab) => (

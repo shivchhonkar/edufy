@@ -150,19 +150,19 @@ export default function TransferCertificatesHistoryPage() {
       <div className="space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+            {/* <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
               <Link href="/students" className="hover:text-primary-600 flex items-center gap-1">
                 <FiArrowLeft size={14} />
                 Students
               </Link>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            </div> */}
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
               <FiFileText className="text-primary-600" />
-              Transfer Certificate History
+              Transfer Certificates 
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            {/* <p className="text-sm text-gray-500 mt-1">
               Review all generated transfer certificates with issuer and timestamp.
-            </p>
+            </p> */}
           </div>
           <div className="flex items-center gap-2">
             <button

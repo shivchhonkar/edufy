@@ -182,7 +182,7 @@ export default function VisitorManagementView() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Today&apos;s Visitors</p>
-              <p className="text-2xl font-semibold text-gray-900">{todayCount}</p>
+              <p className="text-xl  text-gray-900">{todayCount}</p>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function VisitorManagementView() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Currently Inside</p>
-              <p className="text-2xl font-semibold text-gray-900">{checkedInCount}</p>
+              <p className="text-xl  text-gray-900">{checkedInCount}</p>
             </div>
           </div>
         </div>
@@ -286,8 +286,23 @@ export default function VisitorManagementView() {
                   <tr key={visitor.id} className="hover:bg-gray-50/80">
                     <td className="px-4 py-3 font-medium text-gray-900">{visitor.visitor_number}</td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{visitor.visitor_name}</div>
-                      <div className="text-gray-500">{visitor.phone}</div>
+                      <div className="flex items-center gap-3">
+                        {visitor.photo_url ? (
+                          <img
+                            src={visitor.photo_url}
+                            alt={visitor.visitor_name}
+                            className="h-10 w-10 shrink-0 rounded-full object-cover border border-gray-200"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 shrink-0 rounded-full bg-gray-100 flex items-center justify-center">
+                            <FiUserCheck className="w-4 h-4 text-gray-400" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium text-gray-900">{visitor.visitor_name}</div>
+                          <div className="text-gray-500">{visitor.phone}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-700 max-w-xs truncate">{visitor.purpose}</td>
                     <td className="px-4 py-3">

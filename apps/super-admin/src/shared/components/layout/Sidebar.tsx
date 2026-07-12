@@ -4,9 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo, useCallback, type ComponentType } from 'react';
 import CollapsedNavGroupFlyout from '@/shared/components/layout/CollapsedNavGroupFlyout';
-import SidebarBrandHeader from '@/shared/components/layout/SidebarBrandHeader';
 import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/constants/sidebar';
-import { useSettings } from '@/shared/SettingsContext';
 import {
   SIDEBAR_NAV_GROUPS,
   getInitialExpandedGroups,
@@ -42,9 +40,6 @@ function NavIconBadge({
 
 export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
-  const { settings } = useSettings();
-  const schoolLogo = settings.logo_url;
-  const schoolName = settings.school_name?.trim() || 'School CRM';
 
   const initialCollapsedState = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -109,19 +104,11 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
 
   return (
     <div
-      className={`sidebar-container flex-shrink-0 h-full overflow-y-auto transition-transform duration-300 z-50 text-xs shadow-sm fixed inset-y-0 left-0 lg:relative ${
+      className={`sidebar-container flex-shrink-0 h-full overflow-y-auto transition-transform duration-300 z-50 text-xs shadow-sm fixed top-14 bottom-0 left-0 lg:static lg:top-auto lg:bottom-auto lg:h-full ${
         displayCollapsed ? SIDEBAR_COLLAPSED_CLASS : SIDEBAR_EXPANDED_CLASS
       } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
-      <SidebarBrandHeader
-        schoolName={schoolName}
-        schoolLogo={schoolLogo}
-        homeHref="/admin"
-        collapsed={displayCollapsed}
-        onToggle={toggleSidebar}
-      />
-
-      <nav className="px-1.5 py-2 pb-4">
+      <nav className="px-1.5 py-3 pb-4">
         {SIDEBAR_NAV_GROUPS.map((group) => {
           const Icon = group.icon;
           const directLink = getNavGroupDirectLink(group);

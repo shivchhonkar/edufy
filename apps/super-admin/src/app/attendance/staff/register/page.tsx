@@ -160,7 +160,7 @@ export default function StaffMonthlyRegisterPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-4 bg-white p-4">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg text-gray-900">Staff Attendance Register</h1>
