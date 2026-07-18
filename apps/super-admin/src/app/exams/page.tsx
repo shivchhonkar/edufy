@@ -815,8 +815,8 @@ export default function ExamsPage() {
         {/* Header */}
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
-            <h1 className="text-xl text-gray-900">Exams & Results</h1>
-            <p className="text-gray-600 mt-1">Manage exams and upload student results</p>
+            <h1 className="text-lg font-medium text-gray-900">Exams & Results</h1>
+            {/* <p className="text-gray-600 mt-1">Manage exams and upload student results</p> */}
           </div>
           <div className="flex items-center gap-3">
             {/* Class Filter */}
@@ -1257,7 +1257,7 @@ export default function ExamsPage() {
           <div className={APP_MODAL_PANEL}>
             <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
                 <div>
-                  <h3 className="text-xl text-gray-900">{viewingExam.name}</h3>
+                  <h3 className="text-md font-medium text-gray-900">{viewingExam.name}</h3>
                   <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full capitalize">
                     {formatExamType(viewingExam.exam_type)}
                   </span>

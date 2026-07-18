@@ -10,6 +10,7 @@ import {
   SCHOOLS_LIST_UPDATED_EVENT,
 } from '@/lib/client-auth';
 import { setLastSelectedSchoolId } from '@/lib/selected-school';
+import { isCurrentSchoolHost, redirectToSchoolApp } from '@/lib/school-app-url';
 
 export type SchoolOption = {
   id: number;
@@ -137,6 +138,13 @@ export function useSchoolSwitchSession() {
           setLastSelectedSchoolId(session.organization.slug, data.data.school.id);
         }
         setOpen(false);
+
+        const schoolSlug = data.data.school?.slug;
+        if (schoolSlug && !isCurrentSchoolHost(schoolSlug)) {
+          redirectToSchoolApp(schoolSlug);
+          return;
+        }
+
         notifySchoolSwitched(data.data.school.id);
         window.location.reload();
       } else {

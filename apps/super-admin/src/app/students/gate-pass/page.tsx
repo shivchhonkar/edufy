@@ -723,7 +723,7 @@ function GatePassPageContent() {
           >
             <FiArrowLeft size={14} /> Students
           </Link> */}
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+          <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
             {/* <FiShield className="text-primary-600" /> */}
             Gate Pass Exit
           </h1>

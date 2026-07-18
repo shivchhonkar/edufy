@@ -301,8 +301,8 @@ export default function SubjectsPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-xl text-gray-900 flex items-center gap-2">
-                <FiBook className="text-primary-600" size={20} />
+              <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                {/* <FiBook className="text-primary-600" size={20} /> */}
                 Subjects
               </h1>
             </div>

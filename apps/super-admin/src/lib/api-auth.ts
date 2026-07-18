@@ -20,6 +20,7 @@ export const PUBLIC_API_PATHS = [
   '/api/tenant/branding',
   '/api/org/branding',
   '/api/org/schools/public',
+  '/api/public/school-code',
   '/api/platform/schools/register',
   '/api/platform/schools/check-slug',
   '/api/marksheets/verify',

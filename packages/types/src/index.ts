@@ -8,6 +8,8 @@ export interface Organization {
   slug: string;
   name: string;
   type: OrganizationType;
+  /** Public code for unified app login (e.g. KMPI). Shared by all campuses in the org. */
+  school_code: string | null;
   is_active: boolean;
   max_schools: number | null;
   subscription_plan: string | null;
@@ -48,6 +50,43 @@ export interface OrganizationUser {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+/** Platform operator (EduLakhya staff) — control DB `platform_admins`. */
+export interface PlatformAdmin {
+  id: number;
+  email: string;
+  password_hash: string;
+  full_name: string;
+  is_active: boolean;
+  created_at: Date;
+}
+
+export type SubscriptionStatus = 'active' | 'trial' | 'past_due' | 'cancelled' | 'expired';
+export type SubscriptionBillingCycle = 'monthly' | 'quarterly' | 'annual';
+
+/** Organization subscription record — control DB `organization_subscriptions`. */
+export interface OrganizationSubscription {
+  id: number;
+  organization_id: number;
+  plan: string;
+  status: SubscriptionStatus | string;
+  school_count_limit: number | null;
+  student_count_limit: number | null;
+  billing_cycle: SubscriptionBillingCycle | string | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OrganizationWithSubscription extends Organization {
+  school_count?: number;
+  subscription?: OrganizationSubscription | null;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  support_email?: string | null;
+  support_phone?: string | null;
 }
 
 export type UserSchoolAccessRole = 'school_admin' | 'school_viewer' | 'fee_manager' | 'viewer';

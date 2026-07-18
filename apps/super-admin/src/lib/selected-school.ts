@@ -1,4 +1,5 @@
 const STORAGE_PREFIX = 'edufy:lastSchool:';
+const SCHOOL_CODE_PREFIX = 'edufy:lastSchoolCode:';
 
 export type PublicSchoolOption = {
   id: number;
@@ -33,6 +34,25 @@ export function clearLastSelectedSchoolId(orgSlug: string): void {
   if (typeof window === 'undefined' || !orgSlug) return;
   try {
     localStorage.removeItem(`${STORAGE_PREFIX}${orgSlug}`);
+  } catch {
+    // ignore
+  }
+}
+
+export function getLastSchoolCode(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(`${SCHOOL_CODE_PREFIX}global`);
+    return raw?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setLastSchoolCode(code: string): void {
+  if (typeof window === 'undefined' || !code.trim()) return;
+  try {
+    localStorage.setItem(`${SCHOOL_CODE_PREFIX}global`, code.trim().toUpperCase());
   } catch {
     // ignore
   }

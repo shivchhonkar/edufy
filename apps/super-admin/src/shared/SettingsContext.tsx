@@ -8,7 +8,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { SCHOOL_SWITCHED_EVENT } from '@/lib/client-auth';
+import { getClientToken, SCHOOL_SWITCHED_EVENT } from '@/lib/client-auth';
 import { useActiveSchoolId } from '@/hooks/use-active-school-id';
 
 interface SystemSettings {
@@ -70,16 +70,28 @@ function SettingsProviderInner({
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
+    if (!getClientToken()) {
+      setSettings(defaultSettings);
+      setLoading(false);
+      return;
+    }
+
     try {
       const fetchOpts: RequestInit = { cache: 'no-store', credentials: 'include' };
       const [settingsResponse, reportsResponse] = await Promise.all([
         fetch('/api/settings', fetchOpts),
         fetch('/api/settings/reports', fetchOpts),
       ]);
-      const [settingsData, reportsData] = await Promise.all([
-        settingsResponse.json(),
-        reportsResponse.json(),
+      const [settingsRaw, reportsRaw] = await Promise.all([
+        settingsResponse.text(),
+        reportsResponse.text(),
       ]);
+      const settingsData = settingsRaw.trim()
+        ? (JSON.parse(settingsRaw) as { success?: boolean; data?: Partial<SystemSettings> })
+        : { success: false };
+      const reportsData = reportsRaw.trim()
+        ? (JSON.parse(reportsRaw) as { success?: boolean; data?: { logo_url?: string } })
+        : { success: false };
 
       if (settingsData.success) {
         const logoUrl = reportsData.success ? reportsData.data?.logo_url || '' : '';

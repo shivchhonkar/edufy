@@ -31,13 +31,13 @@ export default function TimetablePage() {
       <div className="space-y-6 min-w-0 max-w-full">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-xl flex items-center gap-2 text-gray-900">
-              <FiCalendar className="text-primary-600" />
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              {/* <FiCalendar className="text-primary-600" /> */}
               Timetable
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            {/* <p className="text-sm text-gray-600 mt-1">
               Three layers: curriculum allocation, teacher assignments, and drag-and-drop scheduling with conflict checks.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap gap-2">
             <Link

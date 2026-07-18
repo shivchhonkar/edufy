@@ -215,8 +215,8 @@ export default function HomeworkPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl text-gray-900">Homework & Assignments</h1>
-            <p className="text-gray-600 mt-1">Manage homework and track submissions</p>
+            <h1 className="text-lg font-medium text-gray-900">Homework & Assignments</h1>
+            {/* <p className="text-gray-600 mt-1">Manage homework and track submissions</p> */}
           </div>
           <button 
             onClick={() => {
@@ -372,7 +372,7 @@ export default function HomeworkPage() {
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg text-gray-900 mb-1">{hw.title}</h3>
+                      <h3 className="text-md font-medium text-gray-900 mb-1">{hw.title}</h3>
                       <p className="text-sm text-gray-600">
                         {hw.class_name}
                         {hw.section_name ? ` · ${hw.section_name}` : ''}

@@ -166,6 +166,131 @@ export async function getOrganizationBySlug(slug: string): Promise<Organization 
   return result.rows[0] ?? null;
 }
 
+/** Resolve organization by public school code (case-insensitive, e.g. KMPI). */
+export async function getOrganizationBySchoolCode(code: string): Promise<Organization | null> {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return null;
+  const result = await controlQuery<Organization>(
+    `SELECT * FROM organizations
+     WHERE is_active = true AND school_code IS NOT NULL
+       AND UPPER(school_code) = $1`,
+    [normalized],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function isSchoolCodeAvailable(code: string, excludeOrgId?: number): Promise<boolean> {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized || normalized.length < 3) return false;
+  const result = await controlQuery<{ id: number }>(
+    `SELECT id FROM organizations
+     WHERE school_code IS NOT NULL AND UPPER(school_code) = $1
+       AND ($2::int IS NULL OR id <> $2)
+     LIMIT 1`,
+    [normalized, excludeOrgId ?? null],
+  );
+  if (result.rows.length > 0) return false;
+
+  const tenantConflict = await controlQuery<{ id: number }>(
+    `SELECT id FROM tenants
+     WHERE is_active = true AND code IS NOT NULL AND UPPER(code) = $1
+     LIMIT 1`,
+    [normalized],
+  );
+  return tenantConflict.rows.length === 0;
+}
+
+export async function getTenantByCode(code: string): Promise<Tenant | null> {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return null;
+  const result = await controlQuery<Tenant>(
+    `SELECT * FROM tenants
+     WHERE is_active = true AND code IS NOT NULL AND UPPER(code) = $1
+     LIMIT 1`,
+    [normalized],
+  );
+  return result.rows[0] ?? null;
+}
+
+/** Resolve tenant by URL subdomain slug (school-specific login host). */
+export async function getTenantBySubdomain(subdomain: string): Promise<Tenant | null> {
+  const slug = subdomain.trim().toLowerCase();
+  if (!slug) return null;
+  const result = await controlQuery<Tenant>(
+    `SELECT t.* FROM tenants t
+     INNER JOIN tenant_branding b ON b.tenant_id = t.id
+     WHERE t.is_active = true AND LOWER(b.subdomain) = $1`,
+    [slug],
+  );
+  return result.rows[0] ?? null;
+}
+
+export type SchoolCodeLookupResult = {
+  school_code: string;
+  organization: Organization | null;
+  branding: OrganizationBranding | null;
+  schools: Tenant[];
+  manages_multiple_schools: boolean;
+};
+
+/**
+ * Public lookup for unified app login — organization code or single-campus slug/code.
+ */
+export async function resolveSchoolCodeLookup(rawCode: string): Promise<SchoolCodeLookupResult | null> {
+  const trimmed = rawCode.trim();
+  if (!trimmed || trimmed.length < 2) return null;
+
+  const upper = trimmed.toUpperCase();
+  const lower = trimmed.toLowerCase();
+
+  const org = await getOrganizationBySchoolCode(upper);
+  if (org) {
+    const schools = await getSchoolsForOrganization(org.id);
+    if (schools.length === 0) return null;
+    const branding = await getOrganizationBranding(org.id);
+    return {
+      school_code: upper,
+      organization: org,
+      branding,
+      schools,
+      manages_multiple_schools: schools.length > 1 || org.type !== 'single',
+    };
+  }
+
+  const bySubdomain = await getTenantBySubdomain(lower);
+  const bySlug = bySubdomain ?? (await getTenantBySlug(lower));
+  const byTenantCode = bySlug ?? (await getTenantByCode(upper));
+
+  if (!byTenantCode) return null;
+
+  let organization: Organization | null = null;
+  let branding: OrganizationBranding | null = null;
+  if (byTenantCode.organization_id) {
+    organization = await getOrganizationById(byTenantCode.organization_id);
+    if (organization) {
+      branding = await getOrganizationBranding(organization.id);
+    }
+  }
+
+  const codeLabel = organization?.school_code?.toUpperCase() ?? byTenantCode.code?.toUpperCase() ?? upper;
+
+  return {
+    school_code: codeLabel,
+    organization,
+    branding,
+    schools: [byTenantCode],
+    manages_multiple_schools: false,
+  };
+}
+
+/** Ensure selected school belongs to the organization from a school-code lookup. */
+export function schoolBelongsToLookup(
+  lookup: SchoolCodeLookupResult,
+  schoolId: number,
+): boolean {
+  return lookup.schools.some((school) => school.id === schoolId);
+}
+
 export async function getOrganizationBranding(
   organizationId: number,
 ): Promise<OrganizationBranding | null> {

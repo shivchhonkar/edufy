@@ -33,9 +33,9 @@ export default function TeacherRankingPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto">
         <TeacherNav />
-        <h1 className="text-xl flex items-center gap-2 mb-2"><FiAward className="text-amber-500" /> Top Teacher Ranking</h1>
+        <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-2"> Top Teacher Ranking</h1>
         <p className="text-sm text-gray-600 mb-8">Leaderboard based on 30-day composite performance score</p>
 
         {loading && <p className="text-center text-gray-400 py-12">Loading rankings...</p>}

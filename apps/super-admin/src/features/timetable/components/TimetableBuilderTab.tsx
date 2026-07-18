@@ -38,7 +38,7 @@ export default function TimetableBuilderTab() {
   const [workingDays, setWorkingDays] = useState<WorkingDay[]>([]);
   const [curriculum, setCurriculum] = useState<CurriculumSubject[]>([]);
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
-  const [classId, setClassId] = useState('');
+  const [classId, setClassId] = useState(classes[0]?.id?.toString() ?? '');
   const [sectionId, setSectionId] = useState('');
   const [loading, setLoading] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);

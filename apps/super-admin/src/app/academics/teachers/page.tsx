@@ -108,7 +108,7 @@ export default function TeachersPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap justify-between items-start gap-3">
           <div>
-            <h1 className="text-xl flex items-center gap-2 text-gray-900">
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
               {/* <FiUsers className="text-primary-600" /> */}
               Teachers
             </h1>

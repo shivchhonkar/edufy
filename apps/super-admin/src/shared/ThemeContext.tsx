@@ -14,7 +14,7 @@ import {
   mergeThemeSettings,
   type ThemeSettings,
 } from '@/lib/theme-settings';
-import { SCHOOL_SWITCHED_EVENT } from '@/lib/client-auth';
+import { getClientToken, SCHOOL_SWITCHED_EVENT } from '@/lib/client-auth';
 import { useActiveSchoolId } from '@/hooks/use-active-school-id';
 
 interface ThemeContextType {
@@ -48,12 +48,23 @@ function ThemeProviderInner({
   }, []);
 
   const fetchTheme = useCallback(async () => {
+    if (!getClientToken()) {
+      applyTheme(DEFAULT_THEME_SETTINGS);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/settings/theme', {
         cache: 'no-store',
         credentials: 'include',
       });
-      const data = await response.json();
+      const raw = await response.text();
+      if (!raw.trim()) {
+        applyTheme(DEFAULT_THEME_SETTINGS);
+        return;
+      }
+      const data = JSON.parse(raw) as { success?: boolean; data?: ThemeSettings };
       if (data.success) {
         applyTheme(data.data);
       } else {

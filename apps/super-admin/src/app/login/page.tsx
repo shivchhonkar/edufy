@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AuthPageLayout from '@/features/auth/components/AuthPageLayout';
 import LoginForm from '@/features/auth/components/LoginForm';
+import PlatformLoginFlow from '@/features/auth/components/PlatformLoginFlow';
 import SchoolPicker from '@/features/auth/components/SchoolPicker';
 import TenantBrandedLoginLayout, {
   TENANT_LOGIN_BUTTON_CLASS,
@@ -14,6 +15,7 @@ import {
   setLastSelectedSchoolId,
   type PublicSchoolOption,
 } from '@/lib/selected-school';
+import { isPlatformLoginHost } from '@/lib/platform-login';
 
 type LoginStep = 'select-school' | 'login';
 
@@ -22,13 +24,22 @@ type OrgLoginContext = {
   schools: PublicSchoolOption[];
 };
 
+type HostKind = 'pending' | 'platform' | 'tenant';
+
 export default function LoginPage() {
+  const [hostKind, setHostKind] = useState<HostKind>('pending');
   const [branding, setBranding] = useState<TenantLoginBranding | null | undefined>(undefined);
   const [orgContext, setOrgContext] = useState<OrgLoginContext | null>(null);
   const [step, setStep] = useState<LoginStep>('login');
   const [selectedSchool, setSelectedSchool] = useState<PublicSchoolOption | null>(null);
 
   useEffect(() => {
+    setHostKind(isPlatformLoginHost() ? 'platform' : 'tenant');
+  }, []);
+
+  useEffect(() => {
+    if (hostKind !== 'tenant') return;
+
     async function loadBranding() {
       try {
         const tenantRes = await fetch('/api/tenant/branding');
@@ -103,7 +114,7 @@ export default function LoginPage() {
     }
 
     void loadBranding();
-  }, []);
+  }, [hostKind]);
 
   const handleSelectSchool = (school: PublicSchoolOption) => {
     setSelectedSchool(school);
@@ -112,6 +123,18 @@ export default function LoginPage() {
     }
     setStep('login');
   };
+
+  if (hostKind === 'pending') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+      </div>
+    );
+  }
+
+  if (hostKind === 'platform') {
+    return <PlatformLoginFlow portal="default" />;
+  }
 
   if (branding === undefined) {
     return (
@@ -147,7 +170,7 @@ export default function LoginPage() {
 
         {showLogin && (
           <LoginForm
-            showRegisterLink= {false} //{!isOrgFlow}
+            showRegisterLink={false}
             submitLabel="Login"
             emailLabel="User ID"
             identifierMode="user-id"

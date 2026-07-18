@@ -72,7 +72,8 @@ export default function TeacherTimetablePage() {
         <TeacherNav />
         <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
           <div>
-            <h1 className="text-xl flex items-center gap-2"><FiCalendar className="text-primary-600" /> Teacher Timetable</h1>
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              Teacher Timetable</h1>
             <p className="text-sm text-gray-600 mt-1">Weekly schedule for an individual teacher</p>
           </div>
           <Link href="/academics/timetable" className="text-sm text-primary-600 hover:underline">Edit class timetable →</Link>

@@ -200,7 +200,7 @@ export default function VisitorManagementView() {
         <div className="rounded-xl border border-gray-200 bg-white p-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Quick action</p>
-            <p className="text-sm text-gray-700 mt-1">Register a new visitor at the gate</p>
+            <p className="text-sm text-gray-700 mt-1">Register a new visitor</p>
           </div>
           <button
             type="button"

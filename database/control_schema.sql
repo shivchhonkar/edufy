@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     slug VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'single',
+    school_code VARCHAR(20),
     is_active BOOLEAN DEFAULT true,
     max_schools INTEGER,
     subscription_plan VARCHAR(50),

@@ -192,12 +192,12 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Marks Entry', path: '/exams', icon: FiEdit2 },
       { name: 'Grade Management', path: '/report-cards', icon: FiAward },
       { name: 'Report Cards', path: '/report-cards', icon: FiFileText },
-      {
-        name: 'Result Analytics',
-        path: '/coming-soon?feature=result-analytics',
-        icon: FiPieChart,
-        comingSoon: true,
-      },
+      // {
+      //   name: 'Result Analytics',
+      //   path: '/coming-soon?feature=result-analytics',
+      //   icon: FiPieChart,
+      //   comingSoon: true,
+      // },
       { name: 'Rank Lists', path: '/teachers/ranking', icon: FiList },
     ],
   },

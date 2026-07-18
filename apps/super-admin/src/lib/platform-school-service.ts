@@ -15,6 +15,7 @@ import {
   getTenantAdminDbConfig,
   getTenantDbConfig,
 } from '@/lib/platform-db-config';
+import { isSchoolCodeAvailable } from '@edulakhya/tenant';
 
 export interface RegisterSchoolInput {
   school_name: string;
@@ -28,6 +29,10 @@ export interface RegisterSchoolInput {
   academic_year_start?: string;
   academic_year_end?: string;
   city?: string;
+  /** Public code for unified mobile / platform login (e.g. KMPI). */
+  school_code?: string;
+  /** When true, organization is created as a multi-campus chain. */
+  manages_multiple_schools?: boolean;
 }
 
 export interface RegisterSchoolResult {
@@ -37,6 +42,7 @@ export interface RegisterSchoolResult {
   db_name: string;
   login_url: string;
   academic_year: string;
+  school_code?: string;
 }
 
 export async function registerSchool(
@@ -46,18 +52,34 @@ export async function registerSchool(
   const control = createPlatformPool(getControlDbConfig());
   try {
     await ensureOrganizationsSchema(control);
+
+    const slug = input.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const managesMultiple = Boolean(input.manages_multiple_schools);
+    const orgType = managesMultiple ? 'chain' : 'single';
+    const normalizedCode = (input.school_code?.trim() || slug)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+
+    if (normalizedCode.length < 3) {
+      throw new Error('School code must be at least 3 letters or numbers');
+    }
+
+    const codeAvailable = await isSchoolCodeAvailable(normalizedCode);
+    if (!codeAvailable) {
+      throw new Error('This school code is already in use. Please choose another.');
+    }
+
     const orgResult = await control.query(
-      `INSERT INTO organizations (slug, name, type, is_active)
-       VALUES ($1, $2, 'single', true)
+      `INSERT INTO organizations (slug, name, type, school_code, is_active)
+       VALUES ($1, $2, $3, $4, true)
        RETURNING id`,
-      [
-        input.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-        input.school_name,
-      ],
+      [slug, input.school_name, orgType, normalizedCode],
     );
-    return registerSchoolUnderOrganization(orgResult.rows[0].id, input, control, {
+    const result = await registerSchoolUnderOrganization(orgResult.rows[0].id, input, control, {
       isPrimary: true,
+      tenantCode: managesMultiple ? null : normalizedCode,
     });
+    return { ...result, school_code: normalizedCode };
   } finally {
     await control.end();
   }
@@ -68,7 +90,7 @@ export async function registerSchoolUnderOrganization(
   organizationId: number,
   input: RegisterSchoolInput,
   existingControl?: ReturnType<typeof createPlatformPool>,
-  options?: { isPrimary?: boolean },
+  options?: { isPrimary?: boolean; tenantCode?: string | null },
 ): Promise<RegisterSchoolResult> {
   const slug = input.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!slug || slug.length < 3) {
@@ -194,13 +216,14 @@ export async function registerSchoolUnderOrganization(
   await ensureOrganizationsSchema(control);
 
   const tenantResult = await control.query(
-    `INSERT INTO tenants (organization_id, slug, name, db_name, is_active, is_primary, city)
-     VALUES ($1, $2, $3, $4, true, $5, $6) RETURNING id`,
+    `INSERT INTO tenants (organization_id, slug, name, db_name, code, is_active, is_primary, city)
+     VALUES ($1, $2, $3, $4, $5, true, $6, $7) RETURNING id`,
     [
       organizationId,
       slug,
       input.school_name,
       dbName,
+      options?.tenantCode ?? null,
       options?.isPrimary ?? false,
       input.city || null,
     ],
@@ -227,5 +250,6 @@ export async function registerSchoolUnderOrganization(
     db_name: dbName,
     login_url: loginUrl,
     academic_year: academicYearName,
+    school_code: options?.tenantCode ?? undefined,
   };
 }

@@ -585,6 +585,39 @@ export interface DashboardActivity {
   type: string;
 }
 
+export interface DashboardBirthdayItem {
+  id: number;
+  name: string;
+  person_type: 'student' | 'staff';
+  class_name?: string | null;
+  section_name?: string | null;
+  date_of_birth: string;
+  birthday_label: string;
+  days_until: number;
+}
+
+export interface DashboardPendingTask {
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export interface DashboardStaffAttendanceToday {
+  total_staff: number;
+  present: number;
+  absent: number;
+  on_leave: number;
+  marked: number;
+  not_marked: number;
+}
+
+export interface DashboardOutstandingFeesSummary {
+  total: number;
+  students_with_dues: number;
+}
+
 export interface DashboardOverview extends DashboardStats {
   total_teachers: number;
   fees_collected: number;
@@ -623,6 +656,10 @@ export interface DashboardOverview extends DashboardStats {
   students_by_class: Array<{ name: string; count: number }>;
   admissions_by_status: Array<{ name: string; count: number }>;
   staff_by_department: Array<{ name: string; count: number }>;
+  upcoming_birthdays: DashboardBirthdayItem[];
+  pending_tasks: DashboardPendingTask[];
+  staff_attendance_today: DashboardStaffAttendanceToday;
+  outstanding_fees: DashboardOutstandingFeesSummary;
 }
 
 export interface AnalyticsKpis {

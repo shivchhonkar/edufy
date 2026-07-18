@@ -9,6 +9,12 @@ import {
   EMPTY_STUDENT_STATS,
   fetchStudentDashboardStats,
 } from '@/lib/dashboard/student-stats';
+import {
+  fetchOutstandingFeesSummary,
+  fetchPendingTasks,
+  fetchStaffAttendanceToday,
+  fetchUpcomingBirthdays,
+} from '@/lib/dashboard/dashboard-insights';
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -423,6 +429,33 @@ export async function GET(request: NextRequest) {
       { students_by_class: [], admissions_by_status: [], staff_by_department: [] },
     );
 
+    const upcoming_birthdays = await safeQuery(
+      () => fetchUpcomingBirthdays(db),
+      [],
+    );
+
+    const pending_tasks = await safeQuery(
+      () => fetchPendingTasks(db, academicYear),
+      [],
+    );
+
+    const staff_attendance_today = await safeQuery(
+      () => fetchStaffAttendanceToday(db, total_staff),
+      {
+        total_staff,
+        present: 0,
+        absent: 0,
+        on_leave: 0,
+        marked: 0,
+        not_marked: total_staff,
+      },
+    );
+
+    const outstanding_fees = await safeQuery(
+      () => fetchOutstandingFeesSummary(db, academicYear),
+      { total: pending_fees, students_with_dues: 0 },
+    );
+
     const recent_activities = await safeQuery(async () => {
       const activities: DashboardOverview['recent_activities'] = [];
 
@@ -552,6 +585,10 @@ export async function GET(request: NextRequest) {
       students_by_class: composition_charts.students_by_class,
       admissions_by_status: composition_charts.admissions_by_status,
       staff_by_department: composition_charts.staff_by_department,
+      upcoming_birthdays,
+      pending_tasks,
+      staff_attendance_today,
+      outstanding_fees,
     };
 
     return NextResponse.json({

@@ -216,7 +216,7 @@ export default function TeacherAssignmentsPage() {
       <div className="max-w-7xl mx-auto">
         {/* <HrNav /> */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-          <h1 className="text-xl text-gray-900">Teacher Assignments</h1>
+          <h1 className="text-lg font-medium text-gray-900">Teacher Assignments</h1>
           <div className="flex flex-wrap items-center gap-2 ml-auto">
             <Link
               href="/dashboard"

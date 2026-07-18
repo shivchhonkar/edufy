@@ -359,12 +359,13 @@ export default function ReportCardsPage() {
         <div className="flex flex-col gap-3 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl flex items-center gap-2">
-                <FiAward className="text-primary-600 shrink-0" /> Report Cards & Marksheets
+              <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                {/* <FiAward className="text-primary-600 shrink-0" />  */}
+                Report Cards & Marksheets
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Print performance reports
-              </p>
+                  {/* <p className="text-sm text-gray-500 mt-1">
+                    Print performance reports
+                  </p> */}
             </div>
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button

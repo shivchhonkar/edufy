@@ -155,9 +155,9 @@ export default function StaffIdCardsPage() {
               <FiArrowLeft size={14} /> Back to Staff
             </Link> */}
             <div className='flex flex-col gap-1'>
-            <h1 className="flex items-center gap-2 text-lg text-gray-900">
+            <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
               {/* <FiCreditCard className="text-primary-600" /> */}
-              Staff ID Cards
+              Employee ID Cards
             </h1>
             {/* <p className="mt-1 text-sm text-gray-600">
               Select staff members and print identity cards.

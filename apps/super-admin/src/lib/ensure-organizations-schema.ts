@@ -31,5 +31,18 @@ export async function ensureOrganizationsSchema(control: Pool): Promise<void> {
     }
   }
 
+  const schoolCodeCol = await control.query<{ col: string | null }>(
+    `SELECT column_name AS col FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'school_code'`,
+  );
+  if (!schoolCodeCol.rows[0]?.col) {
+    try {
+      const schoolCodeSql = readDatabaseSql('migrations', 'control', '003_organization_school_code.sql');
+      await control.query(schoolCodeSql);
+    } catch {
+      // optional if file missing on server
+    }
+  }
+
   organizationsSchemaReady = true;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
+import { getServerAuthCookieOptions } from '@/lib/auth-cookie';
 import { buildSchoolSwitchToken } from '@/lib/org-auth';
 
 export async function POST(request: NextRequest) {
@@ -33,11 +34,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    response.cookies.set('token', result.token, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: 'lax',
-    });
+    response.cookies.set('token', result.token, getServerAuthCookieOptions(request.headers.get('host')));
 
     return response;
   } catch (error) {

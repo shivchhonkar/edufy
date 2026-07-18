@@ -163,10 +163,10 @@ export default function StaffMonthlyRegisterPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg text-gray-900">Staff Attendance Register</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">
+            <h1 className="text-lg font-medium text-gray-900">Employee Register</h1>
+            {/* <p className="text-gray-500 mt-0.5 text-sm">
               View staff attendance by month.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 shrink-0">
             <button

@@ -8,7 +8,44 @@ import {
   verifyPortalPassword,
   resolvePortalChildrenIds,
   fetchChildrenByIds,
+  type PortalChild,
 } from '@/lib/parent-students';
+
+function toStaffUserResponse(user: User & { password_hash?: string }) {
+  return {
+    id: Number(user.id),
+    email: user.email,
+    role: user.role,
+    full_name: user.full_name,
+    phone: user.phone ?? null,
+    is_active: user.is_active,
+  };
+}
+
+function toParentUserResponse(login: string, children: PortalChild[]) {
+  return {
+    login,
+    role: 'parent' as const,
+    children: children.map((child) => ({
+      id: Number(child.id),
+      first_name: child.first_name,
+      middle_name: child.middle_name ?? null,
+      last_name: child.last_name,
+      admission_number: child.admission_number,
+      roll_number: child.roll_number ?? null,
+      gender: child.gender ?? null,
+      date_of_birth: child.date_of_birth ?? null,
+      blood_group: child.blood_group ?? null,
+      photo_url: child.photo_url ?? null,
+      status: child.status,
+      class_name: child.class_name ?? null,
+      section_name: child.section_name ?? null,
+      current_academic_year: child.current_academic_year ?? null,
+      portal_access_enabled: child.portal_access_enabled,
+      effective_permissions: child.effective_permissions,
+    })),
+  };
+}
 
 function normalizePhone(value: string): string {
   return value.replace(/\D/g, '');
@@ -56,7 +93,7 @@ export async function authenticateUnifiedLogin(
   db: RequestDb,
   login: string,
   password: string,
-  tenant?: Pick<Tenant, 'id' | 'slug' | 'organization_id'> | null,
+  tenant?: (Pick<Tenant, 'id' | 'slug' | 'organization_id'> & { school_code?: string }) | null,
 ): Promise<AuthenticatedLoginResult | { error: string; status: number }> {
   const trimmedLogin = login.trim();
 
@@ -82,13 +119,9 @@ export async function authenticateUnifiedLogin(
       ? await enrichSchoolLoginToken(tokenPayload, tenant)
       : generateToken({ ...tokenPayload, user_type: 'school_local' });
 
-    const { password_hash: _p, ...userWithoutPassword } = staffUser as User & {
-      password_hash?: string;
-    };
-
     return {
       kind: 'staff',
-      user: userWithoutPassword as User,
+      user: toStaffUserResponse(staffUser),
       token,
     };
   }
@@ -123,15 +156,15 @@ export async function authenticateUnifiedLogin(
     login: trimmedLogin,
     studentIds: children.map((c) => c.id),
     matchedStudentId: matched.id,
+    tenant_id: tenant?.id,
+    tenant_slug: tenant?.slug,
+    organization_id: tenant?.organization_id ?? undefined,
+    school_code: tenant?.school_code,
   });
 
   return {
     kind: 'parent',
-    user: {
-      login: trimmedLogin,
-      children,
-      role: 'parent',
-    },
+    user: toParentUserResponse(trimmedLogin, children),
     token,
   };
 }

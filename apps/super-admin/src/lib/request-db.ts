@@ -12,6 +12,7 @@ import type { TenantContext } from '@edulakhya/types';
 import type { QueryResult, QueryResultRow } from 'pg';
 import { extractSubdomain } from '@/lib/tenant-host';
 import { resolveHostContext, resolveSchoolFromAuth } from '@/lib/host-context';
+import { verifyParentToken } from '@/lib/parent-auth';
 
 export { extractSubdomain } from '@/lib/tenant-host';
 export interface RequestDb {
@@ -60,14 +61,52 @@ function resolveAuthFromRequest(request: NextRequest): {
   if (!token) return {};
 
   const user = getUserFromToken(token);
-  if (!user) return {};
+  if (user) {
+    const schoolId = user.tenant_id ?? user.school_id;
+    return {
+      schoolId: schoolId != null ? Number(schoolId) : undefined,
+      organizationId:
+        user.organization_id != null ? Number(user.organization_id) : undefined,
+    };
+  }
 
-  const schoolId = user.tenant_id ?? user.school_id;
-  return {
-    schoolId: schoolId != null ? Number(schoolId) : undefined,
-    organizationId:
-      user.organization_id != null ? Number(user.organization_id) : undefined,
-  };
+  const parentSession = verifyParentToken(token);
+  if (parentSession) {
+    return {
+      schoolId:
+        parentSession.tenant_id != null ? Number(parentSession.tenant_id) : undefined,
+      organizationId:
+        parentSession.organization_id != null
+          ? Number(parentSession.organization_id)
+          : undefined,
+    };
+  }
+
+  // Parent JWT may include tenant_id without staff user id
+  try {
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64)) as {
+        role?: string;
+        tenant_id?: number;
+        school_id?: number;
+        organization_id?: number;
+      };
+      if (payload.role === 'parent') {
+        const schoolId = payload.tenant_id ?? payload.school_id;
+        return {
+          schoolId: schoolId != null ? Number(schoolId) : undefined,
+          organizationId:
+            payload.organization_id != null ? Number(payload.organization_id) : undefined,
+        };
+      }
+    }
+  } catch {
+    // ignore malformed token
+  }
+
+  return {};
 }
 
 /**
@@ -101,7 +140,7 @@ export async function getRequestDb(
     }
     if (schoolId != null && resolved.context.tenant.id !== schoolId) {
       throw new TenantResolutionError(
-        'Tenant mismatch: your session does not belong to this school.',
+        'Tenant mismatch: your session does not belong to this school. Use the school switcher in the header to open the correct campus.',
       );
     }
     return {

@@ -50,8 +50,8 @@ export default function TeacherPerformancePage() {
         <TeacherNav />
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <div>
-            <h1 className="text-xl">Teacher Performance Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">Composite score from activities, syllabus, timetable, and homework</p>
+            <h1 className="text-lg font-medium text-gray-900">Teacher Performance Dashboard</h1>
+            {/* <p className="text-sm text-gray-600 mt-1">Composite score from activities, syllabus, timetable, and homework</p> */}
           </div>
           <select value={days} onChange={(e) => setDays(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             <option value="7">Last 7 days</option>

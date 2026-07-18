@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { setClientSession, getClientUser } from '@/lib/client-auth';
 import { setLastSelectedSchoolId } from '@/lib/selected-school';
+import { isCurrentSchoolHost, redirectToSchoolApp } from '@/lib/school-app-url';
 
 type SchoolOption = {
   id: number;
@@ -42,6 +43,13 @@ export default function OrgSelectSchoolPage() {
           setLastSelectedSchoolId(orgSlug, data.data.school.id);
         }
       }
+
+      const schoolSlug = data.data.school?.slug;
+      if (schoolSlug && !isCurrentSchoolHost(schoolSlug)) {
+        redirectToSchoolApp(schoolSlug, '/admin');
+        return;
+      }
+
       window.location.href = '/admin';
     }
   };

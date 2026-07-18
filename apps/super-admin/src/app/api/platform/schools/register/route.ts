@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
       academic_year_name,
       academic_year_start,
       academic_year_end,
+      city,
+      school_code,
+      manages_multiple_schools,
     } = body;
 
     if (!school_name?.trim() || !slug?.trim() || !admin_name?.trim() || !admin_email?.trim() || !admin_password) {
@@ -43,6 +46,9 @@ export async function POST(request: NextRequest) {
       academic_year_name: academic_year_name?.trim(),
       academic_year_start: academic_year_start?.trim(),
       academic_year_end: academic_year_end?.trim(),
+      city: city?.trim(),
+      school_code: school_code?.trim(),
+      manages_multiple_schools: Boolean(manages_multiple_schools),
     });
 
     return NextResponse.json(

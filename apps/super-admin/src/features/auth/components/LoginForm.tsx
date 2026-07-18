@@ -51,6 +51,7 @@ interface LoginFormProps {
   passwordLabel?: string;
   identifierMode?: 'email' | 'user-id';
   schoolId?: number;
+  schoolCode?: string;
   selectedSchoolName?: string;
   orgSlug?: string;
   onChangeSchool?: () => void;
@@ -65,6 +66,7 @@ export default function LoginForm({
   passwordLabel = 'Password',
   identifierMode = 'email',
   schoolId,
+  schoolCode,
   selectedSchoolName,
   orgSlug,
   onChangeSchool,
@@ -142,15 +144,34 @@ export default function LoginForm({
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           login: formData.login.trim(),
           password: formData.password,
           ...(schoolId != null ? { school_id: schoolId } : {}),
+          ...(schoolCode ? { school_code: schoolCode } : {}),
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
       });
 
-      const data = await response.json();
+      const rawBody = await response.text();
+      if (!rawBody.trim()) {
+        setError('Login failed: the server returned an empty response. Please refresh and try again.');
+        return;
+      }
+
+      let data: {
+        success?: boolean;
+        error?: string;
+        data?: Record<string, unknown>;
+        guard?: LoginGuardState;
+      };
+      try {
+        data = JSON.parse(rawBody) as typeof data;
+      } catch {
+        setError('Login failed: invalid server response. Please try again.');
+        return;
+      }
       if (data.guard) {
         setGuard(data.guard as LoginGuardState);
       }
@@ -161,6 +182,11 @@ export default function LoginForm({
       }
 
       if (data.success) {
+        if (!data.data?.token || !data.data?.user) {
+          setError('Login failed: incomplete server response. Please try again.');
+          return;
+        }
+
         setGuard(null);
         setTurnstileToken('');
 
@@ -172,8 +198,10 @@ export default function LoginForm({
           setLastSelectedSchoolId(orgSlug, data.data.tenant.id);
         }
 
-        setClientSession(data.data.token, data.data.user);
-        const role = String(data.data.user?.role || getClientUserRole() || '');
+        setClientSession(String(data.data.token), data.data.user as Record<string, unknown>);
+        const role = String(
+          (data.data.user as { role?: string } | undefined)?.role || getClientUserRole() || '',
+        );
 
         if (data.data.requires_school_selection) {
           window.location.href = '/org/select-school';

@@ -22,6 +22,8 @@ import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import {
   FiAlertCircle,
   FiCalendar,
+  FiCheckSquare,
+  FiGift,
   FiUserPlus,
   FiAward,
   FiTruck,
@@ -99,6 +101,20 @@ const EMPTY_DASHBOARD: DashboardOverview = {
   students_by_class: [],
   admissions_by_status: [],
   staff_by_department: [],
+  upcoming_birthdays: [],
+  pending_tasks: [],
+  staff_attendance_today: {
+    total_staff: 0,
+    present: 0,
+    absent: 0,
+    on_leave: 0,
+    marked: 0,
+    not_marked: 0,
+  },
+  outstanding_fees: {
+    total: 0,
+    students_with_dues: 0,
+  },
 };
 
 function PanelCard({
@@ -120,7 +136,7 @@ function PanelCard({
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-sm text-gray-900">{title}</h3>
             {/* {badge && (
               <span className="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                 {badge}
@@ -177,6 +193,30 @@ function ModuleCard({
         </div>
       </div>
     </button>
+  );
+}
+
+function StatPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: 'green' | 'red' | 'amber' | 'gray';
+}) {
+  const toneClasses = {
+    green: 'bg-green-50 text-green-700 border-green-100',
+    red: 'bg-red-50 text-red-700 border-red-100',
+    amber: 'bg-amber-50 text-amber-700 border-amber-100',
+    gray: 'bg-gray-50 text-gray-700 border-gray-100',
+  }[tone];
+
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${toneClasses}`}>
+      <p className="text-[10px] font-medium uppercase tracking-wide opacity-80">{label}</p>
+      <p className="text-lg font-semibold mt-0.5">{value}</p>
+    </div>
   );
 }
 
@@ -343,6 +383,8 @@ export default function DashboardPage() {
           /> */}
         </div>
 
+       
+
         {/* Row 2 — Trends (line) + Comparisons (bar) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <PanelCard
@@ -364,6 +406,145 @@ export default function DashboardPage() {
               formatValue={formatCurrencyFull}
             />
           </PanelCard>
+        </div>
+
+ {/* Row 1b — Quick insights */}
+ <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3">
+          <PanelCard
+            title="Upcoming Birthdays"
+            subtitle="Next 7 days — students & staff"
+            href="/students"
+          >
+            {s.upcoming_birthdays.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm">
+                <FiGift className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                No birthdays in the next 7 days
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {s.upcoming_birthdays.map((person) => (
+                  <div
+                    key={`${person.person_type}-${person.id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{person.name}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {person.person_type === 'student'
+                          ? [person.class_name, person.section_name].filter(Boolean).join(' · ') ||
+                            'Student'
+                          : 'Staff'}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        person.days_until === 0
+                          ? 'bg-pink-100 text-pink-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {person.birthday_label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PanelCard>
+
+          {/* <PanelCard
+            title="Pending Tasks"
+            subtitle="Follow-ups, approvals & collections"
+            href="/admissions"
+          >
+            {s.pending_tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm">
+                <FiCheckSquare className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                No pending tasks right now
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {s.pending_tasks.map((task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() => router.push(task.href)}
+                    className="w-full rounded-lg border border-gray-100 p-2.5 text-left hover:bg-gray-50"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span
+                        className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                          task.severity === 'high'
+                            ? 'bg-red-500'
+                            : task.severity === 'medium'
+                              ? 'bg-amber-500'
+                              : 'bg-gray-400'
+                        }`}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm text-gray-900 truncate">{task.title}</p>
+                        <p className="text-xs text-gray-500 truncate">{task.subtitle}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </PanelCard> */}
+
+          <PanelCard
+            title="Staff attendance today"
+            subtitle={`${s.staff_attendance_today.marked} of ${s.staff_attendance_today.total_staff} marked`}
+            href="/attendance/staff"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <StatPill label="Present" value={s.staff_attendance_today.present} tone="green" />
+              <StatPill label="Absent" value={s.staff_attendance_today.absent} tone="red" />
+              <StatPill label="On Leave" value={s.staff_attendance_today.on_leave} tone="amber" />
+              <StatPill
+                label="Not Marked"
+                value={s.staff_attendance_today.not_marked}
+                tone="gray"
+              />
+            </div>
+            {s.staff_attendance_today.marked === 0 && s.staff_attendance_today.total_staff > 0 && (
+              <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                Staff attendance has not been marked for today.
+              </p>
+            )}
+          </PanelCard>
+
+          {/* <PanelCard
+            title="Total Outstanding Fees"
+            subtitle={
+              s.outstanding_fees.students_with_dues > 0
+                ? `${s.outstanding_fees.students_with_dues} student${s.outstanding_fees.students_with_dues === 1 ? '' : 's'} with dues`
+                : 'All students cleared'
+            }
+            href="/fees/ledger"
+          >
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-amber-50 p-3 text-amber-700">
+                <RupeeIcon size={22} />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {formatCurrencyFull(s.outstanding_fees.total)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Session outstanding across active students
+                </p>
+                {s.outstanding_fees.total > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/fees/ledger')}
+                    className="mt-3 text-xs font-medium text-primary-600 hover:text-primary-700"
+                  >
+                    Open student ledger
+                  </button>
+                )}
+              </div>
+            </div>
+          </PanelCard> */}
         </div>
 
         {/* Row 2b — Composition (donut) */}

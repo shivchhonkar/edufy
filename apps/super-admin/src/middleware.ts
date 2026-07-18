@@ -7,7 +7,7 @@ import {
   isAdminRole,
 } from '@/lib/role-routing';
 
-const PUBLIC_PATHS = ['/login', '/register-school', '/verify', '/school-unavailable'];
+const PUBLIC_PATHS = ['/login', '/student/login', '/parent/login', '/register-school', '/verify', '/school-unavailable'];
 
 /** Legacy academic URLs → /academics/* (query string preserved) */
 const ACADEMIC_ROUTE_REDIRECTS: [string, string][] = [
@@ -33,6 +33,7 @@ const PUBLIC_API_PATHS = [
   '/api/tenant/branding',
   '/api/org/branding',
   '/api/org/schools/public',
+  '/api/public/school-code',
   '/api/platform/schools/register',
   '/api/platform/schools/check-slug',
   '/api/marksheets/verify',
@@ -70,6 +71,22 @@ function getRoleFromToken(token: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** Build a redirect that preserves the incoming Host (e.g. global.localhost). */
+function redirectPath(request: NextRequest, pathname: string): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = '';
+  return NextResponse.redirect(url);
+}
+
+function isLoginPath(pathname: string): boolean {
+  return (
+    pathname === '/login' ||
+    pathname === '/student/login' ||
+    pathname === '/parent/login'
+  );
 }
 
 export async function middleware(request: NextRequest) {
@@ -149,22 +166,22 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!token && !isPublicPage && pathname !== '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return redirectPath(request, '/login');
   }
 
   if (!isApiRoute && subdomain && pathname === '/' && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return redirectPath(request, '/login');
   }
 
-  if (token && pathname.startsWith('/login')) {
+  if (token && isLoginPath(pathname)) {
     const role = decodeJwtRole(token);
-    return NextResponse.redirect(new URL(getRoleHomePath(role), request.url));
+    return redirectPath(request, getRoleHomePath(role));
   }
 
   if (token && pathname === '/dashboard') {
     const role = decodeJwtRole(token);
     if (isAdminRole(role)) {
-      return NextResponse.redirect(new URL('/admin', request.url));
+      return redirectPath(request, '/admin');
     }
   }
 
@@ -176,7 +193,7 @@ export async function middleware(request: NextRequest) {
   ) {
     const role = decodeJwtRole(token);
     if (role && !canRoleAccessPath(role, pathname)) {
-      return NextResponse.redirect(new URL(getRoleHomePath(role), request.url));
+      return redirectPath(request, getRoleHomePath(role));
     }
   }
 

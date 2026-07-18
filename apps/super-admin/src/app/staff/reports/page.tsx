@@ -145,7 +145,7 @@ export default function StaffReportsPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2 text-xl text-gray-900">
+            <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
               {/* <FiBarChart2 className="text-primary-600" /> */}
               Staff Reports <Link
               href="/attendance/staff/register"

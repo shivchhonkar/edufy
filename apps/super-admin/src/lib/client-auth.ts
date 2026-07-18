@@ -105,10 +105,11 @@ export function isAdminRole(role: unknown): boolean {
 export function clearClientSession(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  clearClientAuthCookie();
 }
 
 import { getRoleHomePath } from './role-routing';
+import { clearClientAuthCookie, writeClientAuthCookie } from './auth-cookie';
 
 export function getClientRoleHomePath(): string {
   return getRoleHomePath(getClientUserRole());
@@ -131,5 +132,5 @@ export function setClientSession(token: string, user: Record<string, unknown>): 
 
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(sessionUser));
-  document.cookie = `token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+  writeClientAuthCookie(token);
 }

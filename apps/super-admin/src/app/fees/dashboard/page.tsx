@@ -38,8 +38,8 @@ export default function FeesDashboardPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl text-gray-900">Finance Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-lg font-medium text-gray-900">Finance Dashboard</h1>
+          <p className="text-xs text-gray-500 mt-1">
             {settings.school_name || 'School fees overview'}
             {settings.academic_year && (
               <span className="ml-2 inline-flex px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">

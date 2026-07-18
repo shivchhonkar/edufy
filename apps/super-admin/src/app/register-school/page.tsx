@@ -25,6 +25,9 @@ export default function RegisterSchoolPage() {
   const [form, setForm] = useState({
     school_name: '',
     slug: '',
+    school_code: '',
+    manages_multiple_schools: false,
+    city: '',
     academic_year_name: '',
     academic_year_start: '',
     academic_year_end: '',
@@ -44,11 +47,30 @@ export default function RegisterSchoolPage() {
     }));
   }, []);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [codeTouched, setCodeTouched] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [codeAvailable, setCodeAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  const [checkingCode, setCheckingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ login_url: string; slug: string; academic_year?: string } | null>(null);
+  const [result, setResult] = useState<{ login_url: string; slug: string; academic_year?: string; school_code?: string } | null>(null);
+
+  const checkCode = async (code: string) => {
+    const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.length < 3) {
+      setCodeAvailable(null);
+      return;
+    }
+    setCheckingCode(true);
+    try {
+      const res = await fetch(`/api/public/school-code/check?code=${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      if (data.success) setCodeAvailable(data.data.available);
+    } finally {
+      setCheckingCode(false);
+    }
+  };
 
   const checkSlug = async (slug: string) => {
     const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -72,6 +94,10 @@ export default function RegisterSchoolPage() {
       updates.slug = slugify(name);
       if (updates.slug.length >= 3) checkSlug(updates.slug);
     }
+    if (!codeTouched) {
+      updates.school_code = slugify(name).replace(/-/g, '').toUpperCase().slice(0, 12);
+      if (updates.school_code.length >= 3) checkCode(updates.school_code);
+    }
     setForm(updates);
   };
 
@@ -84,7 +110,7 @@ export default function RegisterSchoolPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (slugAvailable === false) return;
+    if (slugAvailable === false || codeAvailable === false) return;
 
     setSubmitting(true);
     setError('');
@@ -132,6 +158,14 @@ export default function RegisterSchoolPage() {
               <FiLink className="shrink-0 mt-0.5" size={14} />
               {result.login_url}
             </a>
+            {(result.school_code || form.school_code) && (
+              <p className="text-sm text-gray-600">
+                School code for mobile / unified login:{' '}
+                <span className="font-semibold text-gray-900">
+                  {(result.school_code || form.school_code).toUpperCase()}
+                </span>
+              </p>
+            )}
             {(result.academic_year || form.academic_year_name) && (
               <p className="text-sm text-gray-600">
                 Active academic year:{' '}
@@ -160,6 +194,7 @@ export default function RegisterSchoolPage() {
   }
 
   const slugError = slugAvailable === false ? 'This URL is already taken — try another' : undefined;
+  const codeError = codeAvailable === false ? 'This school code is already in use' : undefined;
 
   return (
     <AuthPageLayout
@@ -204,6 +239,62 @@ export default function RegisterSchoolPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            <AuthInput
+              label="City / campus"
+              placeholder="e.g. Mathura"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <AuthInput
+                label="School code"
+                required
+                placeholder="e.g. KMPI"
+                value={form.school_code}
+                onChange={(e) => {
+                  setCodeTouched(true);
+                  const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                  setForm({ ...form, school_code: clean });
+                  checkCode(clean);
+                }}
+                hint="Used for unified login on mobile apps (letters and numbers, min. 3)"
+                error={codeError}
+              />
+              {form.school_code.length >= 3 && (
+                <div className="flex items-center justify-end mt-1.5 text-xs gap-2">
+                  {checkingCode && <span className="text-gray-400">Checking...</span>}
+                  {!checkingCode && codeAvailable === true && (
+                    <span className="text-green-600 font-medium">Available</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-end pb-1">
+              <label className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
+                  checked={form.manages_multiple_schools}
+                  onChange={(e) =>
+                    setForm({ ...form, manages_multiple_schools: e.target.checked })
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Manage multiple schools
+                  </span>
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    One school code (e.g. KMPI) for all campuses. Add more schools later from org
+                    settings.
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
 
@@ -279,7 +370,7 @@ export default function RegisterSchoolPage() {
 
         <button
           type="submit"
-          disabled={submitting || slugAvailable === false || checkingSlug}
+          disabled={submitting || slugAvailable === false || codeAvailable === false || checkingSlug || checkingCode}
           className="w-full flex items-center justify-center gap-2 py-3 bg-brand text-white font-semibold rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
           {submitting ? (

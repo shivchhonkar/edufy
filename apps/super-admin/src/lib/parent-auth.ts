@@ -7,6 +7,11 @@ export function signParentToken(payload: {
   login: string;
   studentIds: number[];
   matchedStudentId?: number;
+  tenant_id?: number;
+  tenant_slug?: string;
+  organization_id?: number;
+  organization_slug?: string;
+  school_code?: string;
 }): string {
   return jwt.sign(
     {
@@ -14,6 +19,13 @@ export function signParentToken(payload: {
       studentIds: payload.studentIds,
       matchedStudentId: payload.matchedStudentId,
       role: 'parent' as const,
+      user_type: 'parent' as const,
+      tenant_id: payload.tenant_id,
+      school_id: payload.tenant_id,
+      tenant_slug: payload.tenant_slug,
+      organization_id: payload.organization_id,
+      organization_slug: payload.organization_slug,
+      school_code: payload.school_code,
     },
     JWT_SECRET,
     { expiresIn: '7d' },
@@ -25,6 +37,9 @@ export interface ParentSession {
   phone?: string;
   studentIds: number[];
   role: 'parent';
+  tenant_id?: number;
+  organization_id?: number;
+  school_code?: string;
 }
 
 export function getBearerToken(request: NextRequest): string | null {
@@ -35,11 +50,21 @@ export function getBearerToken(request: NextRequest): string | null {
 
 export function verifyParentToken(token: string): ParentSession | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as ParentSession;
+    const decoded = jwt.verify(token, JWT_SECRET) as ParentSession & {
+      tenant_id?: number;
+      school_id?: number;
+      organization_id?: number;
+      school_code?: string;
+    };
     if (decoded.role !== 'parent' || !Array.isArray(decoded.studentIds)) {
       return null;
     }
-    return decoded;
+    return {
+      ...decoded,
+      tenant_id: decoded.tenant_id ?? decoded.school_id,
+      organization_id: decoded.organization_id,
+      school_code: decoded.school_code,
+    };
   } catch {
     return null;
   }

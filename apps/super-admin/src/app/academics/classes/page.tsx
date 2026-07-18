@@ -427,7 +427,7 @@ function ClassesPageContent() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-xl text-gray-900 flex items-center gap-2">
+              <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 <FiLayers className="text-primary-600" size={20} />
                 Classes & Sections
               </h1>

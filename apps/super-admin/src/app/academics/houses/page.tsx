@@ -317,13 +317,13 @@ export default function HousesPage() {
           >
             <FiArrowLeft size={14} /> Academics
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <FiFlag className="text-primary-600" />
+          <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+            {/* <FiFlag className="text-primary-600" /> */}
             School Houses
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          {/* <p className="text-sm text-gray-500 mt-1">
             Create houses and assign students for sports, competitions, and school events.
-          </p>
+          </p> */}
         </div>
 
         <div className="flex gap-2 border-b">

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiRefreshCw } from 'react-icons/fi';
 import type { OrgAggregatedMetrics } from '@/lib/org-analytics';
+import { setClientSession } from '@/lib/client-auth';
+import { isCurrentSchoolHost, redirectToSchoolApp } from '@/lib/school-app-url';
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -110,7 +112,12 @@ export default function OrgDashboardPage() {
                             });
                             const data = await res.json();
                             if (data.success) {
-                              document.cookie = `token=${data.data.token}; path=/; max-age=604800; SameSite=Lax`;
+                              setClientSession(data.data.token, data.data.user);
+                              const schoolSlug = data.data.school?.slug ?? school.school_slug;
+                              if (schoolSlug && !isCurrentSchoolHost(schoolSlug)) {
+                                redirectToSchoolApp(schoolSlug, '/admin');
+                                return;
+                              }
                               router.push('/admin');
                             }
                           }}

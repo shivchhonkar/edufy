@@ -481,14 +481,14 @@ export default function AcademicAssignmentsPage() {
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2 text-xl text-gray-900">
-              <FiBookOpen className="text-primary-600" />
+            <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
+              {/* <FiBookOpen className="text-primary-600" /> */}
               Academic Assignments
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            {/* <p className="mt-1 text-sm text-gray-600">
               View class, teacher, and subject mappings, co-teaching, and workload for timetable
               planning.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button

@@ -168,7 +168,7 @@ export default function StudentLedgerListPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl text-gray-900">Student Ledger</h1>
+          <h1 className="text-lg font-medium text-gray-900">Student Ledger</h1>
           {/* <p className="text-sm text-gray-500 mt-1">
             View all students, their outstanding fees and manage collections.
           </p> */}

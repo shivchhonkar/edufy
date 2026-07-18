@@ -47,9 +47,10 @@ export default function ExamAnalyticsPage() {
           </Link>
           <div>
             <h1 className="text-xl text-gray-900 flex items-center gap-2">
-              <FiBarChart2 className="text-primary-600" /> Exam Analytics
+              {/* <FiBarChart2 className="text-primary-600" /> */}
+               Exam Analytics
             </h1>
-            <p className="text-sm text-gray-500">Performance insights from compiled results</p>
+            {/* <p className="text-sm text-gray-500">Performance insights from compiled results</p> */}
           </div>
         </div>
 

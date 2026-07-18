@@ -29,15 +29,15 @@ export default function FeesPageHeader({
       </Link>
 
       <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1">
-        <h1 className="col-start-1 row-start-1 text-lg text-gray-900">{title}</h1>
+        <h1 className="col-start-1 row-start-1 text-lg font-medium text-gray-900">{title}</h1>
         {actions && (
           <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end">
             {actions}
           </div>
         )}
-        {description && (
+        {/* {description && (
           <p className="col-span-2 row-start-2 text-sm text-gray-600">{description}</p>
-        )}
+        )} */}
       </div>
     </header>
   );
