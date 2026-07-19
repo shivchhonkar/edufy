@@ -24,8 +24,11 @@ Required:
 
 ```bash
 cd apps/app-admin
+npm run create:admin
+# interactive prompts for name, email, password
+
+# quick seed with defaults or CLI args:
 npm run seed:admin
-# or with custom credentials:
 node scripts/seed-platform-admin.mjs admin@example.com YourPassword "Admin Name"
 ```
 
