@@ -29,16 +29,15 @@ export default function LandingLogo({
       />
       {showText && (
         <div>
-          <span
-            className={`text-lg leading-tight ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            <span className={`text-lg ${isDark ? 'text-white SHIV' : 'text-gray-900'}`}>Shribi</span> <span className="text-lg font-bold text-primary-900">Edufy</span>
+          <span className="text-lg leading-tight">
+            <span className={isDark ? 'text-white' : 'text-gray-900'}>Shribi</span>{' '}
+            <span className={`font-bold ${isDark ? 'text-brand-light' : 'text-primary-900'}`}>
+              Edufy
+            </span>
           </span>
           <span
             className={`block text-[10px] uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-primary-800'
+              isDark ? 'text-primary-100' : 'text-primary-800'
             }`}
           >
             School ERP

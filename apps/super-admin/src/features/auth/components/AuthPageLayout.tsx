@@ -23,14 +23,14 @@ interface AuthPageLayoutProps {
 export default function AuthPageLayout({ children, title, subtitle, wide = false }: AuthPageLayoutProps) {
   return (
     <div className="min-h-screen flex">
-      {/* Brand panel — desktop */}
-      <div className="hidden lg:flex lg:w-[44%] xl:w-[42%] relative overflow-hidden bg-gradient-to-br from-brand-dark via-primary-600 to-brand-light text-white flex-col justify-between p-10 xl:p-12">
+      {/* Brand panel — desktop (sticky so long forms don't stretch this column) */}
+      <div className="hidden lg:flex lg:w-[44%] xl:w-[42%] lg:sticky lg:top-0 lg:h-screen relative overflow-hidden bg-gradient-to-br from-brand-dark via-primary-600 to-brand-light text-white flex-col p-10 xl:p-12">
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <div className="absolute top-16 left-8 w-64 h-64 bg-brand-light rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-8 w-80 h-80 bg-brand rounded-full blur-3xl" />
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary-100 hover:text-white transition-colors mb-10">
             <FiArrowLeft size={16} />
             Back to home
@@ -38,27 +38,29 @@ export default function AuthPageLayout({ children, title, subtitle, wide = false
           <LandingLogo size={48} variant="dark" />
         </div>
 
-        <div className="relative space-y-8">
-          <div>
-            <h2 className="text-3xl xl:text-4xl leading-tight mb-4 mt-4">
-              India&apos;s Trusted School ERP Platform
-            </h2>
-            <p className="text-primary-100 leading-relaxed">
-              Manage admissions, academics, fees, HR, transport, and parent communication
-              from one powerful dashboard.
-            </p>
+        <div className="relative flex-1 flex flex-col min-h-0 pt-8">
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-3xl xl:text-4xl leading-tight mb-4">
+                India&apos;s Trusted School ERP Platform
+              </h2>
+              <p className="text-primary-100 leading-relaxed">
+                Manage admissions, academics, fees, HR, transport, and parent communication
+                from one powerful dashboard.
+              </p>
+            </div>
+
+            <ul className="space-y-3">
+              {HIGHLIGHTS.map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-primary-50">
+                  <FiCheckCircle className="text-brand-light shrink-0 mt-0.5" size={18} />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <ul className="space-y-3">
-            {HIGHLIGHTS.map((item) => (
-              <li key={item} className="flex items-start gap-3 text-sm text-primary-50">
-                <FiCheckCircle className="text-brand-light shrink-0 mt-0.5" size={18} />
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
+          <div className="grid grid-cols-2 gap-4 pt-4 mt-auto border-t border-white/20">
             {STATS.slice(0, 4).map((stat) => (
               <div key={stat.label}>
                 <p className="text-2xl">{stat.value}</p>
