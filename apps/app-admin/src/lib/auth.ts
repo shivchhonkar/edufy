@@ -18,6 +18,21 @@ export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
+/** Attach session token for middleware-protected API routes. */
+export function authFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const token = getToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return fetch(input, {
+    ...init,
+    credentials: 'include',
+    headers,
+  });
+}
+
 export function logout(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');

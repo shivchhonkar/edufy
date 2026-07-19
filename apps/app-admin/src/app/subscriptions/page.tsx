@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PortalPageShell } from '@edulakhya/ui';
 import { formatDate } from '@edulakhya/utils';
 import type { OrganizationSubscription } from '@edulakhya/types';
+import { authFetch } from '@/lib/auth';
 
 type SubscriptionRow = OrganizationSubscription & {
   organization_name: string;
@@ -20,7 +21,7 @@ export default function SubscriptionsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const response = await fetch('/api/platform/subscriptions', { cache: 'no-store' });
+        const response = await authFetch('/api/platform/subscriptions', { cache: 'no-store' });
         const payload = await response.json();
         if (payload.success) {
           setSubscriptions(payload.data.subscriptions);

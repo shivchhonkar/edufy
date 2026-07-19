@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SuperAdminUser } from '@/lib/school-audit';
+import { authFetch } from '@/lib/auth';
 
 export default function ResetSuperAdminPasswordForm({
   schoolId,
@@ -34,7 +35,7 @@ export default function ResetSuperAdminPasswordForm({
 
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/platform/schools/${schoolId}/super-admins/${user.id}/reset-password`,
         {
           method: 'POST',

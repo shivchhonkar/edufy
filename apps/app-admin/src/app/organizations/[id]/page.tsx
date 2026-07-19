@@ -7,6 +7,7 @@ import { formatDate } from '@edulakhya/utils';
 import {
   SubscriptionFormFields,
 } from '@/features/subscriptions/components/SubscriptionUi';
+import { authFetch } from '@/lib/auth';
 
 type OrganizationDetail = {
   id: number;
@@ -55,7 +56,7 @@ export default function OrganizationDetailPage() {
   useEffect(() => {
     async function load() {
       try {
-        const response = await fetch(`/api/platform/organizations/${params.id}`, {
+        const response = await authFetch(`/api/platform/organizations/${params.id}`, {
           cache: 'no-store',
         });
         const payload = await response.json();
@@ -101,7 +102,7 @@ export default function OrganizationDetailPage() {
     setMessage('');
     setError('');
     try {
-      const response = await fetch(`/api/platform/organizations/${organization.id}`, {
+      const response = await authFetch(`/api/platform/organizations/${organization.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,14 +140,14 @@ export default function OrganizationDetailPage() {
         ? subscriptionForm
         : { ...subscriptionForm, organization_id: organization.id };
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       const payload = await response.json();
       if (payload.success) {
-        const refresh = await fetch(`/api/platform/organizations/${organization.id}`, {
+        const refresh = await authFetch(`/api/platform/organizations/${organization.id}`, {
           cache: 'no-store',
         });
         const refreshed = await refresh.json();

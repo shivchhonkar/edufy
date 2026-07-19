@@ -32,6 +32,16 @@ npm run seed:admin
 node scripts/seed-platform-admin.mjs admin@example.com YourPassword "Admin Name"
 ```
 
+## Production troubleshooting
+
+If `/api/platform/overview` returns 500 with `organization_subscriptions does not exist`, apply the control DB Phase 5 migration from the monorepo root:
+
+```bash
+cd ~/projects/edufy
+npm run db:control:migrate-phase5
+pm2 restart edufy-app-admin
+```
+
 Default seeded credentials:
 - Email: `platform@edulakhya.com`
 - Password: `Platform@123`

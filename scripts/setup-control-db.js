@@ -63,6 +63,21 @@ async function main() {
         console.log('Organization migration applied.');
       }
     }
+
+    const phase5Path = path.join(__dirname, '../database/migrations/control/002_phase5_advanced.sql');
+    if (fs.existsSync(phase5Path)) {
+      const phase5Check = await control.query(
+        "SELECT to_regclass('public.organization_subscriptions') AS reg",
+      );
+      if (!phase5Check.rows[0].reg) {
+        console.log('Applying Phase 5 control migration (organization_subscriptions, etc.)...');
+        const phase5Sql = fs.readFileSync(phase5Path, 'utf8');
+        await control.query(phase5Sql);
+        console.log('Phase 5 migration applied.');
+      } else {
+        console.log('Phase 5 tables already present.');
+      }
+    }
   } finally {
     await control.end();
   }

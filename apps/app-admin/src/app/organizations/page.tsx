@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PortalPageShell } from '@edulakhya/ui';
 import type { OrganizationWithSubscription } from '@edulakhya/types';
 import { OrganizationTable } from '@/features/subscriptions/components/SubscriptionUi';
+import { authFetch } from '@/lib/auth';
 
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState<OrganizationWithSubscription[]>([]);
@@ -14,7 +15,7 @@ export default function OrganizationsPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/platform/organizations', { cache: 'no-store' });
+      const response = await authFetch('/api/platform/organizations', { cache: 'no-store' });
       const payload = await response.json();
       if (payload.success) {
         setOrganizations(payload.data.organizations);

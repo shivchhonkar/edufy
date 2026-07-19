@@ -11,6 +11,7 @@ import SubscriptionStatusCard from '@/components/dashboard/SubscriptionStatusCar
 import { formatCurrency } from '@edulakhya/utils';
 import type { OrganizationWithSubscription } from '@edulakhya/types';
 import type { PlatformDashboardKpis } from '@/lib/platform-dashboard';
+import { authFetch } from '@/lib/auth';
 import { OrganizationTable } from '@/features/subscriptions/components/SubscriptionUi';
 
 type DashboardData = {
@@ -36,7 +37,7 @@ export default function DashboardPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/platform/overview', { cache: 'no-store' });
+      const response = await authFetch('/api/platform/overview', { cache: 'no-store' });
       const payload = await response.json();
       if (payload.success) {
         setData(payload.data);

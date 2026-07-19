@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleCorsPreflight, withCors } from '@edulakhya/utils/cors';
 
 const PUBLIC_PATHS = ['/login'];
-const PUBLIC_API_PATHS = ['/api/auth/login'];
+const PUBLIC_API_PATHS = ['/api/auth/login', '/api/theme'];
 
 function getToken(request: NextRequest): string | null {
-  return request.cookies.get('token')?.value || null;
+  return (
+    request.cookies.get('token')?.value ||
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    null
+  );
 }
 
 export function middleware(request: NextRequest) {

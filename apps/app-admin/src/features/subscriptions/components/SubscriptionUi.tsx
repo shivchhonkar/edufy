@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { OrganizationWithSubscription } from '@edulakhya/types';
 import { formatDate } from '@edulakhya/utils';
+import { authFetch } from '@/lib/auth';
 
 function statusBadgeClass(status?: string | null): string {
   switch (status) {
@@ -56,7 +57,7 @@ export function OrganizationActiveToggle({
     const nextActive = !active;
     setLoading(true);
     try {
-      const response = await fetch(`/api/platform/organizations/${organizationId}`, {
+      const response = await authFetch(`/api/platform/organizations/${organizationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: nextActive }),

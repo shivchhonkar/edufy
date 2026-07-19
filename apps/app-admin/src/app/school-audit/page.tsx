@@ -9,6 +9,7 @@ import {
   getSchoolAdminBaseUrl,
   getSchoolAdminLoginUrl,
 } from '@/features/audit/utils/school-urls';
+import { authFetch } from '@/lib/auth';
 
 function formatSyncTime(value: string | null): string {
   if (!value) return '—';
@@ -36,7 +37,7 @@ export default function SchoolAuditPage() {
 
   const loadSchools = useCallback(async () => {
     try {
-      const response = await fetch('/api/platform/schools', { cache: 'no-store' });
+      const response = await authFetch('/api/platform/schools', { cache: 'no-store' });
       const payload = await response.json();
       if (payload.success) {
         setSchools(payload.data.schools);
@@ -61,7 +62,7 @@ export default function SchoolAuditPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/platform/schools/${schoolId}/audit`, { cache: 'no-store' });
+      const response = await authFetch(`/api/platform/schools/${schoolId}/audit`, { cache: 'no-store' });
       const payload = await response.json();
       if (payload.success) {
         setReport(payload.data.report);

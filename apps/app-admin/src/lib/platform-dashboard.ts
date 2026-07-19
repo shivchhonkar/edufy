@@ -34,6 +34,16 @@ export type PlatformDashboardData = {
 const dashboardCache = { expires: 0, data: null as PlatformDashboardData | null };
 const CACHE_TTL_MS = 60_000;
 
+const emptyOverview: SubscriptionOverview = {
+  totals: {
+    organizations: 0,
+    schools: 0,
+    active_subscriptions: 0,
+    expiring_soon: 0,
+  },
+  recent: [],
+};
+
 export async function getPlatformDashboard(): Promise<PlatformDashboardData> {
   if (dashboardCache.data && dashboardCache.expires > Date.now()) {
     return dashboardCache.data;
@@ -41,7 +51,14 @@ export async function getPlatformDashboard(): Promise<PlatformDashboardData> {
 
   const pool = createControlPool();
   try {
-    const [controlStats, overview] = await Promise.all([
+    let overview = emptyOverview;
+    try {
+      overview = await getSubscriptionOverview();
+    } catch (error) {
+      console.error('Subscription overview unavailable:', error);
+    }
+
+    const [controlStats, tenants] = await Promise.all([
       pool.query<{
         total_schools: string;
         active_schools: string;
@@ -69,12 +86,31 @@ export async function getPlatformDashboard(): Promise<PlatformDashboardData> {
             SELECT COUNT(*)::text FROM tenants
             WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
           ) AS new_schools_this_month
-      `),
-      getSubscriptionOverview() as Promise<SubscriptionOverview>,
+      `).catch(async () => {
+        const fallback = await pool.query<{
+          total_schools: string;
+          active_schools: string;
+          inactive_schools: string;
+          trial_schools: string;
+          expired_subscriptions: string;
+          new_schools_this_month: string;
+        }>(`
+          SELECT
+            (SELECT COUNT(*)::text FROM tenants) AS total_schools,
+            (SELECT COUNT(*)::text FROM tenants WHERE is_active = true) AS active_schools,
+            (SELECT COUNT(*)::text FROM tenants WHERE is_active = false) AS inactive_schools,
+            '0' AS trial_schools,
+            '0' AS expired_subscriptions,
+            (
+              SELECT COUNT(*)::text FROM tenants
+              WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
+            ) AS new_schools_this_month
+        `);
+        return fallback;
+      }),
+      listTenants(),
     ]);
-
     const control = controlStats.rows[0];
-    const tenants = await listTenants();
     const metrics = await Promise.all(tenants.map((tenant) => aggregateSchoolMetrics(tenant)));
 
     const connected = metrics.filter((item) => item.db_connected).length;
