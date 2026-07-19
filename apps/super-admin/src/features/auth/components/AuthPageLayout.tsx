@@ -40,7 +40,7 @@ export default function AuthPageLayout({ children, title, subtitle, wide = false
 
         <div className="relative space-y-8">
           <div>
-            <h2 className="text-3xl xl:text-4xl font-bold leading-tight mb-4">
+            <h2 className="text-3xl xl:text-4xl leading-tight mb-4 mt-4">
               India&apos;s Trusted School ERP Platform
             </h2>
             <p className="text-primary-100 leading-relaxed">
@@ -61,7 +61,7 @@ export default function AuthPageLayout({ children, title, subtitle, wide = false
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
             {STATS.slice(0, 4).map((stat) => (
               <div key={stat.label}>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl">{stat.value}</p>
                 <p className="text-xs text-primary-200">{stat.label}</p>
               </div>
             ))}
