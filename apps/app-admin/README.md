@@ -35,10 +35,11 @@ Default seeded credentials:
 
 ## Features
 
-- Dashboard with organization/school/subscription totals
-- Organization list with current plan and status
+- Dashboard with platform KPIs (schools, subscriptions, revenue, health)
+- Organization list with contact details and active/inactive toggle
 - Per-organization subscription create/update
 - Subscription registry with status filters
+- **School audit** — select a school to review students, staff, classes, fee structures, and reset super admin passwords
 - Platform admin auth via `platform_admins` table
 
 ## Port

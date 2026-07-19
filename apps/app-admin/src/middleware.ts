@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, withCors } from '@edulakhya/utils/cors';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_API_PATHS = ['/api/auth/login'];
@@ -15,11 +16,23 @@ export function middleware(request: NextRequest) {
   const isPublicApi = PUBLIC_API_PATHS.some((path) => pathname.startsWith(path));
 
   if (isApi) {
-    if (isPublicApi) return NextResponse.next();
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    const preflight = handleCorsPreflight(request);
+    if (preflight) {
+      return preflight;
     }
-    return NextResponse.next();
+
+    if (isPublicApi) {
+      return withCors(NextResponse.next(), request);
+    }
+
+    if (!token) {
+      return withCors(
+        NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 }),
+        request,
+      );
+    }
+
+    return withCors(NextResponse.next(), request);
   }
 
   if (!token && !isPublicPage && pathname !== '/') {

@@ -3,13 +3,21 @@
   "version": "1.0.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cors": "./src/cors.ts"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "next": ">=14.0.0"
+  },
   "devDependencies": {
+    "next": "^14.2.0",
     "typescript": "^5.3.3"
   }
 }

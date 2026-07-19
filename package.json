@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --concurrency=13",
+    "dev": "turbo run dev --concurrency=14",
     "dev:super-admin": "turbo run dev --filter=super-admin",
     "dev:parent-portal": "turbo run dev --filter=parent-portal",
     "dev:transport-admin": "turbo run dev --filter=transport-admin",

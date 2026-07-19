@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, withCors } from '@edulakhya/utils/cors';
 import { extractSubdomain, shouldValidateTenant } from '@/lib/tenant-host';
 import {
   canRoleAccessPath,
@@ -141,28 +142,39 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isApiRoute) {
+    const preflight = handleCorsPreflight(request);
+    if (preflight) {
+      return preflight;
+    }
+
     if (PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
-      return NextResponse.next();
+      return withCors(NextResponse.next(), request);
     }
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+      return withCors(
+        NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 },
+        ),
+        request,
       );
     }
 
     if (SUPER_ADMIN_API_PATHS.some((p) => pathname.startsWith(p))) {
       const role = getRoleFromToken(token);
       if (role !== 'super_admin') {
-        return NextResponse.json(
-          { success: false, error: 'Super admin access required' },
-          { status: 403 }
+        return withCors(
+          NextResponse.json(
+            { success: false, error: 'Super admin access required' },
+            { status: 403 },
+          ),
+          request,
         );
       }
     }
 
-    return NextResponse.next();
+    return withCors(NextResponse.next(), request);
   }
 
   if (!token && !isPublicPage && pathname !== '/') {
