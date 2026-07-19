@@ -8,6 +8,7 @@ import {
   SubscriptionFormFields,
 } from '@/features/subscriptions/components/SubscriptionUi';
 import { authFetch } from '@/lib/auth';
+import DeleteInactiveSchoolButton from '@/features/audit/components/DeleteInactiveSchoolButton';
 
 type OrganizationDetail = {
   id: number;
@@ -54,47 +55,48 @@ export default function OrganizationDetailPage() {
   });
 
   useEffect(() => {
-    async function load() {
-      try {
-        const response = await authFetch(`/api/platform/organizations/${params.id}`, {
-          cache: 'no-store',
-        });
-        const payload = await response.json();
-        if (payload.success) {
-          const org = payload.data.organization as OrganizationDetail;
-          setOrganization(org);
-          setOrgLimits({
-            max_schools: org.max_schools != null ? String(org.max_schools) : '',
-            is_active: org.is_active,
-          });
-          if (org.subscription) {
-            setSubscriptionForm({
-              plan: org.subscription.plan,
-              status: org.subscription.status,
-              billing_cycle: org.subscription.billing_cycle || 'annual',
-              school_count_limit:
-                org.subscription.school_count_limit != null
-                  ? String(org.subscription.school_count_limit)
-                  : '',
-              student_count_limit:
-                org.subscription.student_count_limit != null
-                  ? String(org.subscription.student_count_limit)
-                  : '',
-              valid_from: org.subscription.valid_from || '',
-              valid_until: org.subscription.valid_until || '',
-            });
-          }
-        } else {
-          setError(payload.error || 'Organization not found');
-        }
-      } catch {
-        setError('Failed to load organization');
-      } finally {
-        setLoading(false);
-      }
-    }
-    void load();
+    void loadOrganization();
   }, [params.id]);
+
+  async function loadOrganization() {
+    try {
+      const response = await authFetch(`/api/platform/organizations/${params.id}`, {
+        cache: 'no-store',
+      });
+      const payload = await response.json();
+      if (payload.success) {
+        const org = payload.data.organization as OrganizationDetail;
+        setOrganization(org);
+        setOrgLimits({
+          max_schools: org.max_schools != null ? String(org.max_schools) : '',
+          is_active: org.is_active,
+        });
+        if (org.subscription) {
+          setSubscriptionForm({
+            plan: org.subscription.plan,
+            status: org.subscription.status,
+            billing_cycle: org.subscription.billing_cycle || 'annual',
+            school_count_limit:
+              org.subscription.school_count_limit != null
+                ? String(org.subscription.school_count_limit)
+                : '',
+            student_count_limit:
+              org.subscription.student_count_limit != null
+                ? String(org.subscription.student_count_limit)
+                : '',
+            valid_from: org.subscription.valid_from || '',
+            valid_until: org.subscription.valid_until || '',
+          });
+        }
+      } else {
+        setError(payload.error || 'Organization not found');
+      }
+    } catch {
+      setError('Failed to load organization');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleOrgSave = async () => {
     if (!organization) return;
@@ -274,6 +276,14 @@ export default function OrganizationDetailPage() {
                       >
                         Audit
                       </a>
+                      <DeleteInactiveSchoolButton
+                        schoolId={school.id}
+                        schoolSlug={school.slug}
+                        schoolName={school.name}
+                        isActive={school.is_active}
+                        compact
+                        onDeleted={() => void loadOrganization()}
+                      />
                     </div>
                   </li>
                 ))}

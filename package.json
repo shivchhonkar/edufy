@@ -33,6 +33,7 @@
     "db:control:setup": "node scripts/setup-control-db.js",
     "db:control:migrate-orgs": "node scripts/migrate-organizations.js",
     "db:control:migrate-phase5": "node scripts/migrate-phase5.js",
+    "db:control:migrate-all": "node scripts/migrate-control-all.js",
     "db:seed:shiv-org-demo": "node scripts/seed-shiv-org-demo.js",
     "db:school:create": "node scripts/create-school-db.js",
     "setup:production": "node scripts/setup-production.js",

@@ -74,3 +74,15 @@ export function createControlPool(): Pool {
 
   return new Pool(poolConfig);
 }
+
+/** Connect to postgres DB for CREATE/DROP DATABASE operations. */
+export function createAdminPool(): Pool {
+  const config = getControlDbConfig();
+  return new Pool({
+    host: config.host,
+    port: config.port,
+    database: 'postgres',
+    user: config.user,
+    password: config.password,
+  });
+}

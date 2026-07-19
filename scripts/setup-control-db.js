@@ -78,6 +78,20 @@ async function main() {
         console.log('Phase 5 tables already present.');
       }
     }
+
+    const schoolCodePath = path.join(__dirname, '../database/migrations/control/003_organization_school_code.sql');
+    if (fs.existsSync(schoolCodePath)) {
+      const schoolCodeCheck = await control.query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'school_code'`,
+      );
+      if (schoolCodeCheck.rows.length === 0) {
+        console.log('Applying organization school_code migration...');
+        const schoolCodeSql = fs.readFileSync(schoolCodePath, 'utf8');
+        await control.query(schoolCodeSql);
+        console.log('School code migration applied.');
+      }
+    }
   } finally {
     await control.end();
   }

@@ -222,7 +222,19 @@ export default function SchoolAuditPage() {
         </div>
       )}
 
-      {report && !loadingReport && <SchoolAuditReportView report={report} />}
+      {report && !loadingReport && (
+        <SchoolAuditReportView
+          report={report}
+          onDeleted={() => {
+            setReport(null);
+            setSelectedSchoolId('');
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('school');
+            router.replace(`/school-audit?${params.toString()}`, { scroll: false });
+            void loadSchools();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
 import type { SchoolAuditReport } from '@/lib/school-audit';
 import AuditMetricCard from '@/features/audit/components/AuditMetricCard';
 import ResetSuperAdminPasswordForm from '@/features/audit/components/ResetSuperAdminPasswordForm';
+import DeleteInactiveSchoolButton from '@/features/audit/components/DeleteInactiveSchoolButton';
 import {
   getSchoolAdminBaseUrl,
   getSchoolAdminLoginUrl,
@@ -123,7 +124,13 @@ function AuditPanel({
   );
 }
 
-export default function SchoolAuditReportView({ report }: { report: SchoolAuditReport }) {
+export default function SchoolAuditReportView({
+  report,
+  onDeleted,
+}: {
+  report: SchoolAuditReport;
+  onDeleted?: () => void;
+}) {
   const [showResetPanel, setShowResetPanel] = useState(false);
   const adminUrl = getSchoolAdminBaseUrl(report.school.subdomain, report.school.slug);
   const loginUrl = getSchoolAdminLoginUrl(report.school.subdomain, report.school.slug);
@@ -319,7 +326,7 @@ export default function SchoolAuditReportView({ report }: { report: SchoolAuditR
             <span className="audit-status-icon audit-icon-green">
               <FiCheckCircle size={18} />
             </span>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-slate-500">School Status</p>
               <p className="mt-1 text-lg font-semibold text-slate-900">
                 {report.school.is_active ? 'Active' : 'Inactive'}
@@ -327,6 +334,17 @@ export default function SchoolAuditReportView({ report }: { report: SchoolAuditR
               <p className="mt-1 text-xs text-slate-500">
                 {report.school.is_active ? 'No issues found' : 'School is marked inactive'}
               </p>
+              {!report.school.is_active && (
+                <div className="mt-4">
+                  <DeleteInactiveSchoolButton
+                    schoolId={report.school.id}
+                    schoolSlug={report.school.slug}
+                    schoolName={report.school.name}
+                    isActive={report.school.is_active}
+                    onDeleted={onDeleted}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

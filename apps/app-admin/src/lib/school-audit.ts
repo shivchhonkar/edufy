@@ -1,6 +1,6 @@
 import { hashPassword } from '@edulakhya/auth';
 import { queryForTenant, type TenantDbConfig } from '@edulakhya/database';
-import { getTenantById, getTenantDbConfig } from '@edulakhya/tenant';
+import { getTenantDbConfig } from '@edulakhya/tenant';
 import type { OrganizationSubscription, Tenant } from '@edulakhya/types';
 import { createControlPool } from '@/lib/platform-db-config';
 
@@ -140,6 +140,16 @@ function buildModuleList(hasFees: boolean): AuditModuleItem[] {
   }));
 }
 
+async function getTenantRecordById(tenantId: number): Promise<Tenant | null> {
+  const pool = (await import('@/lib/platform-db-config')).createControlPool();
+  try {
+    const result = await pool.query<Tenant>('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+    return result.rows[0] ?? null;
+  } finally {
+    await pool.end();
+  }
+}
+
 async function loadTenantControlMeta(tenant: Tenant): Promise<{
   organization_name: string | null;
   organization_school_code: string | null;
@@ -241,7 +251,7 @@ export async function listPlatformSchools(): Promise<SchoolListItem[]> {
 }
 
 export async function getSchoolSuperAdmins(tenantId: number): Promise<SuperAdminUser[]> {
-  const tenant = await getTenantById(tenantId);
+  const tenant = await getTenantRecordById(tenantId);
   if (!tenant) return [];
 
   const dbConfig = getTenantDbConfig(tenant);
@@ -271,7 +281,7 @@ export async function resetSchoolSuperAdminPassword(
     throw new Error('Password must be at least 6 characters.');
   }
 
-  const tenant = await getTenantById(tenantId);
+  const tenant = await getTenantRecordById(tenantId);
   if (!tenant) {
     throw new Error('School not found.');
   }
@@ -291,7 +301,7 @@ export async function resetSchoolSuperAdminPassword(
 }
 
 export async function getSchoolAuditReport(tenantId: number): Promise<SchoolAuditReport | null> {
-  const tenant = await getTenantById(tenantId);
+  const tenant = await getTenantRecordById(tenantId);
   if (!tenant) return null;
 
   const controlMeta = await loadTenantControlMeta(tenant);
@@ -490,4 +500,99 @@ export async function aggregateSchoolMetrics(tenant: Tenant): Promise<{
     monthly_revenue: monthlyRevenue,
     pending_payments: pendingPayments,
   };
+}
+
+export type DeleteInactiveSchoolResult = {
+  id: number;
+  slug: string;
+  name: string;
+  db_name: string;
+  database_dropped: boolean;
+};
+
+async function dropSchoolDatabase(dbName: string): Promise<void> {
+  const admin = (await import('@/lib/platform-db-config')).createAdminPool();
+  try {
+    await admin.query(
+      `SELECT pg_terminate_backend(pid)
+       FROM pg_stat_activity
+       WHERE datname = $1 AND pid <> pg_backend_pid()`,
+      [dbName],
+    );
+    await admin.query(`DROP DATABASE IF EXISTS "${dbName.replace(/"/g, '""')}"`);
+  } finally {
+    await admin.end();
+  }
+}
+
+/** Permanently remove an inactive school from the control registry and drop its database. */
+export async function deleteInactiveSchool(
+  tenantId: number,
+  confirmSlug: string,
+): Promise<DeleteInactiveSchoolResult> {
+  const pool = (await import('@/lib/platform-db-config')).createControlPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const tenantRes = await client.query<{
+      id: number;
+      slug: string;
+      name: string;
+      db_name: string;
+      is_active: boolean;
+    }>(
+      `SELECT id, slug, name, db_name, is_active
+       FROM tenants
+       WHERE id = $1
+       FOR UPDATE`,
+      [tenantId],
+    );
+
+    const tenant = tenantRes.rows[0];
+    if (!tenant) {
+      throw new Error('School not found.');
+    }
+    if (tenant.is_active) {
+      throw new Error('Only inactive schools can be deleted. Deactivate the school first.');
+    }
+    if (tenant.slug.toLowerCase() !== confirmSlug.trim().toLowerCase()) {
+      throw new Error('Confirmation slug does not match. Deletion cancelled.');
+    }
+
+    await client.query('DELETE FROM parent_school_links WHERE tenant_id = $1', [tenantId]).catch(() => {});
+    await client.query('DELETE FROM admission_leads WHERE target_tenant_id = $1', [tenantId]).catch(() => {});
+    await client.query(
+      `DELETE FROM user_school_access
+       WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await client.query('DELETE FROM tenant_branding WHERE tenant_id = $1', [tenantId]);
+    await client.query('DELETE FROM tenants WHERE id = $1', [tenantId]);
+
+    await client.query('COMMIT');
+
+    let databaseDropped = false;
+    try {
+      await dropSchoolDatabase(tenant.db_name);
+      databaseDropped = true;
+    } catch (error) {
+      console.error('School registry removed but database drop failed:', error);
+    }
+
+    return {
+      id: tenant.id,
+      slug: tenant.slug,
+      name: tenant.name,
+      db_name: tenant.db_name,
+      database_dropped: databaseDropped,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }

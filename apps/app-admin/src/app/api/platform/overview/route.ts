@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
+import { withPlatformAdmin } from '@/lib/platform-route';
 import { requirePlatformAdmin } from '@/lib/platform-auth';
 import { getPlatformDashboard } from '@/lib/platform-dashboard';
 import { jsonOk, jsonError } from '@/lib/api-response';
+import { ensureControlSchema } from '@/lib/ensure-control-schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +12,12 @@ export async function GET(request: NextRequest) {
   if (auth instanceof Response) return auth;
 
   try {
+    await ensureControlSchema();
     const dashboard = await getPlatformDashboard();
     return jsonOk(dashboard);
   } catch (error) {
     console.error('Platform overview error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Failed to load platform overview';
+    const message = error instanceof Error ? error.message : 'Failed to load platform overview';
     return jsonError(message, 500);
   }
 }
