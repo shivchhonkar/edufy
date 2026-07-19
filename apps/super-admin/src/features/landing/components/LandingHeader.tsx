@@ -30,7 +30,7 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <LandingLogo size={36} />
+            <LandingLogo size={36} variant="light" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">

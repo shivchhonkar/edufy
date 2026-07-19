@@ -82,7 +82,7 @@ export default function AuthPageLayout({ children, title, subtitle, wide = false
       <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
         <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
           <Link href="/">
-            <LandingLogo size={32} />
+            <LandingLogo size={32} variant="dark" />
           </Link>
           <Link href="/" className="text-sm text-brand font-medium flex items-center gap-1">
             <FiArrowLeft size={14} /> Home
