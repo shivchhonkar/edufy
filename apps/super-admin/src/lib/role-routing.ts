@@ -55,7 +55,19 @@ export function getRoleHomePath(role: string | null | undefined): string {
   if (r === 'org_viewer' || r === 'org_owner' || r === 'org_admin') {
     return '/org/dashboard';
   }
-  return PORTAL_HOME[getPortalForRole(role)];
+  if (r === 'student') {
+    return '/student/login';
+  }
+  if (isAdminRole(role)) {
+    return PORTAL_HOME.admin;
+  }
+
+  const portal = getPortalForRole(role);
+  if (portal in PORTAL_ALLOWED_PREFIXES) {
+    return PORTAL_HOME[portal];
+  }
+
+  return '/login';
 }
 
 export function getPortalFromPath(pathname: string): PortalId | null {
@@ -117,8 +129,18 @@ export function canRoleAccessPath(role: string | null | undefined, pathname: str
   if (isAdminRole(role)) return true;
 
   const portal = getPortalForRole(role);
+  if (portal === 'admin') {
+    // Unknown/non-admin roles fall back to admin portal — allow only public entry paths.
+    return (
+      pathname === '/' ||
+      pathname === '/login' ||
+      pathname === '/student/login' ||
+      pathname === '/parent/login'
+    );
+  }
+
   const allowed = PORTAL_ALLOWED_PREFIXES[portal];
-  if (allowed.some((prefix) => matchesPrefix(pathname, prefix))) {
+  if (allowed?.some((prefix) => matchesPrefix(pathname, prefix))) {
     return true;
   }
 

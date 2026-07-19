@@ -205,7 +205,11 @@ export async function middleware(request: NextRequest) {
   ) {
     const role = decodeJwtRole(token);
     if (role && !canRoleAccessPath(role, pathname)) {
-      return redirectPath(request, getRoleHomePath(role));
+      const home = getRoleHomePath(role);
+      if (home === pathname) {
+        return redirectPath(request, '/login');
+      }
+      return redirectPath(request, home);
     }
   }
 
