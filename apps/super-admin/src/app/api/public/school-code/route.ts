@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { corsJsonResponse } from '@edulakhya/utils/cors';
 import {
   getOrganizationBranding,
   resolveSchoolCodeLookup,
@@ -8,7 +9,8 @@ import {
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')?.trim() ?? '';
   if (!code || code.length < 2) {
-    return NextResponse.json(
+    return corsJsonResponse(
+      request,
       { success: false, error: 'School code is required (minimum 2 characters).' },
       { status: 400 },
     );
@@ -16,8 +18,12 @@ export async function GET(request: NextRequest) {
 
   const lookup = await resolveSchoolCodeLookup(code);
   if (!lookup) {
-    return NextResponse.json(
-      { success: false, error: 'No school found for this code. Please check and try again.' },
+    return corsJsonResponse(
+      request,
+      {
+        success: false,
+        error: 'No school found for this code. Please check and try again.',
+      },
       { status: 404 },
     );
   }
@@ -25,7 +31,7 @@ export async function GET(request: NextRequest) {
   const org = lookup.organization;
   const branding = lookup.branding ?? (org ? await getOrganizationBranding(org.id) : null);
 
-  return NextResponse.json({
+  return corsJsonResponse(request, {
     success: true,
     data: {
       school_code: lookup.school_code,

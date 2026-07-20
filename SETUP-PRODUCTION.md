@@ -49,6 +49,7 @@ nano apps/super-admin/.env
 | `JWT_SECRET`, `NEXTAUTH_SECRET` | Min 32 chars — use random strings |
 | `NEXTAUTH_URL` | e.g. `https://yourdomain.com` |
 | `APP_BASE_DOMAIN` | e.g. `yourdomain.com` (no protocol) |
+| `CORS_ALLOWED_ORIGINS` | Optional comma-separated browser origins for Expo web / SPA clients (localhost dev ports are always allowed) |
 
 You can use a single URL instead of discrete fields:
 
@@ -264,6 +265,14 @@ server {
 ```
 
 Staff portals (transport / fees / inventory) typically run on ports 7002–7004 with similar proxy blocks, or path-based routing if preferred.
+
+**CORS (Expo web / browser clients):** All Next.js apps add CORS headers on `/api/*` via middleware. After deploy, restart every app process. Optional env on super-admin (and portal apps if needed):
+
+```env
+CORS_ALLOWED_ORIGINS=https://your-web-app.com
+```
+
+Localhost Expo ports (`8081`, `19006`, etc.) are always allowed for mobile web development.
 
 Open firewall ports only for 80/443 if Nginx terminates TLS; keep 7000–7004 bound to localhost.
 

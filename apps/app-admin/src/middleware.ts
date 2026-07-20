@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleCorsPreflight, withCors } from '@edulakhya/utils/cors';
+import { handleApiCorsPreflight, withCors } from '@edulakhya/utils/cors';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_API_PATHS = ['/api/auth/login', '/api/theme'];
@@ -14,17 +14,18 @@ function getToken(request: NextRequest): string | null {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const apiPreflight = handleApiCorsPreflight(request);
+  if (apiPreflight) {
+    return apiPreflight;
+  }
+
   const token = getToken(request);
   const isApi = pathname.startsWith('/api');
   const isPublicPage = PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const isPublicApi = PUBLIC_API_PATHS.some((path) => pathname.startsWith(path));
 
   if (isApi) {
-    const preflight = handleCorsPreflight(request);
-    if (preflight) {
-      return preflight;
-    }
-
     if (isPublicApi) {
       return withCors(NextResponse.next(), request);
     }

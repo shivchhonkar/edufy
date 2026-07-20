@@ -8,6 +8,6 @@ const nextConfig = {
     '@edulakhya/database',
     '@edulakhya/auth',
   ],
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

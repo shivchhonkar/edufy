@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleCorsPreflight, withCors } from '@edulakhya/utils/cors';
+import { handleApiCorsPreflight, withCors } from '@edulakhya/utils/cors';
 import { extractSubdomain, shouldValidateTenant } from '@/lib/tenant-host';
 import {
   canRoleAccessPath,
@@ -91,10 +91,16 @@ function isLoginPath(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  const token = getToken(request);
   const pathname = request.nextUrl.pathname;
-  const isPublicPage = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const isApiRoute = pathname.startsWith('/api');
+
+  const apiPreflight = handleApiCorsPreflight(request);
+  if (apiPreflight) {
+    return apiPreflight;
+  }
+
+  const token = getToken(request);
+  const isPublicPage = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
   const host = request.headers.get('host');
   const subdomain = extractSubdomain(host);
@@ -142,11 +148,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isApiRoute) {
-    const preflight = handleCorsPreflight(request);
-    if (preflight) {
-      return preflight;
-    }
-
     if (PUBLIC_API_PATHS.some((p) => pathname.startsWith(p))) {
       return withCors(NextResponse.next(), request);
     }
