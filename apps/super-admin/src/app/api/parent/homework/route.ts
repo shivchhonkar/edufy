@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/parent-portal/require-student-api';
+import {
+  buildHomeworkListResponse,
+  ensureMissingHomeworkSubmissions,
+  HOMEWORK_LIST_SQL,
+  normalizeHomeworkRow,
+} from '@/lib/parent-portal/ensure-homework-schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,60 +23,35 @@ export async function GET(request: NextRequest) {
        FROM students s
        LEFT JOIN student_enrollments e ON e.student_id = s.id AND e.is_current = true
        WHERE s.id = $1`,
-      [studentId]
+      [studentId],
     );
 
-    console.log('Student query result:', studentResult.rows);
-
-    if (studentResult.rows.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Student not found' },
-        { status: 404 }
-      );
+    if (!studentResult.rows.length) {
+      return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
     const classId = studentResult.rows[0].class_id;
-    console.log('Student class_id:', classId);
+    if (!classId) {
+      return NextResponse.json({
+        success: true,
+        data: buildHomeworkListResponse([]),
+      });
+    }
 
-    // Get homework for student's class
-    const homeworkResult = await db.query(
-      `SELECT 
-        h.*,
-        s.name as subject_name,
-        c.name as class_name,
-        u.full_name as assigned_by_name,
-        hs.id as submission_id,
-        hs.submission_text,
-        hs.submission_file,
-        hs.submitted_at,
-        hs.marks_obtained,
-        hs.feedback,
-        hs.status as submission_status,
-        hs.graded_at
-      FROM homework h
-      LEFT JOIN subjects s ON h.subject_id = s.id
-      LEFT JOIN classes c ON h.class_id = c.id
-      LEFT JOIN users u ON h.assigned_by = u.id
-      LEFT JOIN homework_submissions hs ON hs.homework_id = h.id AND hs.student_id = $1
-      WHERE h.class_id = $2
-      ORDER BY h.due_date DESC, h.created_at DESC
-      LIMIT 50`,
-      [studentId, classId]
-    );
+    await ensureMissingHomeworkSubmissions(db, studentId, classId);
 
-    console.log('Homework query result count:', homeworkResult.rows.length);
-    console.log('Homework data:', JSON.stringify(homeworkResult.rows, null, 2));
+    const homeworkResult = await db.query(HOMEWORK_LIST_SQL, [studentId, classId]);
+    const items = homeworkResult.rows.map((row) => normalizeHomeworkRow(row));
 
     return NextResponse.json({
       success: true,
-      data: homeworkResult.rows,
+      data: buildHomeworkListResponse(items),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching homework:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch homework' },
+      { status: 500 },
     );
   }
 }
-

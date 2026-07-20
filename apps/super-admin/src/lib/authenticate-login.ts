@@ -36,7 +36,10 @@ function toParentUserResponse(login: string, children: PortalChild[]) {
       gender: child.gender ?? null,
       date_of_birth: child.date_of_birth ?? null,
       blood_group: child.blood_group ?? null,
-      photo_url: child.photo_url ?? null,
+      photo_url:
+        child.photo_url && !String(child.photo_url).startsWith('data:')
+          ? child.photo_url
+          : null,
       status: child.status,
       class_name: child.class_name ?? null,
       section_name: child.section_name ?? null,

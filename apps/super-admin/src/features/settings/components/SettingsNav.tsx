@@ -12,6 +12,7 @@ export const SETTINGS_NAV_LINKS = [
   { href: '/settings/staff-access', label: 'Staff Portal' },
   { href: '/settings/reports', label: 'Report Settings' },
   { href: '/settings/theme', label: 'Theme' },
+  { href: '/settings/payment', label: 'Payment Gateway' },
 ] as const;
 
 function navLinkClass(active: boolean) {
