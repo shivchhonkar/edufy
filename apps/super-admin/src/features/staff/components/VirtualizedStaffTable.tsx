@@ -15,6 +15,12 @@ export type StaffListItem = Staff & {
 
 type StaffRow = StaffListItem & { srNo: number };
 
+export const STAFF_TABLE_ROW_HEIGHT = 64;
+export const STAFF_TABLE_MIN_WIDTH = 960;
+export const STAFF_TABLE_MAX_HEIGHT = 'calc(100dvh - 12rem)';
+export const STAFF_TABLE_GRID_COLUMNS =
+  '4.5rem minmax(220px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) 7rem 6.5rem 9rem';
+
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
   inactive: 'bg-yellow-100 text-yellow-800',
@@ -41,6 +47,7 @@ interface VirtualizedStaffTableProps {
   onGenerateId: (member: StaffListItem) => void;
   onViewAttendance: (member: StaffListItem) => void;
   onViewActivity: (member: StaffListItem) => void;
+  fillHeight?: boolean;
 }
 
 export default function VirtualizedStaffTable({
@@ -51,6 +58,7 @@ export default function VirtualizedStaffTable({
   onGenerateId,
   onViewAttendance,
   onViewActivity,
+  fillHeight = false,
 }: VirtualizedStaffTableProps) {
   const rows = useMemo<StaffRow[]>(
     () => staff.map((member, index) => ({ ...member, srNo: index + 1 })),
@@ -189,16 +197,19 @@ export default function VirtualizedStaffTable({
   );
 
   return (
-    <VirtualizedTable
-      rows={rows}
-      columns={columns}
-      getRowKey={(row) => row.id}
-      rowHeight={64}
-      maxHeight="calc(100vh - 260px)"
-      minWidth={960}
-      emptyMessage='No staff members found. Click "Add Staff" to get started.'
-      rowClassName="hover:bg-gray-50/80"
-    />
+    <div className={fillHeight ? 'h-full min-h-0' : undefined}>
+      <VirtualizedTable
+        rows={rows}
+        columns={columns}
+        getRowKey={(row) => row.id}
+        rowHeight={STAFF_TABLE_ROW_HEIGHT}
+        maxHeight={STAFF_TABLE_MAX_HEIGHT}
+        minWidth={STAFF_TABLE_MIN_WIDTH}
+        fillHeight={fillHeight}
+        emptyMessage='No staff members found. Click "Add Staff" to get started.'
+        rowClassName="hover:bg-gray-50/80"
+      />
+    </div>
   );
 }
 

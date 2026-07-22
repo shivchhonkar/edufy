@@ -31,12 +31,13 @@ export function generateRandomString(length: number = 10): string {
   return result;
 }
 
-// Generate admission number (ADM + year + 6 random digits)
-export function generateAdmissionNumber(year?: number): string {
-  const currentYear = year || new Date().getFullYear();
-  const random = Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
-  return `ADM${currentYear}${random}`;
-}
+export {
+  generateAdmissionNumber,
+  formatAdmissionNumber,
+  DEFAULT_ADMISSION_NUMBER_SETTINGS,
+  normalizeAdmissionNumberSettings,
+  type AdmissionNumberFormatSettings,
+} from '@edulakhya/utils';
 
 // Generate employee ID
 export function generateEmployeeId(prefix: string = 'EMP'): string {

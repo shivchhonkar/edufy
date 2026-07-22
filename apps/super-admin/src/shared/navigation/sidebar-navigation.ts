@@ -142,7 +142,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Student Register', path: '/attendance', icon: FiCalendar },
       { name: 'Staff Register', path: '/attendance/staff/register', icon: FiUsers },
       { name: 'Mark Student Attendance', path: '/attendance/students', icon: FiCheckCircle },
-      { name: 'Mark Staff Attendance', path: '/attendance/staff', icon: FiUserCheck },
+      { name: 'Mark Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Attendance Reports', path: '/attendance/reports', icon: FiBarChart2 },
       {
         name: 'Biometric Integration',

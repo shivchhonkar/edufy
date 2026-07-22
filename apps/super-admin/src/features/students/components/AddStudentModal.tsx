@@ -7,6 +7,7 @@ import { Student } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { INDIAN_STATES, isIndianState } from '@/shared/constants/indian-states';
 import { BLOOD_GROUPS } from '@/shared/constants/student-personal';
+import { useAdmissionNumberFormat } from '@/shared/context/AdmissionNumberFormatContext';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -36,7 +37,26 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
   return dateStr.split('T')[0];
 };
 
+function sanitizePhoneInput(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 10);
+}
+
+function validateIndianMobile(phone: string, required = false): string | undefined {
+  const digits = sanitizePhoneInput(phone);
+  if (!digits) {
+    return required ? 'Phone number is required' : undefined;
+  }
+  if (digits.length !== 10) {
+    return 'Phone number must be exactly 10 digits';
+  }
+  if (!/^[6-9]/.test(digits)) {
+    return 'Phone number must start with 6, 7, 8, or 9';
+  }
+  return undefined;
+}
+
 export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStudent }: AddStudentModalProps) {
+  const formatAdmissionNumber = useAdmissionNumberFormat();
   // Get sidebar collapsed state from localStorage
 
   // Refs for form fields
@@ -185,12 +205,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
         section_id: editingStudent.section_id ? editingStudent.section_id.toString() : '',
         roll_number: editingStudent.roll_number || '',
         parent_name: editingStudent.parent_name || '',
-        parent_phone: editingStudent.parent_phone || '',
+        parent_phone: sanitizePhoneInput(editingStudent.parent_phone || ''),
         parent_email: editingStudent.parent_email || '',
         mother_name: editingStudent.mother_name || '',
-        mother_phone: editingStudent.mother_phone || '',
+        mother_phone: sanitizePhoneInput(editingStudent.mother_phone || ''),
         mother_email: editingStudent.mother_email || '',
-        emergency_contact: editingStudent.emergency_contact || '',
+        emergency_contact: sanitizePhoneInput(editingStudent.emergency_contact || ''),
         photo_url: editingStudent.photo_url || '',
         status: editingStudent.status || 'active' as 'active' | 'inactive' | 'graduated' | 'transferred',
       };
@@ -290,11 +310,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
     if (!formData.last_name) errors.last_name = 'Last Name is required';
     if (!formData.date_of_birth) errors.date_of_birth = 'Date of Birth is required';
     if (!formData.admission_date) errors.admission_date = 'Admission Date is required';
-    if (!formData.parent_phone) {
-      errors.parent_phone = 'Parent phone number is required';
-    } else if (!/^\d{10}$/.test(formData.parent_phone)) {
-      errors.parent_phone = 'Phone number must be 10 digits';
-    }
+
+    const parentPhoneError = validateIndianMobile(formData.parent_phone, true);
+    if (parentPhoneError) errors.parent_phone = parentPhoneError;
+
+    const motherPhoneError = validateIndianMobile(formData.mother_phone);
+    if (motherPhoneError) errors.mother_phone = motherPhoneError;
+
+    const emergencyPhoneError = validateIndianMobile(formData.emergency_contact);
+    if (emergencyPhoneError) errors.emergency_contact = emergencyPhoneError;
+
     if (formData.parent_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent_email)) {
       errors.parent_email = 'Invalid email format';
     }
@@ -704,7 +729,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     type="text"
                     readOnly
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
-                    value={editingStudent.admission_number}
+                    value={formatAdmissionNumber(editingStudent.admission_number)}
                   />
                 </div>
               )}
@@ -839,11 +864,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     <input
                       ref={parentPhoneRef}
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="10-digit mobile number"
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
                         fieldErrors.parent_phone ? 'border-red-500 shake' : 'border-gray-300'
                       }`}
                       value={formData.parent_phone}
-                      onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, parent_phone: sanitizePhoneInput(e.target.value) })
+                      }
                     />
                     {fieldErrors.parent_phone && (
                       <p className="mt-1 text-sm text-red-600">{fieldErrors.parent_phone}</p>
@@ -888,10 +918,20 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     </label>
                     <input
                       type="tel"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="10-digit mobile number"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
+                        fieldErrors.mother_phone ? 'border-red-500 shake' : 'border-gray-300'
+                      }`}
                       value={formData.mother_phone}
-                      onChange={(e) => setFormData({ ...formData, mother_phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, mother_phone: sanitizePhoneInput(e.target.value) })
+                      }
                     />
+                    {fieldErrors.mother_phone && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.mother_phone}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -914,10 +954,23 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                   </label>
                   <input
                     type="tel"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="10-digit mobile number"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
+                      fieldErrors.emergency_contact ? 'border-red-500 shake' : 'border-gray-300'
+                    }`}
                     value={formData.emergency_contact}
-                    onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        emergency_contact: sanitizePhoneInput(e.target.value),
+                      })
+                    }
                   />
+                  {fieldErrors.emergency_contact && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.emergency_contact}</p>
+                  )}
                 </div>
               </div>
             </div>

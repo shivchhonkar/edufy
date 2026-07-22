@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import BulkEditSpreadsheet from '@/features/students/components/BulkEditSpreadsheet';
+import BulkEditSpreadsheetSkeleton, {
+  BulkEditTotalSkeleton,
+} from '@/features/students/components/BulkEditSpreadsheetSkeleton';
 import BulkEditPrintRangeModal from '@/features/students/components/BulkEditPrintRangeModal';
 import { useDialog } from '@/shared/context/DialogContext';
 import { Student } from '@/shared/types';
@@ -71,6 +74,16 @@ export default function StudentsBulkEditPage() {
   const [showPrintRangeModal, setShowPrintRangeModal] = useState(false);
 
   const hasUnsavedChangesRef = useRef(false);
+  const classesRef = useRef(classes);
+  const sectionsRef = useRef(sections);
+
+  useEffect(() => {
+    classesRef.current = classes;
+  }, [classes]);
+
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
 
   const effectiveLimit = useMemo(() => {
     if (limitMode === 'all') return MAX_FETCH_LIMIT;
@@ -147,6 +160,8 @@ export default function StudentsBulkEditPage() {
         sectionId: string;
         limit: number;
         skipUnsavedWarning?: boolean;
+        className?: string;
+        sectionName?: string;
       }
     ) => {
       if (!options.skipUnsavedWarning && hasUnsavedChangesRef.current) {
@@ -188,12 +203,16 @@ export default function StudentsBulkEditPage() {
           setAppliedClassFilter(options.classId);
           setAppliedSectionFilter(options.sectionId);
           setAppliedClassName(
-            options.classId === UNASSIGNED_CLASS_FILTER
-              ? 'Unassigned (no class)'
-              : classes.find((c) => c.id.toString() === options.classId)?.name || ''
+            options.className ??
+              (options.classId === UNASSIGNED_CLASS_FILTER
+                ? 'Unassigned (no class)'
+                : (classesRef.current.find((c) => c.id.toString() === options.classId)?.name ?? ''))
           );
           setAppliedSectionName(
-            sections.find((s) => s.id.toString() === options.sectionId)?.name || ''
+            options.sectionName ??
+              (sectionsRef.current.find((s) => s.id.toString() === options.sectionId)?.name ??
+                allSections.find((s) => s.id.toString() === options.sectionId)?.name ??
+                '')
           );
           setAppliedLimit(options.limit);
           return true;
@@ -209,36 +228,42 @@ export default function StudentsBulkEditPage() {
         setLoading(false);
       }
     },
-    [alert, confirm, classes, sections]
+    [alert, confirm, allSections]
   );
 
   useEffect(() => {
-    loadStudents({
+    void loadStudents({
       searchValue: '',
       classId: '',
       sectionId: '',
       limit: MAX_FETCH_LIMIT,
       skipUnsavedWarning: true,
     });
-  }, [loadStudents]);
+    // Initial load only — filter reloads are triggered explicitly via Apply.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleApplyFilters = async () => {
     const className =
       classFilter === UNASSIGNED_CLASS_FILTER
         ? 'Unassigned (no class)'
         : classes.find((c) => c.id.toString() === classFilter)?.name || '';
-    const sectionName = sections.find((s) => s.id.toString() === sectionFilter)?.name || '';
+    const sectionName =
+      sections.find((s) => s.id.toString() === sectionFilter)?.name ||
+      allSections.find((s) => s.id.toString() === sectionFilter)?.name ||
+      '';
 
     const loaded = await loadStudents({
       searchValue: search,
       classId: classFilter,
       sectionId: classFilter === UNASSIGNED_CLASS_FILTER ? '' : sectionFilter,
       limit: effectiveLimit,
+      className,
+      sectionName,
     });
 
     if (loaded) {
-      setAppliedClassName(className);
-      setAppliedSectionName(sectionName);
+      setFiltersExpanded(false);
     }
   };
 
@@ -416,7 +441,7 @@ export default function StudentsBulkEditPage() {
                 <FiArrowLeft size={14} />
                 Back to Students
               </Link>
-              <h1 className="text-xl text-gray-900">Bulk Edit Students</h1>
+              <h1 className="text-lg font-medium text-gray-900">Edit students</h1>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -615,7 +640,7 @@ export default function StudentsBulkEditPage() {
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-gray-100 text-sm text-gray-600 shrink-0">
             <div>
               {loading ? (
-                'Loading students...'
+                <BulkEditTotalSkeleton />
               ) : (
                 <>
                   <span className="font-semibold text-gray-900">{rows.length}</span>
@@ -639,9 +664,7 @@ export default function StudentsBulkEditPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center flex-1">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
-            </div>
+            <BulkEditSpreadsheetSkeleton />
           ) : (
             <BulkEditSpreadsheet
               rows={rows}

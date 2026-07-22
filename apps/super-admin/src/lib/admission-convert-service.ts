@@ -1,7 +1,10 @@
 import type { RequestDb } from '@/lib/request-db';
 import { logInquiryActivity } from '@/lib/admission-inquiry-api';
 import { ensureStudentMotherColumns } from '@/lib/student-profile-api';
-import { generateAdmissionNumber } from '@/lib/utils';
+import {
+  generateAdmissionNumberForSchool,
+  getAdmissionNumberSettings,
+} from '@/lib/admission-number-settings';
 
 interface InquiryRow {
   id: number;
@@ -105,11 +108,13 @@ export async function convertInquiryToStudent(
 
   await ensureStudentMotherColumns(db);
 
+  const admissionSettings = await getAdmissionNumberSettings(db);
+
   let student: Record<string, unknown> | undefined;
   let admission_number = '';
 
   for (let attempt = 0; attempt < MAX_ADMISSION_NUMBER_ATTEMPTS; attempt++) {
-    admission_number = generateAdmissionNumber();
+    admission_number = generateAdmissionNumberForSchool(admissionSettings);
     try {
       const studentResult = await db.query(
         `INSERT INTO students (

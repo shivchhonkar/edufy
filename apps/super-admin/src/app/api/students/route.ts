@@ -3,7 +3,11 @@ import { getAuthenticatedDb } from '@/lib/request-db';
 import { studentCountSearchSql, studentSearchSql } from '@/lib/student-search';
 import type { RequestDb } from '@/lib/request-db';
 import { Student } from '@/shared/types';
-import { generateAdmissionNumber, getPaginationParams } from '@/lib/utils';
+import { getPaginationParams } from '@/lib/utils';
+import {
+  generateAdmissionNumberForSchool,
+  getAdmissionNumberSettings,
+} from '@/lib/admission-number-settings';
 import { ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncStudentMedicalBloodGroup } from '@/lib/student-profile-api';
 import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
 
@@ -183,8 +187,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate admission number
-    const admission_number = generateAdmissionNumber();
+    // Generate admission number from school setup settings
+    const admissionSettings = await getAdmissionNumberSettings(db);
+    const admission_number = generateAdmissionNumberForSchool(admissionSettings);
 
     await ensureStudentMotherColumns(db);
 

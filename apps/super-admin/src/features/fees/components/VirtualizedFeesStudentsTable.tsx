@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiAlertCircle, FiEye, FiMoreVertical } from 'react-icons/fi';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import { studentInitials } from '@/features/students/utils/student-profile';
+import { AdmissionNo } from '@/shared/context/AdmissionNumberFormatContext';
 
 const ROW_HEIGHT = 76;
 const OVERSCAN = 12;
@@ -202,7 +203,9 @@ function StudentRow({
             <p className="text-sm font-semibold text-gray-900 truncate">
               {student.first_name} {student.last_name}
             </p>
-            <p className="text-xs text-gray-500 truncate">{student.admission_number}</p>
+            <p className="text-xs text-gray-500 truncate">
+              <AdmissionNo value={student.admission_number} />
+            </p>
           </div>
         </div>
       </div>

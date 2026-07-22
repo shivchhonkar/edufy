@@ -22,6 +22,9 @@ import {
 } from 'react-icons/fi';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import VirtualizedStudentsTable from '@/features/students/components/VirtualizedStudentsTable';
+import StudentsTableSkeleton, {
+  StudentsTotalSkeleton,
+} from '@/features/students/components/StudentsTableSkeleton';
 import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
 import StudentIdCardModal from '@/features/students/components/StudentIdCardModal';
 import GatePassIssueModal from '@/features/students/components/GatePassIssueModal';
@@ -325,7 +328,9 @@ function StudentsPageContent() {
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-baseline gap-2">
               <h1 className="text-lg font-medium text-gray-900">Students</h1>
-              {!loading && (
+              {loading ? (
+                <StudentsTotalSkeleton />
+              ) : (
                 <span className="text-xs text-gray-500">
                   {totalStudents} total
                   {students.length < totalStudents && ` · ${students.length} loaded`}
@@ -496,9 +501,7 @@ function StudentsPageContent() {
 
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            </div>
+            <StudentsTableSkeleton />
           ) : (
             <VirtualizedStudentsTable
               students={students}
@@ -586,7 +589,15 @@ export default function StudentsPage() {
     <Suspense
       fallback={
         <DashboardLayout>
-          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+          <div className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-lg font-medium text-gray-900">Students</h1>
+              <StudentsTotalSkeleton />
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <StudentsTableSkeleton />
+            </div>
+          </div>
         </DashboardLayout>
       }
     >

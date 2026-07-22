@@ -27,6 +27,10 @@ export interface ReportSettings {
   city: string;
   state: string;
   pincode: string;
+  admission_use_prefix: boolean;
+  admission_prefix: string;
+  admission_include_year: boolean;
+  admission_digit_length: number;
 }
 
 export const DEFAULT_REPORT_SETTINGS: ReportSettings = {
@@ -54,6 +58,10 @@ export const DEFAULT_REPORT_SETTINGS: ReportSettings = {
   city: '',
   state: '',
   pincode: '',
+  admission_use_prefix: false,
+  admission_prefix: 'ADM',
+  admission_include_year: false,
+  admission_digit_length: 6,
 };
 
 export const REPORT_TEMPLATE_OPTIONS: { id: ReportTemplate; label: string; description: string }[] = [

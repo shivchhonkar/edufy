@@ -76,6 +76,7 @@ export const BULK_EDIT_COLUMNS: BulkEditColumn[] = [
 ];
 
 export const BULK_EDIT_TOTAL_WIDTH = BULK_EDIT_COLUMNS.reduce((sum, col) => sum + col.width, 0);
+export const BULK_EDIT_ROW_HEIGHT = 34;
 
 export function formatDateForInput(date: Date | string | null | undefined): string {
   if (!date) return '';

@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import AddStaffModal from '@/features/staff/components/AddStaffModal';
+import { TeachersStatsSkeleton } from '@/features/academics/components/TeachersStatsSkeleton';
+import TeachersTableSkeleton from '@/features/academics/components/TeachersTableSkeleton';
 import { useDialog } from '@/shared/context/DialogContext';
 import type { Staff } from '@/shared/types';
 import {
@@ -15,7 +17,6 @@ import {
   FiSearch,
   FiTrash2,
   FiUserCheck,
-  FiUsers,
 } from 'react-icons/fi';
 
 type TeacherRecord = Staff & {
@@ -105,8 +106,8 @@ export default function TeachersPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-wrap justify-between items-start gap-3">
+      <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-4">
+        <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
               {/* <FiUsers className="text-primary-600" /> */}
@@ -155,23 +156,27 @@ export default function TeachersPage() {
           </p>
         </div> */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Teachers</p>
-            <p className="text-xl text-gray-900 mt-1">{teachers.length}</p>
+        {loading ? (
+          <TeachersStatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Teachers</p>
+              <p className="text-xl text-gray-900 mt-1">{teachers.length}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Active assignments</p>
+              <p className="text-xl text-gray-900 mt-1">{totalAssignments}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Status filter</p>
+              <p className="text-sm text-gray-900 mt-2 capitalize">{statusFilter}</p>
+            </div>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Active assignments</p>
-            <p className="text-xl text-gray-900 mt-1">{totalAssignments}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Status filter</p>
-            <p className="text-sm text-gray-900 mt-2 capitalize">{statusFilter}</p>
-          </div>
-        </div>
+        )}
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row gap-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="shrink-0 border-b border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -195,16 +200,17 @@ export default function TeachersPage() {
             </select>
           </div>
 
-          {loading ? (
-            <div className="py-16 text-center text-sm text-gray-500">Loading teachers...</div>
-          ) : teachers.length === 0 ? (
-            <div className="py-16 text-center text-sm text-gray-500">
-              No teachers found. Add a teacher or assign staff to the Teaching department in Staff
-              Management.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+          <div className="min-h-0 flex-1">
+            {loading ? (
+              <TeachersTableSkeleton fillHeight />
+            ) : teachers.length === 0 ? (
+              <div className="py-16 text-center text-sm text-gray-500">
+                No teachers found. Add a teacher or assign staff to the Teaching department in Staff
+                Management.
+              </div>
+            ) : (
+              <div className="h-full min-h-0 overflow-x-auto overflow-y-auto">
+                <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
@@ -292,8 +298,9 @@ export default function TeachersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -601,10 +601,10 @@ export default function StaffAttendancePage() {
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-lg text-gray-900">Staff Attendance</h1>
-              <p className="text-gray-600 mt-1 text-sm">
+              <h1 className="text-lg font-medium text-gray-900">Employee Attendance</h1>
+              {/* <p className="text-gray-600 mt-1 text-sm">
                 Mark attendance.
-              </p>
+              </p> */}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button

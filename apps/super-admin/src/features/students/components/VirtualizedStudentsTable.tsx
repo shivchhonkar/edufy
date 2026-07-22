@@ -5,13 +5,17 @@ import { Student } from '@/shared/types';
 import { studentFullName, studentInitials, getStudentContactPhone } from '@/features/students/utils/student-profile';
 import { FiCheckSquare, FiEdit, FiSquare, FiTrash, FiEye } from 'react-icons/fi';
 import StudentRowMoreActions from '@/features/students/components/StudentRowMoreActions';
+import { AdmissionNo } from '@/shared/context/AdmissionNumberFormatContext';
 
 const ROW_HEIGHT = 60;
 const OVERSCAN = 12;
 
 const ACTIONS_COLUMN = 'minmax(7.5rem, 0.95fr)';
 
-const GRID_COLUMNS = `minmax(6.5rem, 0.85fr) minmax(11rem, 2fr) minmax(5rem, 0.75fr) minmax(3.5rem, 0.5fr) minmax(4rem, 0.6fr) ${ACTIONS_COLUMN}`;
+export const STUDENTS_TABLE_ROW_HEIGHT = ROW_HEIGHT;
+export const STUDENTS_TABLE_GRID_COLUMNS = `minmax(6.5rem, 0.85fr) minmax(11rem, 2fr) minmax(5rem, 0.75fr) minmax(3.5rem, 0.5fr) minmax(4rem, 0.6fr) ${ACTIONS_COLUMN}`;
+
+const GRID_COLUMNS = STUDENTS_TABLE_GRID_COLUMNS;
 
 const GRID_COLUMNS_WITH_SELECT = `2.25rem minmax(6.5rem, 0.85fr) minmax(11rem, 2fr) minmax(5rem, 0.75fr) minmax(3.5rem, 0.5fr) minmax(4rem, 0.6fr) ${ACTIONS_COLUMN}`;
 
@@ -245,7 +249,9 @@ function StudentRow({
       )}
 
       <div className="px-3 py-2 min-w-0">
-        <div className="truncate text-xs font-medium text-gray-900 leading-snug">{student.admission_number}</div>
+        <div className="truncate text-xs font-medium text-gray-900 leading-snug">
+          <AdmissionNo value={student.admission_number} />
+        </div>
         <div className="truncate text-[11px] text-gray-500 leading-snug mt-0.5">
           Roll {student.roll_number || '—'}
         </div>

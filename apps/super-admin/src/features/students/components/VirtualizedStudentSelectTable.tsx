@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Student } from '@/shared/types';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
+import { AdmissionNo } from '@/shared/context/AdmissionNumberFormatContext';
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 
 const ROW_HEIGHT = 56;
@@ -223,7 +224,7 @@ function SelectRow({
         )}
       </div>
       <div className="px-4 text-sm text-gray-900 truncate">
-        {student.admission_number}
+        <AdmissionNo value={student.admission_number} />
       </div>
       <div className="px-4 flex items-center gap-2 min-w-0">
         {student.photo_url ? (

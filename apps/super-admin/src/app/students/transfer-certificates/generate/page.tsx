@@ -186,13 +186,13 @@ function GenerateTransferCertificatePageContent() {
             >
               <FiArrowLeft size={14} /> Students
             </Link>
-            <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-              <FiFileText className="text-primary-600" />
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              {/* <FiFileText className="text-primary-600" /> */}
               Generate Transfer Certificate
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            {/* <p className="text-sm text-gray-500 mt-1">
               Select students, configure TC details, and print official transfer certificates.
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link

@@ -5,6 +5,7 @@ import { FiMapPin } from 'react-icons/fi';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Student } from '@/shared/types';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
+import { useAdmissionNumberFormat } from '@/shared/context/AdmissionNumberFormatContext';
 import { darkenBrandColor, normalizeBrandColor } from '@/features/students/utils/student-id-card-school-info';
 
 export interface StudentIdCardSchoolInfo {
@@ -172,6 +173,7 @@ function CardBackgroundStamp({ stampUrl }: { stampUrl?: string }) {
 export default function StudentIdCard({ student, school }: StudentIdCardProps) {
   const brandColor = normalizeBrandColor(school.brandColor);
   const brandColorDark = darkenBrandColor(brandColor);
+  const formatAdmissionNumber = useAdmissionNumberFormat();
 
   const fullName = studentFullName(student);
   const qrValue = useMemo(() => buildQrPayload(student), [student.id, student.admission_number]);
@@ -336,7 +338,11 @@ export default function StudentIdCard({ student, school }: StudentIdCardProps) {
           <div className="relative z-10 flex flex-col" style={{ gap: '0.5mm' }}>
             <FieldRow label="Class" value={student.class_name} brandColor={brandColor} />
             <FieldRow label="Section" value={student.section_name} brandColor={brandColor} />
-            <FieldRow label="Admission No." value={student.admission_number} brandColor={brandColor} />
+            <FieldRow
+              label="Admission No."
+              value={formatAdmissionNumber(student.admission_number)}
+              brandColor={brandColor}
+            />
             <FieldRow label="Date of Birth" value={formatDob(student.date_of_birth)} brandColor={brandColor} />
             <FieldRow label="Blood Group" value={student.blood_group} brandColor={brandColor} />
             <FieldRow label="Emergency Contact" value={student.emergency_contact} brandColor={brandColor} />

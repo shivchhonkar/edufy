@@ -128,6 +128,7 @@ export default function SetupWizardPage() {
   });
   const [openProfileSections, setOpenProfileSections] = useState({
     basic: true,
+    admission: false,
     contact: false,
     address: false,
     branding: false,
@@ -573,6 +574,89 @@ export default function SetupWizardPage() {
                       <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                     </select>
                   </div>
+                </div>
+              </CollapsibleProfileSection>
+
+              <CollapsibleProfileSection
+                title="Admission Numbers"
+                open={openProfileSections.admission}
+                onToggle={() => toggleProfileSection('admission')}
+              >
+                <div className="space-y-3">
+                  <label className="flex items-start gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={reportSettingsBase.admission_use_prefix}
+                      onChange={(e) =>
+                        setReportSettingsBase((prev) => ({
+                          ...prev,
+                          admission_use_prefix: e.target.checked,
+                        }))
+                      }
+                      className="mt-0.5 rounded border-gray-300 text-brand focus:ring-brand/30"
+                    />
+                    <span>
+                      Use prefix in admission numbers
+                      <span className="block text-xs text-gray-500 mt-0.5">
+                        Off by default — new students get numeric admission numbers only.
+                      </span>
+                    </span>
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={LABEL}>Prefix</label>
+                      <input
+                        value={reportSettingsBase.admission_prefix}
+                        onChange={(e) =>
+                          setReportSettingsBase((prev) => ({
+                            ...prev,
+                            admission_prefix: e.target.value.toUpperCase(),
+                          }))
+                        }
+                        disabled={!reportSettingsBase.admission_use_prefix}
+                        className={`${INPUT} disabled:bg-gray-50 disabled:text-gray-400`}
+                        placeholder="ADM"
+                      />
+                    </div>
+                    <div>
+                      <label className={LABEL}>Number length</label>
+                      <input
+                        type="number"
+                        min={4}
+                        max={12}
+                        value={reportSettingsBase.admission_digit_length}
+                        onChange={(e) =>
+                          setReportSettingsBase((prev) => ({
+                            ...prev,
+                            admission_digit_length: Number(e.target.value) || 6,
+                          }))
+                        }
+                        className={INPUT}
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-start gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={reportSettingsBase.admission_include_year}
+                      onChange={(e) =>
+                        setReportSettingsBase((prev) => ({
+                          ...prev,
+                          admission_include_year: e.target.checked,
+                        }))
+                      }
+                      disabled={!reportSettingsBase.admission_use_prefix}
+                      className="mt-0.5 rounded border-gray-300 text-brand focus:ring-brand/30 disabled:opacity-50"
+                    />
+                    <span>
+                      Include calendar year after prefix
+                      <span className="block text-xs text-gray-500 mt-0.5">
+                        Example with prefix: ADM2026048372
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </CollapsibleProfileSection>
 

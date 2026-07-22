@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BULK_EDIT_COLUMNS,
+  BULK_EDIT_ROW_HEIGHT,
   BULK_EDIT_TOTAL_WIDTH,
   buildSectionsByClassId,
   BulkEditClassOption,
@@ -10,8 +11,8 @@ import {
   BulkEditRow,
   BulkEditSectionOption,
 } from '@/features/students/utils/bulk-edit';
+import { useAdmissionNumberFormat } from '@/shared/context/AdmissionNumberFormatContext';
 
-const ROW_HEIGHT = 34;
 const OVERSCAN = 12;
 
 interface BulkEditSpreadsheetProps {
@@ -31,6 +32,7 @@ export default function BulkEditSpreadsheet({
   allSections,
   onCellChange,
 }: BulkEditSpreadsheetProps) {
+  const formatAdmissionNumber = useAdmissionNumberFormat();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -71,15 +73,15 @@ export default function BulkEditSpreadsheet({
       return { startIndex: 0, endIndex: -1, totalHeight: 0, offsetY: 0 };
     }
 
-    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-    const visibleCount = Math.ceil(containerHeight / ROW_HEIGHT) + OVERSCAN * 2;
+    const start = Math.max(0, Math.floor(scrollTop / BULK_EDIT_ROW_HEIGHT) - OVERSCAN);
+    const visibleCount = Math.ceil(containerHeight / BULK_EDIT_ROW_HEIGHT) + OVERSCAN * 2;
     const end = Math.min(count - 1, start + visibleCount - 1);
 
     return {
       startIndex: start,
       endIndex: end,
-      totalHeight: count * ROW_HEIGHT,
-      offsetY: start * ROW_HEIGHT,
+      totalHeight: count * BULK_EDIT_ROW_HEIGHT,
+      offsetY: start * BULK_EDIT_ROW_HEIGHT,
     };
   }, [scrollTop, containerHeight, rowIndices.length]);
 
@@ -135,7 +137,7 @@ export default function BulkEditSpreadsheet({
                 <div
                   key={row.id}
                   className={`flex border-b border-gray-200 ${isChanged ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'}`}
-                  style={{ height: ROW_HEIGHT }}
+                  style={{ height: BULK_EDIT_ROW_HEIGHT }}
                 >
                   {BULK_EDIT_COLUMNS.map((column) => (
                     <SpreadsheetCell
@@ -146,6 +148,7 @@ export default function BulkEditSpreadsheet({
                       classNames={classNames}
                       classNameToId={classNameToId}
                       sectionsByClassId={sectionsByClassId}
+                      formatAdmissionNumber={formatAdmissionNumber}
                       onChange={(key, value) => onCellChange(rowIndex, key, value)}
                     />
                   ))}
@@ -166,6 +169,7 @@ interface SpreadsheetCellProps {
   classNames: string[];
   classNameToId: Map<string, number>;
   sectionsByClassId: Map<number, string[]>;
+  formatAdmissionNumber: (value?: string | null) => string;
   onChange: (key: keyof BulkEditRow, value: string) => void;
 }
 
@@ -176,6 +180,7 @@ function SpreadsheetCell({
   classNames,
   classNameToId,
   sectionsByClassId,
+  formatAdmissionNumber,
   onChange,
 }: SpreadsheetCellProps) {
   const baseClass =
@@ -190,9 +195,14 @@ function SpreadsheetCell({
   }
 
   if (column.readOnly) {
+    const displayValue =
+      column.key === 'admission_number'
+        ? formatAdmissionNumber(row.admission_number)
+        : row[column.key as keyof BulkEditRow];
+
     return (
       <div className={`${baseClass} px-2 bg-gray-50 font-medium`} style={{ width: column.width }}>
-        {row[column.key as keyof BulkEditRow]}
+        {displayValue}
       </div>
     );
   }

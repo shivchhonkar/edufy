@@ -71,11 +71,87 @@ export function generateRandomString(length: number = 10): string {
   return result;
 }
 
-// Generate admission number (ADM + year + 6 random digits)
-export function generateAdmissionNumber(year?: number): string {
-  const currentYear = year || new Date().getFullYear();
-  const random = Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
-  return `ADM${currentYear}${random}`;
+// Generate admission number — format controlled by school settings (default: digits only, no prefix)
+export interface AdmissionNumberFormatSettings {
+  use_prefix: boolean;
+  prefix: string;
+  include_year: boolean;
+  digit_length: number;
+}
+
+export const DEFAULT_ADMISSION_NUMBER_SETTINGS: AdmissionNumberFormatSettings = {
+  use_prefix: false,
+  prefix: 'ADM',
+  include_year: false,
+  digit_length: 6,
+};
+
+export function normalizeAdmissionNumberSettings(
+  input?: Partial<AdmissionNumberFormatSettings>,
+): AdmissionNumberFormatSettings {
+  const digitLength = input?.digit_length ?? DEFAULT_ADMISSION_NUMBER_SETTINGS.digit_length;
+  return {
+    use_prefix: input?.use_prefix ?? DEFAULT_ADMISSION_NUMBER_SETTINGS.use_prefix,
+    prefix: (input?.prefix ?? DEFAULT_ADMISSION_NUMBER_SETTINGS.prefix).trim() || 'ADM',
+    include_year: input?.include_year ?? DEFAULT_ADMISSION_NUMBER_SETTINGS.include_year,
+    digit_length: Math.min(12, Math.max(4, digitLength)),
+  };
+}
+
+type GenerateAdmissionNumberInput =
+  | number
+  | (Partial<AdmissionNumberFormatSettings> & { year?: number });
+
+/** @deprecated Pass settings object instead of bare year when possible. */
+export function generateAdmissionNumber(input?: GenerateAdmissionNumberInput): string {
+  let settings = DEFAULT_ADMISSION_NUMBER_SETTINGS;
+  let year = new Date().getFullYear();
+
+  if (typeof input === 'number') {
+    year = input;
+  } else if (input) {
+    settings = normalizeAdmissionNumberSettings(input);
+    if (input.year) year = input.year;
+  }
+
+  const max = 10 ** settings.digit_length;
+  const random = Math.floor(Math.random() * max)
+    .toString()
+    .padStart(settings.digit_length, '0');
+
+  if (!settings.use_prefix) {
+    return random;
+  }
+
+  const prefix = settings.prefix || 'ADM';
+  return settings.include_year ? `${prefix}${year}${random}` : `${prefix}${random}`;
+}
+
+/** Display admission number according to school settings; strips legacy prefixes when disabled. */
+export function formatAdmissionNumber(
+  admissionNumber: string | null | undefined,
+  settings?: Partial<AdmissionNumberFormatSettings>,
+): string {
+  const value = String(admissionNumber ?? '').trim();
+  if (!value) return '—';
+
+  const merged = normalizeAdmissionNumberSettings(settings);
+  if (merged.use_prefix) return value;
+
+  let rest = value;
+  const prefix = merged.prefix || 'ADM';
+  if (prefix) {
+    const prefixPattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+    rest = rest.replace(prefixPattern, '');
+  }
+  rest = rest.replace(/^[A-Z]+/i, '');
+
+  if (merged.include_year || /^\d{4}\d+/.test(rest)) {
+    rest = rest.replace(/^\d{4}/, '');
+  }
+
+  const digits = rest.replace(/\D/g, '');
+  return digits || value;
 }
 
 // Generate employee ID

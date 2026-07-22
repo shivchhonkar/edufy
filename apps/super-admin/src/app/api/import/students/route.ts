@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { csvToObjects } from '@/lib/csv-import';
-import { generateAdmissionNumber } from '@/lib/utils';
+import {
+  generateAdmissionNumberForSchool,
+  getAdmissionNumberSettings,
+} from '@/lib/admission-number-settings';
 
 interface StudentCsvRow extends Record<string, string> {
   first_name: string;
@@ -49,6 +52,8 @@ export async function POST(request: NextRequest) {
       sectionResult.rows.map((s) => [`${s.class_id}:${s.name.toLowerCase()}`, s.id])
     );
 
+    const admissionSettings = await getAdmissionNumberSettings(db);
+
     let created = 0;
     const rowErrors: string[] = [];
 
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active')
           RETURNING id`,
           [
-            generateAdmissionNumber(),
+            generateAdmissionNumberForSchool(admissionSettings),
             row.first_name,
             row.last_name,
             row.date_of_birth,

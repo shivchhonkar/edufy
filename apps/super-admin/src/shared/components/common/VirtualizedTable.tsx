@@ -22,6 +22,7 @@ interface VirtualizedTableProps<T> {
   minWidth?: number | string;
   emptyMessage?: string;
   rowClassName?: string | ((item: T, index: number) => string);
+  fillHeight?: boolean;
 }
 
 export default function VirtualizedTable<T>({
@@ -33,6 +34,7 @@ export default function VirtualizedTable<T>({
   minWidth = 960,
   emptyMessage = 'No records found.',
   rowClassName = 'hover:bg-gray-50',
+  fillHeight = false,
 }: VirtualizedTableProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridTemplateColumns = columns.map((column) => column.width ?? '1fr').join(' ');
@@ -51,7 +53,11 @@ export default function VirtualizedTable<T>({
   }
 
   return (
-    <div ref={scrollRef} className="overflow-auto h-full" style={{ maxHeight }}>
+    <div
+      ref={scrollRef}
+      className={`overflow-auto ${fillHeight ? 'h-full min-h-0' : 'h-full'}`}
+      style={fillHeight ? undefined : { maxHeight }}
+    >
       <div style={{ minWidth }}>
         <div
           className="sticky top-0 z-10 grid bg-gray-50 text-gray-600 text-sm border-b border-gray-200"

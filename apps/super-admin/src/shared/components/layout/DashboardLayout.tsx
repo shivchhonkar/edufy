@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { isClientAuthenticated } from '@/lib/client-auth';
 import { usePortalSidebar, PortalSidebarBackdrop } from '@edulakhya/ui';
+import { AdmissionNumberFormatProvider } from '@/shared/context/AdmissionNumberFormatContext';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <PortalSidebarBackdrop open={mobileOpen} onClose={closeMobile} />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          {children}
+          <AdmissionNumberFormatProvider>{children}</AdmissionNumberFormatProvider>
         </main>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import {
   RECEIPT_PRINT_DOCUMENT_STYLES,
   RECEIPT_PREVIEW_STYLES,
+  formatAdmissionNumber,
 } from '@edulakhya/utils';
 
 export interface FeeReceiptLineItem {
@@ -463,7 +464,7 @@ export function buildFeeReceiptInnerHtml(
               : ''
           }
           <div class="fr-info-row"><div class="fr-info-label">Name of the Student :</div><div class="fr-info-value">${escapeHtml(studentName)}</div></div>
-          <div class="fr-info-row"><div class="fr-info-label">Admission No :</div><div class="fr-info-value">${escapeHtml(student.admission_number || '—')}</div></div>
+          <div class="fr-info-row"><div class="fr-info-label">Admission No :</div><div class="fr-info-value">${escapeHtml(formatAdmissionNumber(student.admission_number))}</div></div>
           <div class="fr-info-row"><div class="fr-info-label">Father's Name :</div><div class="fr-info-value">${escapeHtml(fatherName)}</div></div>
           <div class="fr-info-row"><div class="fr-info-label">Address :</div><div class="fr-info-value">${escapeHtml(formatStudentAddress(student).toUpperCase())}</div></div>
         </div>

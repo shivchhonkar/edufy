@@ -9,6 +9,7 @@ import StaffIdCardModal from '@/features/staff/components/StaffIdCardModal';
 import VirtualizedStaffTable, {
   type StaffListItem,
 } from '@/features/staff/components/VirtualizedStaffTable';
+import StaffTableSkeleton, { StaffTotalSkeleton } from '@/features/staff/components/StaffTableSkeleton';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import { useDialog } from '@/shared/context/DialogContext';
@@ -210,12 +211,14 @@ export default function StaffPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-3">
-        <div className="space-y-2">
+      <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-3">
+        <div className="shrink-0 space-y-2">
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-baseline gap-2">
               <h1 className="text-lg font-medium text-gray-900">Staff Management</h1>
-              {!loading && (
+              {loading ? (
+                <StaffTotalSkeleton />
+              ) : (
                 <span className="text-xs text-gray-500">
                   {totalStaff} total
                   {staff.length < totalStaff ? ` · ${staff.length} loaded` : ''}
@@ -337,25 +340,26 @@ export default function StaffPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-            </div>
-          ) : (
-            <VirtualizedStaffTable
-              staff={staff}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDeleteClick}
-              onGenerateId={handleGenerateId}
-              onViewAttendance={handleViewAttendance}
-              onViewActivity={handleViewActivity}
-            />
-          )}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="min-h-0 flex-1">
+            {loading ? (
+              <StaffTableSkeleton fillHeight />
+            ) : (
+              <VirtualizedStaffTable
+                fillHeight
+                staff={staff}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDeleteClick}
+                onGenerateId={handleGenerateId}
+                onViewAttendance={handleViewAttendance}
+                onViewActivity={handleViewActivity}
+              />
+            )}
+          </div>
 
           {!loading && staff.length > 0 && (
-            <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/60 text-sm text-gray-600 flex justify-between items-center">
+            <div className="shrink-0 px-4 py-2.5 border-t border-gray-100 bg-gray-50/60 text-sm text-gray-600 flex justify-between items-center">
               <span>
                 Showing {staff.length} staff member{staff.length !== 1 ? 's' : ''}
                 {totalStaff > staff.length ? ` of ${totalStaff}` : ''}
