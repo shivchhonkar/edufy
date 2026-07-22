@@ -39,8 +39,11 @@ function HrReportsPageContent() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <HrNav />
-        <h1 className="text-xl mb-4">HR Reports & Analytics</h1>
+        {/* <HrNav /> */}
+        <div>
+          <h1 className="text-lg font-medium text-gray-900">HR Reports & Analytics</h1>
+          {/* <p className="text-sm text-gray-500 mt-1">Manage HR reports and analytics</p> */}
+        </div>
         <div className="flex flex-wrap gap-3 mb-6">
           {['headcount', 'attendance', 'leave', 'payroll'].map((t) => (
             <button key={t} type="button" onClick={() => setReportType(t)}

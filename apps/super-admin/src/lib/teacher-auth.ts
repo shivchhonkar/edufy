@@ -32,7 +32,15 @@ export function requireTeacherAuth(
   }
 
   const role = String(decoded.role || '').toLowerCase()
-  if (role !== 'teacher' && role !== 'admin' && role !== 'super_admin') {
+  const allowedRoles = new Set([
+    'teacher',
+    'staff',
+    'admin',
+    'super_admin',
+    'principal',
+    'vice_principal',
+  ])
+  if (!allowedRoles.has(role)) {
     return NextResponse.json({ success: false, error: 'Teacher access required' }, { status: 403 })
   }
 

@@ -158,7 +158,7 @@ export default function StudentPortalPasswordsPanel() {
             <FiLock className="text-primary-600" />
             Parent Portal Passwords
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Set passwords so students can sign in to the Parent Portal using admission number or parent phone.
           </p>
         </div>

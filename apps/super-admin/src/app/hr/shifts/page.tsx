@@ -100,9 +100,12 @@ export default function ShiftsPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <HrNav />
+        {/* <HrNav /> */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl">Shift Management</h1>
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Shift Management</h1>
+            {/* <p className="text-sm text-gray-500 mt-1">Manage shifts and staff</p> */}
+          </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => setShowAssignModal(true)} className="px-4 py-2 border rounded-lg text-sm">Assign to Staff</button>
             <button type="button" onClick={openCreateShift} className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"><FiPlus /> Add Shift</button>

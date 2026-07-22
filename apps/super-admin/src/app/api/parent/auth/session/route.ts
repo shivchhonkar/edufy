@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 type ParentTokenPayload = {
   login?: string
   studentIds: number[]
+  matchedStudentId?: number
   role: 'parent'
 }
 
@@ -27,8 +28,16 @@ export async function GET(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as ParentTokenPayload
     const login = decoded.login || ''
     const children = await refreshPortalChildren(db, login, session.studentIds)
+    const matchedStudentId = decoded.matchedStudentId
+    const sortedChildren = matchedStudentId
+      ? [...children].sort((a, b) => {
+          if (Number(a.id) === matchedStudentId) return -1
+          if (Number(b.id) === matchedStudentId) return 1
+          return Number(a.id) - Number(b.id)
+        })
+      : children
 
-    if (children.length === 0) {
+    if (sortedChildren.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -42,7 +51,8 @@ export async function GET(request: NextRequest) {
       success: true,
       user: {
         login,
-        children,
+        children: sortedChildren,
+        active_student_id: matchedStudentId ?? sortedChildren[0]?.id ?? null,
       },
     })
   } catch (error: unknown) {

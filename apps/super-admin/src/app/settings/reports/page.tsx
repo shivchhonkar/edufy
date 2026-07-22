@@ -171,12 +171,12 @@ export default function ReportSettingsPage() {
           {/* <SettingsNav /> */}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+        <div className="flex mb-2 sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-xl text-gray-900">Report Settings</h1>
-            <p className="text-sm text-gray-500 mt-1 mb-2">
+            {/* <p className="text-sm text-gray-500 mt-1 mb-2">
               Configure report card template, header design, logos, watermarks, and signatures
-            </p>
+            </p> */}
           </div>
           <button
             type="button"

@@ -36,8 +36,8 @@ export default function InventoryPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-xl text-gray-900">Inventory Management</h1>
-            <p className="text-gray-600 mt-1">Manage school inventory and stock</p>
+            <h1 className="text-lg font-medium text-gray-900">Inventory Management</h1>
+            {/* <p className="text-gray-600 mt-1">Manage school inventory and stock</p> */}
           </div>
           <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2">
             <FiPlus />
@@ -68,14 +68,14 @@ export default function InventoryPage() {
 
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-900">Inventory Items</h3>
+            <h3 className="text-sm font-medium text-gray-900">Inventory Items</h3>
           </div>
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-sm text-gray-500">
               No inventory items found. Add your first item to get started.
             </div>
           ) : (

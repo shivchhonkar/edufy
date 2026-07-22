@@ -31,14 +31,18 @@ export async function fetchCalendarEventsInRange(
   db: RequestDb,
   startDate: string,
   endDate: string,
-  options?: { parentVisibleOnly?: boolean },
+  options?: { parentVisibleOnly?: boolean; staffVisibleOnly?: boolean },
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db)
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false
-  const schoolEventFilter = parentVisibleOnly
-    ? `AND status = 'published' AND audience IN ('all', 'parents')`
-    : ''
+  const staffVisibleOnly = options?.staffVisibleOnly ?? false
+  let schoolEventFilter = ''
+  if (parentVisibleOnly) {
+    schoolEventFilter = `AND status = 'published' AND audience IN ('all', 'parents')`
+  } else if (staffVisibleOnly) {
+    schoolEventFilter = `AND status = 'published' AND audience IN ('all', 'staff')`
+  }
 
   const [holidays, schoolEvents] = await Promise.all([
     db.query<{
@@ -120,14 +124,18 @@ export async function fetchCalendarEventsInRange(
 
 export async function fetchAllCalendarEvents(
   db: RequestDb,
-  options?: { parentVisibleOnly?: boolean },
+  options?: { parentVisibleOnly?: boolean; staffVisibleOnly?: boolean },
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db)
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false
-  const schoolEventFilter = parentVisibleOnly
-    ? `WHERE status = 'published' AND audience IN ('all', 'parents')`
-    : ''
+  const staffVisibleOnly = options?.staffVisibleOnly ?? false
+  let schoolEventFilter = ''
+  if (parentVisibleOnly) {
+    schoolEventFilter = `WHERE status = 'published' AND audience IN ('all', 'parents')`
+  } else if (staffVisibleOnly) {
+    schoolEventFilter = `WHERE status = 'published' AND audience IN ('all', 'staff')`
+  }
 
   const [holidays, schoolEvents] = await Promise.all([
     db.query<{

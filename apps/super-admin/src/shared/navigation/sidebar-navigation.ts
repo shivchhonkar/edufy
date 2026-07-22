@@ -337,14 +337,14 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
 // School Timing
 // School Documents
 
-      { name: 'User Access', path: '/settings/user-access', icon: FiUsers },
+      { name: 'Manage Student Access', path: '/settings/user-access', icon: FiUsers },
 
 //       Roles
 // Permissions
 // User Groups
 // Admin Access
 
-      { name: 'Staff Access', path: '/settings/staff-access', icon: FiUserCheck },
+      { name: 'Manage Employee Access', path: '/settings/staff-access', icon: FiUserCheck },
 
 //       Teacher Login
 // Employee Portal Access
@@ -369,7 +369,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
 // Certificate Templates
 // Report Card Templates
 
-      { name: 'Theme', path: '/settings/theme', icon: FiMonitor },
+      { name: 'Theme Settings', path: '/settings/theme', icon: FiMonitor },
 
 //       Color Scheme
 // Sidebar Layout

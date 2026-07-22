@@ -127,7 +127,89 @@ CREATE TABLE IF NOT EXISTS staff_shift_assignments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_staff_shift_staff ON staff_shift_assignments(staff_id, effective_from);
+`;
 
+async function reconcileStaffLeaves(db: RequestDb): Promise<void> {
+  const tableCheck = await db.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'staff_leaves'
+    ) AS exists
+  `);
+
+  if (!tableCheck.rows[0]?.exists) {
+    return;
+  }
+
+  await db.query(`
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS leave_type_id INTEGER REFERENCES leave_types(id) ON DELETE SET NULL;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS days_requested INTEGER;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS reason TEXT;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending';
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES staff(id) ON DELETE SET NULL;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS remarks TEXT;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE staff_leaves ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+  `);
+
+  await db.query(`
+    UPDATE staff_leaves
+    SET days_requested = GREATEST(
+      COALESCE(days_requested, 0),
+      CASE WHEN end_date IS NOT NULL AND start_date IS NOT NULL
+        THEN GREATEST((end_date - start_date) + 1, 1)
+        ELSE 1
+      END
+    )
+    WHERE days_requested IS NULL OR days_requested <= 0
+  `);
+}
+
+async function reconcilePayrollSchema(db: RequestDb): Promise<void> {
+  const tableCheck = await db.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'payroll'
+    ) AS exists
+  `);
+
+  if (!tableCheck.rows[0]?.exists) {
+    return;
+  }
+
+  await db.query(`
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS payslip_generated_at TIMESTAMP;
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS lop_days DECIMAL(5,1) DEFAULT 0;
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS structure_id INTEGER REFERENCES salary_structures(id) ON DELETE SET NULL;
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS is_advance BOOLEAN DEFAULT FALSE;
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP;
+    ALTER TABLE payroll ADD COLUMN IF NOT EXISTS amount_paid DECIMAL(12,2) DEFAULT 0;
+  `);
+
+  await db.query(`
+    UPDATE payroll SET amount_paid = net_salary
+    WHERE status = 'paid' AND COALESCE(amount_paid, 0) = 0 AND net_salary IS NOT NULL
+      AND COALESCE(is_advance, false) = false
+  `);
+
+  const runsCheck = await db.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'payroll_runs'
+    ) AS exists
+  `);
+
+  if (runsCheck.rows[0]?.exists) {
+    await db.query(`
+      ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE;
+      ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMP;
+      ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS notes TEXT;
+    `);
+  }
+}
+
+const HR_TAIL_SQL = `
 -- Attendance policies
 CREATE TABLE IF NOT EXISTS attendance_policies (
   id SERIAL PRIMARY KEY,
@@ -260,24 +342,6 @@ CREATE TABLE IF NOT EXISTS payroll_runs (
   UNIQUE(month, year)
 );
 
--- Extend payroll
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS payslip_generated_at TIMESTAMP;
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS lop_days DECIMAL(5,1) DEFAULT 0;
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS structure_id INTEGER REFERENCES salary_structures(id) ON DELETE SET NULL;
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS is_advance BOOLEAN DEFAULT FALSE;
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP;
-ALTER TABLE payroll ADD COLUMN IF NOT EXISTS amount_paid DECIMAL(12,2) DEFAULT 0;
-
--- Backfill amount_paid for existing non-advance fully-paid rows
-UPDATE payroll SET amount_paid = net_salary
-WHERE status = 'paid' AND COALESCE(amount_paid, 0) = 0 AND net_salary IS NOT NULL
-  AND COALESCE(is_advance, false) = false;
-
--- Extend payroll_runs
-ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE;
-ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMP;
-ALTER TABLE payroll_runs ADD COLUMN IF NOT EXISTS notes TEXT;
-
 -- Punch machines (attendance integration)
 CREATE TABLE IF NOT EXISTS punch_machines (
   id SERIAL PRIMARY KEY,
@@ -385,6 +449,9 @@ async function seedDefaultDepartments(db: RequestDb): Promise<void> {
 /** Idempotent — ensures all HR tables and reconciles attendance schema. */
 export async function ensureHrSchema(db: RequestDb): Promise<void> {
   await db.query(HR_TABLES_SQL);
+  await db.query(HR_TAIL_SQL);
+  await reconcileStaffLeaves(db);
+  await reconcilePayrollSchema(db);
   await reconcileStaffAttendance(db);
   await seedDefaultDepartments(db);
 }

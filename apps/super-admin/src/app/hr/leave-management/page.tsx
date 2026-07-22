@@ -214,11 +214,11 @@ export default function LeaveManagementPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto min-w-0 w-full">
-        <HrNav />
+        {/* <HrNav /> */}
         <div className="flex flex-wrap justify-between items-end gap-3 mb-5">
           <div>
-            <h1 className="text-2xl text-gray-900">Leave Management</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage and track staff leave requests</p>
+            <h1 className="text-lg font-medium text-gray-900">Leave Management</h1>
+            {/* <p className="text-sm text-gray-600 mt-1">Manage and track staff leave requests</p> */}
           </div>
           <div className="flex flex-wrap gap-2">
             {['pending', 'approved', 'rejected', 'all'].map((s) => (

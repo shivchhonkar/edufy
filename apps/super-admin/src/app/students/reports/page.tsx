@@ -205,7 +205,7 @@ export default function StudentReportsPage() {
         header: 'Student Name',
         width: 'minmax(160px, 1fr)',
         render: (row) => (
-          <span className="block truncate text-xs font-medium text-gray-900" title={row.student_name}>
+          <span className="block truncate text-sm font-medium text-gray-900" title={row.student_name}>
             {row.student_name}
           </span>
         ),

@@ -72,7 +72,8 @@ export default function TransportVehiclesView() {
     <div className="space-y-6 p-4">
       <TransportPageHeader
         title="Vehicles"
-        description="Manage buses, vans, and driver details"
+        description=""
+        // description="Manage buses, vans, and driver details"
         action={
           <button
             onClick={() => setShowVehicleModal(true)}

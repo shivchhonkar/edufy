@@ -64,9 +64,12 @@ export default function SalaryStructuresPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <HrNav />
+        {/* <HrNav /> */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl">Salary Structures</h1>
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Salary Structures</h1>
+            {/* <p className="text-sm text-gray-500 mt-1">Manage salary structures and components</p> */}
+          </div>
           <button type="button" onClick={() => setShowModal(true)} className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"><FiPlus /> New Structure</button>
         </div>
         <div className="grid md:grid-cols-2 gap-4 mb-6">

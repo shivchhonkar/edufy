@@ -247,11 +247,11 @@ export default function ThemeSettingsPage() {
     <DashboardLayout>
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Theme Settings</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">Theme Settings</h1>
+          {/* <p className="mt-1 text-sm text-gray-600">
             Customize colors for the super-admin portal. The Edufy default theme is applied on first
             load.
-          </p>
+          </p> */}
         </div>
 
         {/* <SettingsNav /> */}

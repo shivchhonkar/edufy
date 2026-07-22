@@ -29,7 +29,11 @@ export function parseHomeworkAttachments(
 }
 
 export function buildHomeworkStats(rows: Array<{ submission_status?: string | null }>) {
-  const pending = rows.filter((row) => row.submission_status === 'pending').length;
+  const pending = rows.filter((row) =>
+    row.submission_status === 'pending' ||
+    row.submission_status === 'rejected' ||
+    row.submission_status === 'resubmit_requested',
+  ).length;
   const submitted = rows.filter((row) => row.submission_status === 'submitted').length;
   const completed = rows.filter((row) => row.submission_status === 'graded').length;
 

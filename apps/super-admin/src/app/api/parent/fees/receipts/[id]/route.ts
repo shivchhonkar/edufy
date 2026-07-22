@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDbOrError } from '@/lib/request-db';
 import { requireStudentFromQuery } from '@/lib/parent-portal/require-student-api';
+import { loadPaymentReceiptData } from '@/lib/fees/load-payment-receipt-data';
+import { loadReceiptSchoolSettings } from '@/lib/fees/load-receipt-school-settings';
+import {
+  buildFeeReceiptPreviewDocument,
+  type FeeReceiptPayment,
+  type FeeReceiptStudent,
+} from '@/features/fees/utils/fee-receipt-print';
 
 export async function GET(
   request: NextRequest,
@@ -23,36 +30,54 @@ export async function GET(
       );
     }
 
-    const result = await db.query(
-      `SELECT
-         fp.id,
-         fp.receipt_number,
-         fp.payment_method,
-         fp.payment_date,
-         fp.amount_paid,
-         fp.transaction_id,
-         fp.remarks,
-         fp.academic_year,
-         fp.late_fee_charged,
-         fp.discount_applied
-       FROM fee_payments fp
-       WHERE fp.id = $1
-         AND fp.student_id = $2
-         AND fp.status = 'completed'`,
-      [receiptId, studentId],
-    );
-
-    if (result.rows.length === 0) {
+    const data = await loadPaymentReceiptData(db, receiptId);
+    if (!data) {
       return NextResponse.json(
         { success: false, error: 'Receipt not found' },
         { status: 404 },
       );
     }
 
+    const paymentStudentId = Number(data.student.id);
+    if (!Number.isFinite(paymentStudentId) || paymentStudentId !== studentId) {
+      return NextResponse.json(
+        { success: false, error: 'Receipt not found' },
+        { status: 404 },
+      );
+    }
+
+    const basicResult = await db.query(
+      `SELECT id, receipt_number, payment_method, payment_date, amount_paid, transaction_id,
+              remarks, academic_year, late_fee_charged, discount_applied, status
+       FROM fee_payments
+       WHERE id = $1 AND student_id = $2 AND status = 'completed'`,
+      [receiptId, studentId],
+    );
+
+    if (basicResult.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Receipt not found' },
+        { status: 404 },
+      );
+    }
+
+    const origin = request.nextUrl.origin;
+    const settings = await loadReceiptSchoolSettings(db, origin);
+    const payment = data.payment as FeeReceiptPayment;
+    const student = data.student as FeeReceiptStudent;
+    const html = buildFeeReceiptPreviewDocument(payment, student, {
+      ...settings,
+      academic_year: settings.academic_year || String(payment.academic_year || ''),
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        receipt: result.rows[0],
+        receipt: basicResult.rows[0],
+        payment: data.payment,
+        student: data.student,
+        settings,
+        html,
       },
     });
   } catch (error) {

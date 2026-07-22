@@ -223,10 +223,10 @@ export default function LibraryDashboardPage() {
       <div className="mx-auto max-w-7xl space-y-4 pb-4">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl text-gray-900">Library Dashboard</h1>
-            <p className="mt-0.5 text-sm text-gray-600">
+            <h1 className="text-lg font-medium text-gray-900">Library Dashboard</h1>
+            {/* <p className="mt-0.5 text-sm text-gray-600">
               Catalog, circulation, members, and overdue overview
-            </p>
+            </p> */}
           </div>
           <button
             type="button"

@@ -97,10 +97,10 @@ export default function ViewStudentModal({
         {/* Header */}
         <div className="px-4 py-3 sm:px-6 bg-white border-b flex justify-between items-center flex-shrink-0 sticky top-0 z-10 shrink-0">
           <div>
-            <h2 className="text-xl text-gray-900">Student Profile</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h2 className="text-lg font-medium text-gray-900">Student Profile</h2>
+            {/* <p className="text-sm text-gray-500 mt-0.5">
               {studentFullName(studentData)} · {studentData.admission_number}
-            </p>
+            </p> */}
           </div>
           <div className="flex items-center gap-2">
             {onEdit && (

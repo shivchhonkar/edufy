@@ -27,7 +27,22 @@ export async function GET(request: NextRequest) {
     const sectionId = request.nextUrl.searchParams.get('section_id')
 
     if (!classId) {
-      return NextResponse.json({ success: false, error: 'class_id is required' }, { status: 400 })
+      const result = await db.query(
+        `SELECT DISTINCT ON (s.id)
+          s.id, s.first_name, s.last_name, s.admission_number, s.roll_number,
+          s.class_id, s.section_id,
+          c.name AS class_name, sec.name AS section_name
+        FROM students s
+        INNER JOIN teacher_assignments ta ON ta.staff_id = $1
+          AND ta.class_id = s.class_id
+          AND (ta.section_id IS NULL OR ta.section_id = s.section_id)
+        LEFT JOIN classes c ON s.class_id = c.id
+        LEFT JOIN sections sec ON s.section_id = sec.id
+        WHERE s.status = 'active'
+        ORDER BY s.id, c.name, sec.name NULLS FIRST, s.roll_number NULLS LAST, s.first_name, s.last_name`,
+        [staffId],
+      )
+      return NextResponse.json({ success: true, data: result.rows })
     }
 
     const classIdNum = parseInt(classId, 10)

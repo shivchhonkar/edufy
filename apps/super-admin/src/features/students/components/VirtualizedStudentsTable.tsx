@@ -6,7 +6,7 @@ import { studentFullName, studentInitials, getStudentContactPhone } from '@/feat
 import { FiCheckSquare, FiEdit, FiSquare, FiTrash, FiEye } from 'react-icons/fi';
 import StudentRowMoreActions from '@/features/students/components/StudentRowMoreActions';
 
-const ROW_HEIGHT = 44;
+const ROW_HEIGHT = 60;
 const OVERSCAN = 12;
 
 const ACTIONS_COLUMN = 'minmax(7.5rem, 0.95fr)';
@@ -181,7 +181,7 @@ function HeaderCell({
 }) {
   return (
     <div
-      className={`px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wide ${className}`}
+      className={`px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wide ${className}`}
     >
       {children}
     </div>
@@ -244,44 +244,44 @@ function StudentRow({
         </div>
       )}
 
-      <div className="px-3 py-1.5 min-w-0">
-        <div className="truncate text-xs font-medium text-gray-900">{student.admission_number}</div>
-        <div className="truncate text-[11px] text-gray-500">
+      <div className="px-3 py-2 min-w-0">
+        <div className="truncate text-xs font-medium text-gray-900 leading-snug">{student.admission_number}</div>
+        <div className="truncate text-[11px] text-gray-500 leading-snug mt-0.5">
           Roll {student.roll_number || '—'}
         </div>
       </div>
 
-      <div className="px-3 py-1.5 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="px-3 py-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           {student.photo_url ? (
             <img
               src={student.photo_url}
               alt={studentFullName(student)}
-              className="h-7 w-7 shrink-0 rounded-full object-cover"
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-[10px] font-medium text-gray-600">
                 {studentInitials(student)}
               </span>
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate text-xs font-medium text-gray-900">
+            <div className="truncate text-sm font-medium text-gray-900 leading-snug">
               {studentFullName(student)}
             </div>
-            <div className="truncate text-[11px] text-gray-500">{contactPhone || '—'}</div>
+            <div className="truncate text-[11px] text-gray-500 leading-snug mt-0.5">{contactPhone || '—'}</div>
           </div>
         </div>
       </div>
 
-      <div className="px-3 py-1.5 truncate text-xs text-gray-700">{classLabel}</div>
+      <div className="px-3 py-2 truncate text-xs text-gray-700">{classLabel}</div>
 
-      <div className="px-3 py-1.5 truncate text-xs text-gray-500 capitalize">
+      <div className="px-3 py-2 truncate text-xs text-gray-500 capitalize">
         {student.gender || '—'}
       </div>
 
-      <div className="px-3 py-1.5">
+      <div className="px-3 py-2">
         <span
           className={`px-1.5 py-0.5 inline-flex text-[10px] font-medium rounded ${
             student.status === 'active'
@@ -297,7 +297,7 @@ function StudentRow({
         <button
           type="button"
           onClick={() => onView(student)}
-          className="inline-flex shrink-0 items-center justify-center p-0.5 text-primary-600 hover:text-primary-900"
+          className="inline-flex shrink-0 items-center justify-center p-1 text-primary-600 hover:text-primary-900"
           title="View Details"
         >
           <FiEye size={15} />
@@ -305,7 +305,7 @@ function StudentRow({
         <button
           type="button"
           onClick={() => onEdit(student)}
-          className="inline-flex shrink-0 items-center justify-center p-0.5 text-blue-600 hover:text-blue-900"
+          className="inline-flex shrink-0 items-center justify-center p-1 text-blue-600 hover:text-blue-900"
           title="Edit"
         >
           <FiEdit size={15} />
@@ -313,7 +313,7 @@ function StudentRow({
         <button
           type="button"
           onClick={() => onDelete(student)}
-          className="inline-flex shrink-0 items-center justify-center p-0.5 text-red-600 hover:text-red-900"
+          className="inline-flex shrink-0 items-center justify-center p-1 text-red-600 hover:text-red-900"
           title="Delete"
         >
           <FiTrash size={15} />

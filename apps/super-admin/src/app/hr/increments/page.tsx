@@ -46,9 +46,12 @@ export default function IncrementsPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <HrNav />
+        {/* <HrNav /> */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl">Salary Increments</h1>
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Salary Increments</h1>
+            {/* <p className="text-sm text-gray-500 mt-1">Manage salary increments and staff</p> */}
+          </div>
           <button type="button" onClick={() => setShowModal(true)} className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"><FiPlus /> Record Increment</button>
         </div>
         <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">

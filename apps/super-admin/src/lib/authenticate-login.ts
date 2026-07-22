@@ -22,11 +22,20 @@ function toStaffUserResponse(user: User & { password_hash?: string }) {
   };
 }
 
-function toParentUserResponse(login: string, children: PortalChild[]) {
+function toParentUserResponse(login: string, children: PortalChild[], matchedStudentId?: number) {
+  const sortedChildren = matchedStudentId
+    ? [...children].sort((a, b) => {
+        if (a.id === matchedStudentId) return -1;
+        if (b.id === matchedStudentId) return 1;
+        return Number(a.id) - Number(b.id);
+      })
+    : children;
+
   return {
     login,
     role: 'parent' as const,
-    children: children.map((child) => ({
+    active_student_id: matchedStudentId ?? sortedChildren[0]?.id ?? null,
+    children: sortedChildren.map((child) => ({
       id: Number(child.id),
       first_name: child.first_name,
       middle_name: child.middle_name ?? null,
@@ -167,7 +176,7 @@ export async function authenticateUnifiedLogin(
 
   return {
     kind: 'parent',
-    user: toParentUserResponse(trimmedLogin, children),
+    user: toParentUserResponse(trimmedLogin, children, matched.id),
     token,
   };
 }

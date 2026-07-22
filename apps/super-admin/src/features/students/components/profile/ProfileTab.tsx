@@ -20,7 +20,7 @@ function InfoRow({
 }) {
   return (
     <div className="py-2">
-      <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+      <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
       <div className="flex items-center space-x-2">
         {Icon && <Icon className="w-4 h-4 text-primary-600" />}
         <p className="text-sm text-gray-900">{value ?? 'N/A'}</p>

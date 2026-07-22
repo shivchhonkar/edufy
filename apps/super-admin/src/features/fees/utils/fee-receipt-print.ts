@@ -571,6 +571,32 @@ export function buildFeeReceiptPrintDocument(
 </html>`;
 }
 
+export function buildFeeReceiptPreviewDocument(
+  payment: FeeReceiptPayment,
+  student: FeeReceiptStudent,
+  settings: FeeReceiptSettings = {},
+): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fee Receipt</title>
+  <style>${FEE_RECEIPT_PREVIEW_STYLES}</style>
+  <style>
+    html, body { margin: 0; padding: 0; background: #f1f5f9; }
+    body { padding: 12px; box-sizing: border-box; }
+    .fee-receipt-preview { margin: 0 auto; max-width: 820px; }
+  </style>
+</head>
+<body>
+  <div class="fee-receipt-preview">
+    ${buildFeeReceiptInnerHtml(payment, student, settings)}
+  </div>
+</body>
+</html>`;
+}
+
 export function printFeeReceiptViaIframe(
   payment: FeeReceiptPayment,
   student: FeeReceiptStudent,

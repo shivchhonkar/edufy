@@ -23,13 +23,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No staff profile linked' }, { status: 404 })
     }
 
+    const { ensureHomeworkReviewSchema } = await import('@/lib/teacher-homework')
+    await ensureHomeworkReviewSchema(db)
+
     const classId = request.nextUrl.searchParams.get('class_id')
     const subjectId = request.nextUrl.searchParams.get('subject_id')
 
     let query = `
       SELECT h.*, c.name AS class_name, s.name AS subject_name,
         (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id) AS total_submissions,
-        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status != 'pending') AS submitted_count
+        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status = 'pending') AS pending_count,
+        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status = 'submitted') AS submitted_count,
+        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status = 'graded') AS graded_count,
+        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status = 'rejected') AS rejected_count,
+        (SELECT COUNT(*) FROM homework_submissions hs WHERE hs.homework_id = h.id AND hs.status = 'resubmit_requested') AS resubmit_requested_count
       FROM homework h
       LEFT JOIN classes c ON h.class_id = c.id
       LEFT JOIN subjects s ON h.subject_id = s.id

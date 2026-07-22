@@ -163,12 +163,12 @@ export default function UserAccessPage() {
         {/* <SettingsNav /> */}
         <div>
           <h1 className="text-xl text-gray-900 flex items-center gap-2">
-            <FiShield className="text-primary-600" />
-            Parent Portal
+            {/* <FiShield className="text-primary-600" /> */}
+            Manage Student Access
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          {/* <p className="text-sm text-gray-500 mt-1">
             Parent and student portal permissions, passwords, and administrator overview.
-          </p>
+          </p> */}
         </div>
 
         <div className="flex gap-2 border-b pb-2">
@@ -199,7 +199,7 @@ export default function UserAccessPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Default portal modules</h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs text-gray-500">
                     Applies to all students and parents unless overridden per student.
                   </p>
                 </div>

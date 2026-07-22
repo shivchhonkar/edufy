@@ -204,19 +204,19 @@ export default function StaffAccessPage() {
         {/* <SettingsNav /> */}
         <div>
           <h1 className="text-xl text-gray-900 flex items-center gap-2">
-            <FiUserCheck className="text-primary-600" />
-            Staff Portal
+            {/* <FiUserCheck className="text-primary-600" /> */}
+            Manage Employee Access
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          {/* <p className="text-sm text-gray-500 mt-1">
             Staff login, ESS modules, and external portal access (Transport, Fees, Inventory).
-          </p>
+          </p> */}
         </div>
 
         <div className="bg-white border rounded-xl p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Default access</h2>
-              <p className="text-sm text-gray-500">Applies to all staff unless overridden individually.</p>
+              <p className="text-xs text-gray-500">Applies to all staff unless overridden individually.</p>
             </div>
             <button
               type="button"

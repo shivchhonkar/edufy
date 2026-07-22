@@ -69,9 +69,12 @@ export default function ResignationsPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <HrNav />
+        {/* <HrNav /> */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-          <h1 className="text-xl">Resignation Management</h1>
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Resignation Management</h1>
+            {/* <p className="text-sm text-gray-500 mt-1">Manage resignations and staff</p> */}
+          </div>
           <div className="flex gap-2">
             {['pending', 'approved', 'cleared', 'all'].map((s) => (
               <button key={s} type="button" onClick={() => setFilter(s)}

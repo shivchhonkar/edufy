@@ -840,10 +840,10 @@ function SettingsPageContent() {
       <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h1 className={SET_H3}>System Settings</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">System Settings</h1>
+            {/* <p className="text-xs text-gray-500 mt-0.5">
               School profile, academic years, users, backups, and maintenance
-            </p>
+            </p> */}
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
             <FiShield className="w-3.5 h-3.5" />
