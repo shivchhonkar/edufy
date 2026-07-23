@@ -10,14 +10,14 @@ export default function EventCalendarPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
+            {/* <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
               <FiCalendar className="w-6 h-6" />
-            </div>
+            </div> */}
             <div>
-              <h1 className="text-xl text-gray-900">Event Calendar</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-lg font-medium text-gray-900">Event Calendar</h1>
+              {/* <p className="text-gray-600 mt-1">
                 Create school events and holidays visible to parents on the parent portal.
-              </p>
+              </p> */}
             </div>
           </div>
         </div>

@@ -135,11 +135,11 @@ export default function ReturnPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-6 min-w-0">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Return Book</h1>
-          <p className="text-gray-500 text-sm mt-1">Issues/Returns / Return Book</p>
+          <h1 className="text-lg font-medium text-gray-900">Return Book</h1>
+          {/* <p className="text-gray-500 text-sm mt-1">Issues/Returns / Return Book</p> */}
         </div>
 
         {/* Main Card */}

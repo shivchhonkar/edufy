@@ -3,7 +3,7 @@
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useEffect, useState } from 'react';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiEdit2, FiTrash2, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
 
 export default function MembersPage() {
   const [members, setMembers] = useState<any[]>([]);
@@ -168,14 +168,15 @@ export default function MembersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Members</h1>
-            <p className="text-gray-500 text-sm">Manage library members</p>
+            <h1 className="text-lg font-medium text-gray-900">Members</h1>
+            {/* <p className="text-gray-500 text-sm">Manage library members</p> */}
           </div>
           <button
             onClick={() => setShowModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
-            + Add Member
+            <FiPlus size={16} />
+            Add Member
           </button>
         </div>
 
@@ -195,9 +196,7 @@ export default function MembersPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
+         
             <select
               value={filterStatus}
               onChange={(e) => {

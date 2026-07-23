@@ -19,7 +19,7 @@ export default function TransportPageHeader({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-xl text-gray-900">{title}</h1>
+          <h1 className="text-lg font-medium text-gray-900">{title}</h1>
           {showSetupHint && (
             <div className="relative group">
               <button
@@ -49,7 +49,7 @@ export default function TransportPageHeader({
             </div>
           )}
         </div>
-        {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+        {/* {description && <p className="text-sm text-gray-600 mt-1">{description}</p>} */}
       </div>
       {action}
     </div>

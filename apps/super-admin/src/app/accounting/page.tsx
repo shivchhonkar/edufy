@@ -61,7 +61,8 @@ export default function AccountingPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 min-w-0">
-        <h1 className="text-xl flex items-center gap-2"><FiBookOpen className="text-primary-600" /> Accounting</h1>
+        <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+          {/* <FiBookOpen className="text-primary-600" /> */} Accounting</h1>
         <div className="flex gap-2">
           {(['accounts', 'journal', 'ledger'] as const).map((t) => (
             <button key={t} type="button" onClick={() => setTab(t)} className={`px-4 py-2 rounded-lg text-sm capitalize ${tab === t ? 'bg-primary-600 text-white' : 'border'}`}>{t}</button>

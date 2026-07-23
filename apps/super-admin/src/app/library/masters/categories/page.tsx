@@ -39,8 +39,10 @@ export default function CategoriesPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-xl font-semibold mb-4">Categories</h1>
+      <div className="space-y-6 min-w-0 max-w-7xl mx-auto">
+        <div>
+          <h1 className="text-lg font-medium text-gray-900">Categories</h1>
+        </div>
         <div className="bg-white border rounded-lg p-4 mb-4">
           <div className="flex gap-2">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New category" className="px-3 py-2 border rounded-lg flex-1" />

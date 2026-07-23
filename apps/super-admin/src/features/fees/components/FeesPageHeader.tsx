@@ -20,13 +20,13 @@ export default function FeesPageHeader({
 }: FeesPageHeaderProps) {
   return (
     <header>
-      <Link
+      {/* <Link
         href={backHref}
         className=" flex-start inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-2 transition-colors"
       >
         <FiArrowLeft size={14} aria-hidden />
         {backLabel}
-      </Link>
+      </Link> */}
 
       <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1">
         <h1 className="col-start-1 row-start-1 text-lg font-medium text-gray-900">{title}</h1>

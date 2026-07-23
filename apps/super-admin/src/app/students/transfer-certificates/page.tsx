@@ -157,7 +157,7 @@ export default function TransferCertificatesHistoryPage() {
               </Link>
             </div> */}
             <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              <FiFileText className="text-primary-600" />
+              {/* <FiFileText className="text-primary-600" /> */}
               Transfer Certificates 
             </h1>
             {/* <p className="text-sm text-gray-500 mt-1">

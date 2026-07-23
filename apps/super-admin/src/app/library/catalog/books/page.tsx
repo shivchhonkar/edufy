@@ -303,8 +303,8 @@ export default function BooksPage() {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Books</h1>
-            <p className="text-sm text-gray-500">Manage your library catalog</p>
+            <h1 className="text-lg font-medium text-gray-900">Books</h1>
+            {/* <p className="text-sm text-gray-500">Manage your library catalog</p> */}
           </div>
           <button
             onClick={openAddModal}

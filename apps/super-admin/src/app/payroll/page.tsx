@@ -390,10 +390,11 @@ export default function PayrollPage() {
       <div className="space-y-6 min-w-0 max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-xl text-gray-900 flex items-center gap-2">
-              <RupeeIcon className="text-primary-600" /> Payroll
+            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              {/* <RupeeIcon className="text-primary-600" />  */}
+              Payroll
             </h1>
-            <p className="text-gray-600 mt-1">of month {monthLabel}</p>
+            <p className="text-xs text-gray-600 mt-1">of month {monthLabel}</p>
           </div>
           {isFrozen && (
             <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">

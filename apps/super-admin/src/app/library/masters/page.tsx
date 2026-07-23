@@ -6,10 +6,10 @@ import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 export default function LibraryMastersPage() {
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="space-y-6 min-w-0 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-xl font-semibold">Library Masters</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage categories, authors, publishers, vendors and locations</p>
+          <h1 className="text-lg font-medium text-gray-900">Library Masters</h1>
+          {/* <p className="text-gray-500 text-sm mt-1">Manage categories, authors, publishers, vendors and locations</p> */}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link href="/library/masters/categories" className="block p-4 bg-white border rounded-lg">Categories</Link>
