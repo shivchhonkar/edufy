@@ -14,7 +14,7 @@ export default function VisitorManagementPage() {
               <FiUserCheck className="w-6 h-6" />
             </div> */}
             <div>
-              <h1 className="text-lg text-gray-900">Visitor Management</h1>
+              <h1 className="text-lg font-medium text-gray-900">Visitor Management</h1>
               {/* <p className="text-gray-600 mt-1">
                 Record visitor check-ins at the gate and send text notifications to hosts.
               </p> */}

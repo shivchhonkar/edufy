@@ -53,6 +53,8 @@ import {
   FiUsers,
 } from 'react-icons/fi';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
+import { AiFillDashboard } from 'react-icons/ai';
+import { GrDashboard } from 'react-icons/gr';
 
 export interface NavLink {
   name: string;
@@ -74,9 +76,9 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
   {
     id: 'dashboard',
     title: 'Dashboard',
-    icon: FiGrid,
+    icon: GrDashboard,
     items: [
-      { name: 'Dashboard', path: '/admin', icon: FiGrid },
+      { name: 'Dashboard', path: '/admin', icon: GrDashboard },
       // { name: 'Analytics', path: '/dashboard/analytics', icon: FiBarChart2 },
       // { name: 'Reports', path: '/settings/reports', icon: FiFileText },
       // { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: FiActivity },
