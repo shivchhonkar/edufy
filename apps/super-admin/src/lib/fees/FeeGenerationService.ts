@@ -1,4 +1,5 @@
 import type { RequestDb } from '@/lib/request-db';
+import { resolveEnrollmentWriteContext } from '@/lib/enrollment-service';
 import {
   academicYearVariants,
   academicYearFilterValues,
@@ -448,8 +449,18 @@ async function insertStudentFee(
     month: number;
     conflictStrategy: ConflictStrategy;
     feeStructureVersionId?: number | null;
+    enrollmentId?: number | null;
   }
 ): Promise<{ inserted: boolean; row?: Record<string, unknown> }> {
+  const writeCtx =
+    params.enrollmentId != null
+      ? { enrollmentId: params.enrollmentId, academicYear: params.academicYear }
+      : await resolveEnrollmentWriteContext(db, params.studentId, {
+          academicYear: params.academicYear,
+        });
+  const enrollmentId = writeCtx?.enrollmentId ?? params.enrollmentId ?? null;
+  const academicYear = writeCtx?.academicYear ?? params.academicYear;
+
   const conflictClause =
     params.conflictStrategy === 'update_amount'
       ? `DO UPDATE SET amount_due = EXCLUDED.amount_due, updated_at = NOW()`
@@ -461,16 +472,17 @@ async function insertStudentFee(
 
   const result = await db.query(
     `INSERT INTO student_fees (
-      student_id, fee_structure_id, fee_structure_version_id, academic_year, amount_due,
+      student_id, enrollment_id, fee_structure_id, fee_structure_version_id, academic_year, amount_due,
       due_date, month, status, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), NOW())
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW(), NOW())
     ON CONFLICT (student_id, fee_structure_id, academic_year, month)
     ${conflictClause}${returning}`,
     [
       params.studentId,
+      enrollmentId,
       params.feeStructureId,
       params.feeStructureVersionId ?? null,
-      params.academicYear,
+      academicYear,
       params.amountDue,
       params.dueDate,
       params.month,

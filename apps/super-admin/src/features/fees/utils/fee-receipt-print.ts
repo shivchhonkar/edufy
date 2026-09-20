@@ -30,6 +30,7 @@ export interface FeeReceiptPayment {
     amount?: number | string;
     late_fee?: number | string;
   }>;
+  line_items?: FeeReceiptLineItem[];
   is_tuition_only?: boolean;
   id?: number | string;
   received_by_name?: string;
@@ -58,6 +59,7 @@ export interface FeeReceiptSettings {
   school_website?: string;
   logo_url?: string;
   academic_year?: string;
+  document_title?: string;
 }
 
 function escapeHtml(value: unknown): string {
@@ -403,12 +405,16 @@ export function buildFeeReceiptInnerHtml(
   renderOptions: { hideReceiptNo?: boolean } = {},
 ): string {
   const academicYear = settings.academic_year || payment.academic_year || '';
-  const lineItems = buildFeeReceiptLineItems(payment, academicYear);
+  const lineItems = payment.line_items?.length
+    ? payment.line_items
+    : buildFeeReceiptLineItems(payment, academicYear);
   const totalPaid = parseFloat(String(payment.amount_paid || 0));
   const totalDue = lineItems.reduce((sum, item) => sum + item.due, 0);
   const totalBalance = lineItems.reduce((sum, item) => sum + item.balance, 0);
   const displayTotal = totalDue > 0 ? totalDue : totalPaid;
 
+  const documentTitle = settings.document_title || 'FEE RECEIPT';
+  const yearLabel = formatAcademicYearShort(academicYear);
   const schoolName = settings.school_name || 'School Name';
   const studentName = `${student.first_name || ''} ${student.last_name || ''}`.trim().toUpperCase();
   const fatherName = (student.parent_name || '—').toUpperCase();
@@ -454,13 +460,13 @@ export function buildFeeReceiptInnerHtml(
         </div>
       </div>
 
-      <div class="fr-receipt-title">FEE RECEIPT (${escapeHtml(formatAcademicYearShort(academicYear) || '—')})</div>
+      <div class="fr-receipt-title">${escapeHtml(documentTitle)}${yearLabel ? ` (${escapeHtml(yearLabel)})` : ''}</div>
 
       <div class="fr-info-grid">
         <div class="fr-info-col">
           ${
             showReceiptNo
-              ? `<div class="fr-info-row"><div class="fr-info-label">Receipt No. :</div><div class="fr-info-value">${escapeHtml(payment.receipt_number || '—')}</div></div>`
+              ? `<div class="fr-info-row"><div class="fr-info-label">${documentTitle.toLowerCase().includes('invoice') ? 'Invoice No.' : 'Receipt No.'} :</div><div class="fr-info-value">${escapeHtml(payment.receipt_number || '—')}</div></div>`
               : ''
           }
           <div class="fr-info-row"><div class="fr-info-label">Name of the Student :</div><div class="fr-info-value">${escapeHtml(studentName)}</div></div>
@@ -563,7 +569,7 @@ export function buildFeeReceiptPrintDocument(
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Fee Receipt</title>
+  <title>${settings.document_title || 'Fee Receipt'}</title>
   <style>${FEE_RECEIPT_PRINT_STYLES}</style>
 </head>
 <body>

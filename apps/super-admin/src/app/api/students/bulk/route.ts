@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
+import { updateCurrentEnrollmentPlacement, prepareEnrollmentSchema } from '@/lib/enrollment-service';
 
 interface BulkStudentUpdate {
   id: number;
@@ -43,6 +44,7 @@ export async function PUT(request: NextRequest) {
     const authResult = await getAuthenticatedDb(request);
     if (authResult instanceof NextResponse) return authResult;
     const { db } = authResult;
+    await prepareEnrollmentSchema(db);
 
     const body = await request.json();
     const students: BulkStudentUpdate[] = body.students;
@@ -137,16 +139,13 @@ export async function PUT(request: NextRequest) {
             state = $17,
             pincode = $18,
             admission_date = $19,
-            class_id = $20,
-            section_id = $21,
-            roll_number = $22,
-            parent_name = $23,
-            parent_phone = $24,
-            parent_email = $25,
-            emergency_contact = $26,
-            status = $27,
+            parent_name = $20,
+            parent_phone = $21,
+            parent_email = $22,
+            emergency_contact = $23,
+            status = $24,
             updated_at = CURRENT_TIMESTAMP
-          WHERE id = $28
+          WHERE id = $25
           RETURNING id`,
           [
             emptyToNull(student.student_code),
@@ -168,9 +167,6 @@ export async function PUT(request: NextRequest) {
             emptyToNull(student.state),
             emptyToNull(student.pincode),
             student.admission_date || null,
-            classId,
-            sectionId,
-            emptyToNull(student.roll_number),
             emptyToNull(student.parent_name),
             emptyToNull(student.parent_phone),
             emptyToNull(student.parent_email),
@@ -183,6 +179,14 @@ export async function PUT(request: NextRequest) {
         if (result.rows.length === 0) {
           errors.push(`Student #${student.id}: not found`);
           continue;
+        }
+
+        if (classId != null || sectionId != null || student.roll_number !== undefined) {
+          await updateCurrentEnrollmentPlacement(db, student.id, {
+            classId: classId ?? undefined,
+            sectionId: sectionId ?? undefined,
+            rollNumber: emptyToNull(student.roll_number) ?? undefined,
+          });
         }
 
         updated += 1;

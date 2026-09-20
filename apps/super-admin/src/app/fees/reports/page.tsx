@@ -14,7 +14,7 @@ import { filterFeeStudents, matchesClassSection } from '@/features/fees/utils/st
 import Link from 'next/link';
 import FeesPageHeader from '@/features/fees/components/FeesPageHeader';
 
-type ReportType = 'collection' | 'outstanding' | 'defaulters' | 'daily' | 'statements';
+type ReportType = 'collection' | 'outstanding' | 'defaulters' | 'daily' | 'statements' | 'summary';
 
 function ReportsContent() {
   const searchParams = useSearchParams();
@@ -25,6 +25,10 @@ function ReportsContent() {
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [modeFilter, setModeFilter] = useState('');
+  const [summary, setSummary] = useState<{
+    rows: Array<Record<string, unknown>>;
+    totals: { billed: number; collected: number; discount: number; outstanding: number };
+  } | null>(null);
   const {
     classes,
     sections,
@@ -50,6 +54,17 @@ function ReportsContent() {
         if (d.success) setPayments(d.data);
       });
   }, []);
+
+  useEffect(() => {
+    if (type !== 'summary') return;
+    const params = new URLSearchParams({ academic_year: settings.academic_year || '' });
+    if (classId) params.set('class_id', classId);
+    fetch(`/api/fees/summary?${params}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setSummary(d.data);
+      });
+  }, [type, settings.academic_year, classId]);
 
   const defaulters = useMemo(() => {
     return filterFeeStudents(
@@ -150,7 +165,9 @@ function ReportsContent() {
           ? 'Students with overdue balances'
           : type === 'daily'
             ? "Today's collection by payment mode"
-            : 'Generate printable student statements';
+            : type === 'summary'
+              ? 'Class-wise billed, collected, and outstanding summary'
+              : 'Generate printable student statements';
 
   return (
     <div className="space-y-4">
@@ -238,6 +255,45 @@ function ReportsContent() {
               {formatFeeCurrency(Object.values(dailyBreakdown).reduce((a, b) => a + b, 0))}
             </p>
           </div>
+        </div>
+      )}
+
+      {type === 'summary' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <tr>
+                <th className="px-3 py-2">Class</th>
+                <th className="px-3 py-2 text-right">Students</th>
+                <th className="px-3 py-2 text-right">Billed</th>
+                <th className="px-3 py-2 text-right">Collected</th>
+                <th className="px-3 py-2 text-right">Discount</th>
+                <th className="px-3 py-2 text-right">Outstanding</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(summary?.rows || []).map((row) => (
+                <tr key={String(row.class_id || row.class_name)} className="border-t">
+                  <td className="px-3 py-2">{String(row.class_name)}</td>
+                  <td className="px-3 py-2 text-right">{String(row.student_count)}</td>
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(row.billed as number)}</td>
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(row.collected as number)}</td>
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(row.discount as number)}</td>
+                  <td className="px-3 py-2 text-right text-red-700">{formatFeeCurrency(row.outstanding as number)}</td>
+                </tr>
+              ))}
+              {summary && (
+                <tr className="border-t font-medium">
+                  <td className="px-3 py-2">Total</td>
+                  <td className="px-3 py-2" />
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(summary.totals.billed)}</td>
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(summary.totals.collected)}</td>
+                  <td className="px-3 py-2 text-right">{formatFeeCurrency(summary.totals.discount)}</td>
+                  <td className="px-3 py-2 text-right text-red-700">{formatFeeCurrency(summary.totals.outstanding)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 

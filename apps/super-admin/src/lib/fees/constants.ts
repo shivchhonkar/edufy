@@ -16,6 +16,7 @@ export const PAYMENT_STATUSES = {
   COMPLETED: 'completed',
   FAILED: 'failed',
   REFUNDED: 'refunded',
+  REVERSED: 'reversed',
 } as const;
 
 export const FEE_FREQUENCIES = {

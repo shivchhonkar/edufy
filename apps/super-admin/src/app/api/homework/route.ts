@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
+import { prepareEnrollmentSchema, getCurrentEnrollment } from '@/lib/enrollment-service';
+import { JOIN_CURRENT_ENROLLMENT_ON_STUDENT } from '@/lib/enrollment-sql';
 // GET - Fetch all homework assignments with filters
 export async function GET(request: NextRequest) {
   try {
@@ -166,22 +168,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create submissions for all students in the class
+    await prepareEnrollmentSchema(db);
+
     const studentsResult = section_id
       ? await db.query(
-          'SELECT id FROM students WHERE class_id = $1 AND section_id = $2 AND status = $3',
+          `SELECT s.id FROM students s
+           ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+           WHERE COALESCE(ce.class_id, s.class_id) = $1
+             AND COALESCE(ce.section_id, s.section_id) = $2
+             AND s.status = $3`,
           [class_id, section_id, 'active'],
         )
       : await db.query(
-          'SELECT id FROM students WHERE class_id = $1 AND status = $2',
+          `SELECT s.id FROM students s
+           ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+           WHERE COALESCE(ce.class_id, s.class_id) = $1 AND s.status = $2`,
           [class_id, 'active'],
         );
     
     for (const student of studentsResult.rows) {
+      const enrollment = await getCurrentEnrollment(db, student.id);
       await db.query(
         `INSERT INTO homework_submissions (
-          homework_id, student_id, status
-        ) VALUES ($1, $2, $3)`,
-        [homeworkId, student.id, 'pending']
+          homework_id, student_id, enrollment_id, status
+        ) VALUES ($1, $2, $3, $4)`,
+        [homeworkId, student.id, enrollment?.id ?? null, 'pending']
       );
     }
 

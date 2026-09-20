@@ -1,10 +1,12 @@
 import type { RequestDb } from '@/lib/request-db';
 import { logInquiryActivity } from '@/lib/admission-inquiry-api';
 import { ensureStudentMotherColumns } from '@/lib/student-profile-api';
+import { createCurrentEnrollment } from '@/lib/enrollment-service';
 import {
   generateAdmissionNumberForSchool,
   getAdmissionNumberSettings,
 } from '@/lib/admission-number-settings';
+import { assertClassAgeRestriction } from '@/lib/class-age-restriction';
 
 interface InquiryRow {
   id: number;
@@ -18,6 +20,9 @@ interface InquiryRow {
   parent_name: string;
   parent_phone: string;
   parent_email: string | null;
+  mother_name?: string | null;
+  mother_phone?: string | null;
+  mother_email?: string | null;
   address: string | null;
   city: string | null;
   state: string | null;
@@ -102,9 +107,24 @@ export async function convertInquiryToStudent(
   const admissionDate =
     options.admission_date || new Date().toISOString().split('T')[0];
 
+  const ageCheck = await assertClassAgeRestriction(db, {
+    classId,
+    dateOfBirth: inquiry.date_of_birth,
+    admissionDate,
+  });
+  if (!ageCheck.ok) {
+    throw new InquiryConvertError(ageCheck.error, 400);
+  }
+
   const lastName = inquiry.student_last_name?.trim() || '—';
   const gender = inquiry.gender || 'Male';
   const isMother = inquiry.parent_relation === 'mother';
+  const fatherName = isMother ? null : inquiry.parent_name;
+  const fatherPhone = isMother ? null : inquiry.parent_phone;
+  const fatherEmail = isMother ? null : inquiry.parent_email;
+  const motherName = inquiry.mother_name || (isMother ? inquiry.parent_name : null);
+  const motherPhone = inquiry.mother_phone || (isMother ? inquiry.parent_phone : null);
+  const motherEmail = inquiry.mother_email || (isMother ? inquiry.parent_email : null);
 
   await ensureStudentMotherColumns(db);
 
@@ -119,11 +139,11 @@ export async function convertInquiryToStudent(
       const studentResult = await db.query(
         `INSERT INTO students (
           admission_number, first_name, last_name, date_of_birth, gender,
-          address, city, state, pincode, admission_date, class_id, section_id,
+          address, city, state, pincode, admission_date,
           parent_name, parent_phone, parent_email,
           mother_name, mother_phone, mother_email,
           remarks, status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING *`,
         [
           admission_number,
@@ -136,14 +156,12 @@ export async function convertInquiryToStudent(
           inquiry.state,
           inquiry.pincode,
           admissionDate,
-          classId,
-          sectionId,
-          isMother ? null : inquiry.parent_name,
-          isMother ? null : inquiry.parent_phone,
-          isMother ? null : inquiry.parent_email,
-          isMother ? inquiry.parent_name : null,
-          isMother ? inquiry.parent_phone : null,
-          isMother ? inquiry.parent_email : null,
+          fatherName,
+          fatherPhone,
+          fatherEmail,
+          motherName,
+          motherPhone,
+          motherEmail,
           inquiry.remarks,
           'active',
         ]
@@ -170,21 +188,11 @@ export async function convertInquiryToStudent(
 
   if (classId) {
     try {
-      const ayResult = await db.query<{ id: number; name: string }>(
-        'SELECT id, name FROM academic_years WHERE is_active = true LIMIT 1'
-      );
-      const academicYear =
-        ayResult.rows[0]?.name ||
-        `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-      const academicYearId = ayResult.rows[0]?.id ?? null;
-
-      await db.query(
-        `INSERT INTO student_enrollments (
-          student_id, academic_year_id, academic_year, class_id, section_id,
-          status, is_current
-        ) VALUES ($1, $2, $3, $4, $5, 'active', true)`,
-        [student.id, academicYearId, academicYear, classId, sectionId]
-      );
+      await createCurrentEnrollment(db, {
+        studentId: student.id as number,
+        classId,
+        sectionId,
+      });
     } catch (enrollmentError) {
       console.error('Error creating enrollment from inquiry:', enrollmentError);
     }

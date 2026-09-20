@@ -15,6 +15,10 @@ import {
   fetchStaffAttendanceToday,
   fetchUpcomingBirthdays,
 } from '@/lib/dashboard/dashboard-insights';
+import {
+  resolveDashboardSession,
+  studentInSessionSql,
+} from '@/lib/dashboard/resolve-dashboard-session';
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -42,26 +46,27 @@ export async function GET(request: NextRequest) {
     const authResult = await getAuthenticatedDb(request);
     if (authResult instanceof NextResponse) return authResult;
     const { db } = authResult;
+    const session = await resolveDashboardSession(db, request);
+    const { academicYear, academicYearId, yearVariants } = session;
+    const sessionStudentFilter = studentInSessionSql('s', 1, 2);
+    const sessionStudentFilterFromDate = studentInSessionSql('s', 2, 3);
 
     const today = new Date().toISOString().split('T')[0];
     const dayOfWeek = new Date().getDay();
 
-    const academicYear = await safeQuery(async () => {
-      const result = await db.query(
-        'SELECT academic_year FROM system_settings ORDER BY id DESC LIMIT 1'
-      );
-      return (result.rows[0]?.academic_year as string) || new Date().getFullYear().toString();
-    }, new Date().getFullYear().toString());
-
     const total_students = await safeQuery(async () => {
       const result = await db.query<{ count: string }>(
-        "SELECT COUNT(*)::text AS count FROM students WHERE status = 'active'"
+        `SELECT COUNT(*)::text AS count
+         FROM students s
+         WHERE s.status = 'active'
+           AND ${sessionStudentFilter}`,
+        [yearVariants, academicYearId],
       );
       return parseInt(result.rows[0]?.count || '0', 10);
     }, 0);
 
     const student_stats = await safeQuery(
-      () => fetchStudentDashboardStats(db, academicYear),
+      () => fetchStudentDashboardStats(db, academicYear, academicYearId),
       EMPTY_STUDENT_STATS,
     );
 
@@ -97,24 +102,36 @@ export async function GET(request: NextRequest) {
 
     const present_today = await safeQuery(async () => {
       const result = await db.query(
-        "SELECT COUNT(*) as count FROM attendance WHERE date = $1 AND status = 'present'",
-        [today]
+        `SELECT COUNT(*) as count
+         FROM attendance a
+         JOIN students s ON s.id = a.student_id
+         WHERE a.date = $1 AND a.status = 'present'
+           AND ${sessionStudentFilterFromDate}`,
+        [today, yearVariants, academicYearId],
       );
       return parseInt(result.rows[0].count, 10);
     }, 0);
 
     const absent_today = await safeQuery(async () => {
       const result = await db.query(
-        "SELECT COUNT(*) as count FROM attendance WHERE date = $1 AND status = 'absent'",
-        [today]
+        `SELECT COUNT(*) as count
+         FROM attendance a
+         JOIN students s ON s.id = a.student_id
+         WHERE a.date = $1 AND a.status = 'absent'
+           AND ${sessionStudentFilterFromDate}`,
+        [today, yearVariants, academicYearId],
       );
       return parseInt(result.rows[0].count, 10);
     }, 0);
 
     const attendance_marked = await safeQuery(async () => {
       const result = await db.query(
-        'SELECT COUNT(*) as count FROM attendance WHERE date = $1',
-        [today]
+        `SELECT COUNT(*) as count
+         FROM attendance a
+         JOIN students s ON s.id = a.student_id
+         WHERE a.date = $1
+           AND ${sessionStudentFilterFromDate}`,
+        [today, yearVariants, academicYearId],
       );
       return parseInt(result.rows[0].count, 10);
     }, 0);
@@ -164,11 +181,11 @@ export async function GET(request: NextRequest) {
 
     const fees_collected = await safeQuery(async () => {
       const result = await db.query(
-        `SELECT COALESCE(SUM(amount_paid), 0) as total
-         FROM fee_payments
-         WHERE status = 'completed'
-         AND (academic_year = $1 OR academic_year IS NULL)`,
-        [academicYear]
+        `SELECT COALESCE(SUM(fp.amount_paid), 0) as total
+         FROM fee_payments fp
+         WHERE fp.status = 'completed'
+         AND (fp.academic_year = ANY($1::text[]) OR fp.academic_year IS NULL)`,
+        [yearVariants],
       );
       return parseFloat(result.rows[0].total);
     }, 0);
@@ -191,7 +208,9 @@ export async function GET(request: NextRequest) {
           ), 0)::text AS bank
          FROM fee_payments
          WHERE status = 'completed'
-         AND payment_date::date = CURRENT_DATE`,
+         AND payment_date::date = CURRENT_DATE
+         AND (academic_year = ANY($1::text[]) OR academic_year IS NULL)`,
+        [yearVariants],
       );
       const row = result.rows[0];
       return {
@@ -225,9 +244,12 @@ export async function GET(request: NextRequest) {
         FROM student_fees sf
         JOIN students s ON sf.student_id = s.id
         LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
-        WHERE s.status = 'active' AND sf.academic_year = $1 AND sf.amount_due > sf.amount_paid
+        WHERE s.status = 'active'
+          AND sf.academic_year = ANY($1::text[])
+          AND sf.amount_due > sf.amount_paid
+          AND ${sessionStudentFilter}
         ${EXCLUDE_INACTIVE_OUTSTANDING_FEES}`,
-        [academicYear]
+        [yearVariants, academicYearId],
       );
       return parseFloat(result.rows[0].total_pending);
     }, 0);
@@ -249,9 +271,12 @@ export async function GET(request: NextRequest) {
           COUNT(*) FILTER (WHERE a.status = 'present')::text AS present,
           COUNT(*)::text AS total
          FROM attendance a
+         JOIN students s ON s.id = a.student_id
          WHERE a.date >= CURRENT_DATE - INTERVAL '6 days'
+           AND ${sessionStudentFilter}
          GROUP BY a.date
-         ORDER BY a.date ASC`
+         ORDER BY a.date ASC`,
+        [yearVariants, academicYearId],
       );
       const byDate = new Map(
         result.rows.map((row) => {
@@ -425,7 +450,7 @@ export async function GET(request: NextRequest) {
     }, { total_items: 0, low_stock: low_stock_items });
 
     const composition_charts = await safeQuery(
-      () => fetchDashboardCompositionCharts(db),
+      () => fetchDashboardCompositionCharts(db, academicYear, academicYearId),
       { students_by_class: [], admissions_by_status: [], staff_by_department: [] },
     );
 
@@ -464,7 +489,10 @@ export async function GET(request: NextRequest) {
          FROM fee_payments fp
          JOIN students s ON fp.student_id = s.id
          WHERE fp.status = 'completed'
-         ORDER BY fp.payment_date DESC LIMIT 5`
+           AND (fp.academic_year = ANY($1::text[]) OR fp.academic_year IS NULL)
+           AND ${sessionStudentFilter}
+         ORDER BY fp.payment_date DESC LIMIT 5`,
+        [yearVariants, academicYearId],
       );
       for (const row of payments.rows) {
         activities.push({
@@ -594,6 +622,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: stats,
+      meta: {
+        academic_year: academicYear,
+        academic_year_id: academicYearId,
+      },
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);

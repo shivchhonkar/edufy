@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
+import ExamModuleLinks from '@/features/exams/components/ExamModuleLinks';
 import UploadResultsModal from './UploadResultsModal';
 import ContentAreaModal from '@/shared/components/common/ContentAreaModal';
 import { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
@@ -813,6 +814,7 @@ export default function ExamsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
+        <ExamModuleLinks />
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-lg font-medium text-gray-900">Exams & Results</h1>
@@ -839,6 +841,12 @@ export default function ExamsPage() {
               </select>
             </div>
             
+            <Link
+              href="/settings/reports"
+              className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Report Card Setup
+            </Link>
             <Link
               href="/exams/analytics"
               className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"

@@ -169,7 +169,7 @@ export async function syncStudentMedicalBloodGroup(
   );
 }
 
-/** Keep current enrollment aligned when class/section is edited on the student record. */
+/** Keep current enrollment aligned when class/section is edited (enrollment is source of truth). */
 export async function syncCurrentEnrollmentFromStudent(
   db: RequestDb,
   studentId: number,
@@ -181,23 +181,14 @@ export async function syncCurrentEnrollmentFromStudent(
     return;
   }
 
-  const current = await db.query<{ id: number }>(
-    `SELECT id FROM student_enrollments
-     WHERE student_id = $1 AND is_current = true
-     ORDER BY id DESC
-     LIMIT 1`,
-    [studentId],
-  );
+  const { updateCurrentEnrollmentPlacement, syncStudentDenormalizedFromEnrollment } =
+    await import('@/lib/enrollment-service');
 
-  if (current.rows.length === 0) return;
+  await updateCurrentEnrollmentPlacement(db, studentId, {
+    classId: classId ?? undefined,
+    sectionId: sectionId ?? undefined,
+    rollNumber: rollNumber ?? undefined,
+  });
 
-  await db.query(
-    `UPDATE student_enrollments
-     SET class_id = COALESCE($2, class_id),
-         section_id = COALESCE($3, section_id),
-         roll_number = COALESCE($4, roll_number),
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [current.rows[0].id, classId ?? null, sectionId ?? null, rollNumber ?? null],
-  );
+  await syncStudentDenormalizedFromEnrollment(db, studentId);
 }

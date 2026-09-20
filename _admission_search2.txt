@@ -1,0 +1,38 @@
+C:\Shiv\Projects\edufyApp\apps\management-app\app\attendance-reports\list.tsx:53:{[item.admission_number, item.class_name, item.section_name].filter(Boolean).join(' • ') ||
+C:\Shiv\Projects\edufyApp\apps\parent-app\components\ParentAppHeader.tsx:25:admissionNumber={activeChild?.admission_number}
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\(tabs)\attendance.tsx:320:admission_number: student.admission_number ?? '',
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\(tabs)\attendance.tsx:325:String(student.admission_number ?? '').toLowerCase().includes(query)
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\(tabs)\attendance.tsx:543:admission_number: student.admission_number ?? '',
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\(tabs)\attendance.tsx:547:Roll {student.roll_number ?? '—'} • {student.admission_number ?? '—'}
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\classes\students.tsx:29:return (student.admission_number?.[0] ?? 'S').toUpperCase();
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\classes\students.tsx:36:admission_number: student.admission_number ?? undefined,
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\classes\students.tsx:59:{student.admission_number ? (
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\classes\students.tsx:62:<Text style={styles.metaChipText}>{student.admission_number}</Text>
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\classes\students.tsx:126:const admission = String(student.admission_number ?? '').toLowerCase();
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\exams\[id].tsx:32:admission_number: item.admission_number ?? undefined,
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\my-students\index.tsx:28:return (student.admission_number?.[0] ?? 'S').toUpperCase();
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\my-students\index.tsx:35:admission_number: student.admission_number ?? undefined,
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\my-students\index.tsx:65:{student.admission_number ? (
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\my-students\index.tsx:68:<Text style={styles.metaChipText}>{student.admission_number}</Text>
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\my-students\index.tsx:130:const admission = String(student.admission_number ?? '').toLowerCase();
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\index.tsx:49:admission_number: thread.admission_number ?? undefined,
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\index.tsx:57:else if (student.admission_number) parts.push(student.admission_number);
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\index.tsx:60:if (student.admission_number && name) parts.push(student.admission_number);
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\index.tsx:187:(existing.roll_number ? 1 : 0) + (existing.admission_number ? 1 : 0);
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\index.tsx:189:(student.roll_number ? 1 : 0) + (student.admission_number ? 1 : 0);
+C:\Shiv\Projects\edufyApp\apps\teacher-app\app\parent-messages\[id].tsx:123:admission_number: thread.admission_number ?? undefined,
+C:\Shiv\Projects\edufyApp\apps\teacher-app\features\assignments\AssignmentDetailScreen.tsx:85:{[submission.roll_number ? `Roll ${submission.roll_number}` : null, submission.admission_number]
+C:\Shiv\Projects\edufyApp\apps\teacher-app\features\assignments\AssignmentDetailScreen.tsx:195:{[submission.roll_number ? `Roll ${submission.roll_number}` : null, submission.admission_number]
+C:\Shiv\Projects\edufyApp\packages\api\src\index.ts:101:admission_number: child.admission_number,
+C:\Shiv\Projects\edufyApp\packages\auth\src\index.tsx:95:return children.find((child) => child.admission_number?.toLowerCase() === lower);
+C:\Shiv\Projects\edufyApp\packages\components\src\index.tsx:169:const childMeta = [child.class_name, child.section_name, child.admission_number]
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:5:admission_number: string;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:65:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:403:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:489:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:661:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:680:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:874:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\types\src\index.ts:950:admission_number?: string | null;
+C:\Shiv\Projects\edufyApp\packages\utils\src\index.ts:77:admission_number?: string;
+C:\Shiv\Projects\edufyApp\packages\utils\src\index.ts:80:return name || child.admission_number || 'Student';

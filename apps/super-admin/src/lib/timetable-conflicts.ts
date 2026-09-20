@@ -1,3 +1,5 @@
+import { resolveWorkingDays } from '@/lib/working-days';
+
 type Db = { query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }> };
 
 export interface TimetablePlacementInput {
@@ -49,16 +51,9 @@ export async function validateTimetablePlacement(
     return conflicts;
   }
 
-  const workingDayResult = await db.query(
-    `SELECT is_working, teaching_period_count
-     FROM school_working_days WHERE day_of_week = $1`,
-    [input.day_of_week],
-  );
-  if (workingDayResult.rows.length) {
-    const workingDay = workingDayResult.rows[0] as {
-      is_working: boolean;
-      teaching_period_count: number;
-    };
+  const workingDays = await resolveWorkingDays(db as never, input.class_id);
+  const workingDay = workingDays.find((day) => day.day_of_week === input.day_of_week);
+  if (workingDay) {
     if (!workingDay.is_working) {
       conflicts.push({
         code: 'non_working_day',

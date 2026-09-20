@@ -115,4 +115,6 @@ export async function ensureFeeSchema(db: RequestDb) {
 
   const { ensureFeeExtensions } = await import('@/lib/fees/ensure-fee-extensions');
   await ensureFeeExtensions(db);
+  const { ensureFeeOperationsSchema } = await import('@/lib/ensure-fee-operations-schema');
+  await ensureFeeOperationsSchema(db);
 }

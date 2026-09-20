@@ -17,6 +17,7 @@ import {
   getMonthLabel,
   type RegisterCellClick,
 } from '@/features/attendance/utils/attendance-status'
+import { collectHolidayDates } from '@/lib/holiday-utils'
 import {
   downloadRegisterExcel,
   printRegister,
@@ -60,6 +61,7 @@ export default function StudentMonthlyRegisterPage() {
   const [students, setStudents] = useState<StudentRow[]>([])
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set())
+  const [nonWorkingWeekdays, setNonWorkingWeekdays] = useState<Set<number>>(new Set([0]))
   const [loading, setLoading] = useState(true)
   const [migrationRequired, setMigrationRequired] = useState(false)
   const [cellEdit, setCellEdit] = useState<RegisterCellEditContext | null>(null)
@@ -115,17 +117,19 @@ export default function StudentMonthlyRegisterPage() {
       attendanceParams.set('class_id', classId)
       if (sectionId) attendanceParams.set('section_id', sectionId)
 
-      const holidayParams = new URLSearchParams({ start_date: start, end_date: end })
+      const holidayParams = new URLSearchParams({ start_date: start, end_date: end, class_id: classId })
 
-      const [studentsRes, attendanceRes, holidaysRes] = await Promise.all([
+      const [studentsRes, attendanceRes, holidaysRes, workingRes] = await Promise.all([
         fetch(`/api/students?${studentParams.toString()}`),
         fetch(`/api/attendance/students?${attendanceParams.toString()}`),
         fetch(`/api/holidays?${holidayParams.toString()}`),
+        fetch(`/api/settings/working-days?class_id=${classId}`),
       ])
 
       const studentsData = await studentsRes.json()
       const attendanceData = await attendanceRes.json()
       const holidaysData = await holidaysRes.json()
+      const workingData = await workingRes.json()
 
       if (studentsData.success) {
         setStudents(studentsData.data)
@@ -144,12 +148,18 @@ export default function StudentMonthlyRegisterPage() {
       }
 
       if (holidaysData.success) {
-        const dates = new Set<string>(
-          (holidaysData.data as { date: string }[]).map((h) => String(h.date).slice(0, 10)),
-        )
-        setHolidayDates(dates)
+        setHolidayDates(new Set(collectHolidayDates(holidaysData.data || [])))
       } else {
         setHolidayDates(new Set())
+      }
+
+      if (workingData.success) {
+        const closed = (workingData.data.working_days as { day_of_week: number; is_working: boolean }[])
+          .filter((day) => !day.is_working)
+          .map((day) => day.day_of_week)
+        setNonWorkingWeekdays(new Set(closed))
+      } else {
+        setNonWorkingWeekdays(new Set([0]))
       }
     } catch (error) {
       console.error('Error loading student register:', error)
@@ -373,6 +383,7 @@ export default function StudentMonthlyRegisterPage() {
           year={year}
           classLabel={classId ? classLabel : undefined}
           holidayDates={holidayDates}
+          nonWorkingWeekdays={nonWorkingWeekdays}
           loading={loading}
           editable={!migrationRequired && Boolean(classId)}
           onCellClick={handleCellClick}

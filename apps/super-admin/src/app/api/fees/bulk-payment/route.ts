@@ -377,8 +377,8 @@ export async function POST(request: NextRequest) {
       }
 
       await db.query(
-        `UPDATE fee_payments SET fee_breakdown = $1::jsonb WHERE id = $2`,
-        [JSON.stringify(paymentBreakdown), paymentResult.rows[0].id]
+        `UPDATE fee_payments SET fee_breakdown = $1::jsonb, allocated_fee_ids = $2 WHERE id = $3`,
+        [JSON.stringify(paymentBreakdown), Array.from(processedFeeIds), paymentResult.rows[0].id]
       );
 
       await db.query('COMMIT');

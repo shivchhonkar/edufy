@@ -164,8 +164,13 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoRow label="First Name" value={staff.first_name} />
                 <InfoRow label="Last Name" value={staff.last_name} />
+                <InfoRow label="Type" value={staff.staff_type} />
+                <InfoRow label="Category" value={staff.staff_category} />
                 <InfoRow label="Date of Birth" value={formatDate(staff.date_of_birth)} icon={FiCalendar} />
                 <InfoRow label="Gender" value={staff.gender} />
+                <InfoRow label="Father / Husband" value={staff.father_husband_name} />
+                <InfoRow label="Aadhaar" value={staff.aadhaar_number} />
+                <InfoRow label="P.A.N" value={staff.pan_number} />
               </div>
             </div>
           </div>
@@ -182,6 +187,7 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoRow label="Phone" value={staff.phone} icon={FiPhone} />
                 <InfoRow label="Email" value={staff.email} icon={FiMail} />
+                <InfoRow label="Emergency Contact" value={staff.emergency_contact} />
               </div>
             </div>
           </div>
@@ -199,6 +205,8 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
                 <InfoRow label="Street Address" value={staff.address} />
                 <InfoRow label="City" value={staff.city} />
                 <InfoRow label="State" value={staff.state} />
+                <InfoRow label="Pincode" value={staff.pincode} />
+                <InfoRow label="Location" value={staff.work_location} />
               </div>
             </div>
           </div>
@@ -219,14 +227,25 @@ export default function ViewStaffModal({ isOpen, onClose, staff, initialTab = 'p
                 <InfoRow label="Qualification" value={staff.qualification} />
                 <InfoRow label="Experience (Years)" value={staff.experience_years} />
                 <InfoRow label="Date of Joining" value={formatDate(staff.date_of_joining)} icon={FiCalendar} />
-                <InfoRow 
-                  label="Employment Type" 
-                  value={staff.employment_type?.replace('_', ' ').toUpperCase()} 
+                <InfoRow label="End Date" value={formatDate(staff.date_of_leaving)} icon={FiCalendar} />
+                <InfoRow
+                  label="Employment Type"
+                  value={staff.employment_type?.replace('_', ' ').toUpperCase()}
                 />
-                <InfoRow 
-                  label="Monthly Salary" 
-                  value={staff.salary ? `₹${staff.salary.toLocaleString()}` : 'N/A'} 
+                <InfoRow label="Class Teacher" value={staff.class_teacher} />
+                <InfoRow
+                  label="Monthly Salary"
+                  value={staff.salary ? `₹${Number(staff.salary).toLocaleString()}` : 'N/A'}
                 />
+                <InfoRow label="In Time" value={staff.in_time} />
+                <InfoRow label="Out Time" value={staff.out_time} />
+                <InfoRow label="Duty Hrs" value={staff.duty_hours} />
+                <InfoRow label="PF A/c No" value={staff.pf_account_no} />
+                <InfoRow label="PF UAN" value={staff.pf_uan} />
+                <InfoRow label="ESI A/c No" value={staff.esi_account_no} />
+                <InfoRow label="Bank Name" value={staff.bank_name} />
+                <InfoRow label="Bank A/c No" value={staff.bank_account_number} />
+                <InfoRow label="Bank IFSC" value={staff.bank_ifsc} />
               </div>
             </div>
           </div>

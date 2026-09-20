@@ -8,8 +8,11 @@ import { SIDEBAR_COLLAPSED_CLASS, SIDEBAR_EXPANDED_CLASS } from '@/shared/consta
 import {
   SIDEBAR_NAV_GROUPS,
   getInitialExpandedGroups,
+  getInitialExpandedNested,
   getNavGroupDirectLink,
+  isNavItemTreeActive,
   isNavLinkActive,
+  nestedNavKey,
 } from '@/shared/navigation/sidebar-navigation';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import type { PortalSidebarProps } from '@edulakhya/ui';
@@ -57,14 +60,28 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     getInitialExpandedGroups(pathname),
   );
+  const [expandedNested, setExpandedNested] = useState<Record<string, boolean>>(() =>
+    getInitialExpandedNested(pathname),
+  );
 
   useEffect(() => {
     const activeGroup = SIDEBAR_NAV_GROUPS.find((group) =>
-      group.items.some((item) => isNavLinkActive(pathname, item.path)),
+      group.items.some((item) => isNavItemTreeActive(pathname, item)),
     );
     if (activeGroup) {
       setExpandedGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
     }
+    setExpandedNested((prev) => {
+      const next = { ...prev };
+      for (const group of SIDEBAR_NAV_GROUPS) {
+        for (const item of group.items) {
+          if (item.items?.length && isNavItemTreeActive(pathname, item)) {
+            next[nestedNavKey(group.id, item.path)] = true;
+          }
+        }
+      }
+      return next;
+    });
   }, [pathname]);
 
   useEffect(() => {
@@ -91,9 +108,13 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
+  const toggleNested = (key: string) => {
+    setExpandedNested((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const isGroupActive = (groupId: string) => {
     const group = SIDEBAR_NAV_GROUPS.find((g) => g.id === groupId);
-    return group?.items.some((item) => isNavLinkActive(pathname, item.path)) ?? false;
+    return group?.items.some((item) => isNavItemTreeActive(pathname, item)) ?? false;
   };
 
   const displayCollapsed = isCollapsed && !mobileOpen;
@@ -189,29 +210,92 @@ export default function Sidebar({ onToggle, mobileOpen = false, onMobileClose }:
               {expanded && (
                 <div className="mt-0.5 space-y-0.5 pb-1">
                   {group.items.map((item) => {
-                    const itemActive = isNavLinkActive(pathname, item.path);
+                    const childItems = item.items ?? [];
+                    const nestedKey = nestedNavKey(group.id, item.path);
+                    const nestedOpen = Boolean(expandedNested[nestedKey]);
+                    const itemActive =
+                      childItems.length > 0
+                        ? isNavItemTreeActive(pathname, item)
+                        : isNavLinkActive(pathname, item.path);
                     const ItemIcon = item.icon;
                     return (
-                      <Link
-                        key={`${group.id}-${item.path}`}
-                        href={item.path}
-                        onClick={() => onMobileClose?.()}
-                        className={`flex items-center gap-2 rounded-md pl-7 pr-2 py-1 transition-colors ${
-                          itemActive ? linkActiveClass : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                      >
-                        <ItemIcon
-                          className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
-                            itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
-                          }`}
-                        />
-                        <span className="min-w-0 flex-1 truncate text-[12px] ">{item.name}</span>
-                        {item.comingSoon && (
-                          <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
-                            Soon
-                          </span>
+                      <div key={`${group.id}-${item.path}`}>
+                        <div className="flex items-center">
+                          <Link
+                            href={item.path}
+                            onClick={() => {
+                              if (childItems.length > 0) {
+                                setExpandedNested((prev) => ({ ...prev, [nestedKey]: true }));
+                              }
+                              onMobileClose?.();
+                            }}
+                            className={`flex min-w-0 flex-1 items-center gap-2 rounded-md py-1 pr-1 transition-colors ${
+                              childItems.length > 0 ? 'pl-7' : 'pl-7 pr-2'
+                            } ${
+                              itemActive ? linkActiveClass : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                          >
+                            <ItemIcon
+                              className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                                itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                              }`}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-[12px] ">{item.name}</span>
+                            {item.comingSoon && (
+                              <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
+                                Soon
+                              </span>
+                            )}
+                          </Link>
+                          {childItems.length > 0 && (
+                            <button
+                              type="button"
+                              aria-label={nestedOpen ? `Collapse ${item.name}` : `Expand ${item.name}`}
+                              aria-expanded={nestedOpen}
+                              onClick={() => toggleNested(nestedKey)}
+                              className="mr-1 rounded-md p-1 text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                            >
+                              {nestedOpen ? (
+                                <FiChevronDown className="sidebar-chevron h-3.5 w-3.5" />
+                              ) : (
+                                <FiChevronRight className="sidebar-chevron h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        {childItems.length > 0 && nestedOpen && (
+                          <div className="mt-0.5 space-y-0.5">
+                            {childItems.map((child) => {
+                              const childActive = isNavLinkActive(pathname, child.path);
+                              const ChildIcon = child.icon;
+                              return (
+                                <Link
+                                  key={`${group.id}-${child.path}`}
+                                  href={child.path}
+                                  onClick={() => onMobileClose?.()}
+                                  className={`flex items-center gap-2 rounded-md pl-11 pr-2 py-1 transition-colors ${
+                                    childActive
+                                      ? linkActiveClass
+                                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  }`}
+                                >
+                                  <ChildIcon
+                                    className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                                      childActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                                    }`}
+                                  />
+                                  <span className="min-w-0 flex-1 truncate text-[12px]">{child.name}</span>
+                                  {child.comingSoon && (
+                                    <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-400 font-semibold">
+                                      Soon
+                                    </span>
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         )}
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>

@@ -327,6 +327,11 @@ export interface Result {
 }
 
 // Staff Types
+export interface StaffSubjectClass {
+  subject: string;
+  class_name: string;
+}
+
 export interface Staff {
   id: number;
   user_id?: number;
@@ -359,6 +364,33 @@ export interface Staff {
   status: 'active' | 'inactive' | 'resigned' | 'terminated';
   notes?: string;
   status_change_date?: Date | string;
+  staff_type?: string | null;
+  staff_category?: string | null;
+  father_husband_name?: string | null;
+  pan_number?: string | null;
+  aadhaar_number?: string | null;
+  pf_account_no?: string | null;
+  pf_max?: number | string | null;
+  pf_uan?: string | null;
+  esi_account_no?: string | null;
+  date_of_leaving?: Date | string | null;
+  transport_allowance?: number | string | null;
+  in_time?: string | null;
+  out_time?: string | null;
+  duty_hours?: number | string | null;
+  restrict_holidays?: number | null;
+  overtime_allowed?: boolean | null;
+  overtime_hours?: number | string | null;
+  bank_account_name?: string | null;
+  bank_branch?: string | null;
+  work_location?: string | null;
+  class_teacher?: string | null;
+  basic_salary?: number | string | null;
+  travel_allowance?: number | string | null;
+  dearness_allowance?: number | string | null;
+  other_allowance?: number | string | null;
+  salary_effective_date?: Date | string | null;
+  subject_classes?: StaffSubjectClass[] | null;
   created_at: Date;
   updated_at: Date;
 }

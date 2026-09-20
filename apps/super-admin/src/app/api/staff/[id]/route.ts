@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureHrSchema } from '@/lib/ensure-hr-schema';
 import { requireHrAdmin, requireHrRead } from '@/lib/hr-auth';
+import { STAFF_WRITE_COLUMNS, staffWriteParams, staffWriteValues } from '@/lib/staff-write-values';
+import { applyStaffTypeDefaults } from '@/lib/teachers-query';
 
 export async function GET(
   request: NextRequest,
@@ -44,34 +46,23 @@ export async function PUT(
     const { db } = await getRequestDb(request);
     await ensureHrSchema(db);
     const body = await request.json();
-    const {
-      first_name, last_name, date_of_birth, gender, phone, email, address, city, state, pincode,
-      designation, last_designation, department, department_id, designation_id,
-      qualification, experience_years, date_of_joining, employment_type, salary,
-      photo_url, status, notes, status_change_date,
-      bank_account_number, bank_name, bank_ifsc, emergency_contact,
-    } = body;
+    const fields = await applyStaffTypeDefaults(db, staffWriteValues(body));
 
+    if (!fields.first_name || !fields.last_name || !fields.phone || !fields.date_of_joining || !fields.employment_type) {
+      return NextResponse.json(
+        { success: false, error: 'Required fields are missing' },
+        { status: 400 }
+      );
+    }
+
+    const status = ['active', 'inactive', 'resigned', 'terminated'].includes(String(body.status))
+      ? String(body.status)
+      : 'active';
+    const setSql = STAFF_WRITE_COLUMNS.map((column, i) => `${column} = $${i + 1}`).join(', ');
     const result = await db.query(
-      `UPDATE staff SET
-        first_name = $1, last_name = $2, date_of_birth = $3, gender = $4, phone = $5,
-        email = $6, address = $7, city = $8, state = $9, pincode = $10, designation = $11,
-        last_designation = $12, department = $13, department_id = $14, designation_id = $15,
-        qualification = $16, experience_years = $17, date_of_joining = $18,
-        employment_type = $19, salary = $20, photo_url = $21, status = $22,
-        notes = $23, status_change_date = $24,
-        bank_account_number = $25, bank_name = $26, bank_ifsc = $27, emergency_contact = $28,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $29 RETURNING *`,
-      [
-        first_name, last_name, date_of_birth || null, gender, phone, email || null,
-        address || null, city || null, state || null, pincode || null, designation || null,
-        last_designation || null, department || null, department_id || null, designation_id || null,
-        qualification || null, experience_years || null, date_of_joining, employment_type,
-        salary || null, photo_url || null, status || 'active', notes || null,
-        status_change_date || null, bank_account_number || null, bank_name || null,
-        bank_ifsc || null, emergency_contact || null, params.id,
-      ]
+      `UPDATE staff SET ${setSql}, status = $${STAFF_WRITE_COLUMNS.length + 1}, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $${STAFF_WRITE_COLUMNS.length + 2} RETURNING *`,
+      [...staffWriteParams(fields), status, params.id]
     );
 
     if (result.rows.length === 0) {

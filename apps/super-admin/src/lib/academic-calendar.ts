@@ -65,7 +65,9 @@ export async function fetchAcademicCalendarEntries(
   const endDate = options?.endDate;
 
   const holidayFilter =
-    startDate && endDate ? 'WHERE date BETWEEN $1 AND $2' : '';
+    startDate && endDate
+      ? 'WHERE COALESCE(start_date, date) <= $2 AND COALESCE(end_date, start_date, date) >= $1'
+      : '';
   const holidayParams = startDate && endDate ? [startDate, endDate] : [];
 
   const eventConditions: string[] = [];
@@ -108,8 +110,23 @@ export async function fetchAcademicCalendarEntries(
 
   const [holidays, schoolEvents, termDates] = await Promise.all([
     fetchHolidays
-      ? db.query<{ id: number; date: Date; name: string; type: string; description: string | null }>(
-          `SELECT id, date, name, type, description FROM holidays ${holidayFilter} ORDER BY date ASC`,
+      ? db.query<{
+          id: number;
+          date: Date;
+          name: string;
+          type: string;
+          description: string | null;
+          start_date: Date | null;
+          end_date: Date | null;
+          remark: string | null;
+          academic_year: string | null;
+        }>(
+          `SELECT id, date, name, type, description,
+                  COALESCE(start_date, date) AS start_date,
+                  COALESCE(end_date, start_date, date) AS end_date,
+                  COALESCE(remark, description) AS remark,
+                  academic_year
+           FROM holidays ${holidayFilter} ORDER BY COALESCE(start_date, date) ASC`,
           holidayParams,
         )
       : Promise.resolve({ rows: [] }),
@@ -158,16 +175,18 @@ export async function fetchAcademicCalendarEntries(
   const entries: AcademicCalendarEntry[] = [];
 
   for (const row of holidays.rows) {
-    const date = toDateString(row.date);
+    const start = toDateString(row.start_date || row.date);
+    const end = toDateString(row.end_date || start);
     entries.push({
       id: row.id,
       category: 'holiday',
       source_kind: 'holiday',
-      title: row.name,
-      description: row.description,
-      start_date: date,
-      end_date: date,
+      title: row.remark || row.name,
+      description: row.description || row.remark,
+      start_date: start,
+      end_date: end,
       holiday_type: row.type,
+      academic_year: row.academic_year,
       all_day: true,
       status: 'published',
       audience: 'all',

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
 import FeesPageHeader from '@/features/fees/components/FeesPageHeader';
+import FeeSetupLinks from '@/features/fees/components/FeeSetupLinks';
 
 interface Category {
   id: number;
@@ -13,7 +14,7 @@ interface Category {
 }
 
 export default function FeeCategoriesPage() {
-  const { alert } = useDialog();
+  const { alert, confirm } = useDialog();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
@@ -50,7 +51,7 @@ export default function FeeCategoriesPage() {
         setName('');
         setDescription('');
         await load();
-        await alert('Category created', { title: 'Success', type: 'success' });
+        await alert('Fee head created', { title: 'Success', type: 'success' });
       } else {
         await alert(data.error, { title: 'Error', type: 'error' });
       }
@@ -59,23 +60,37 @@ export default function FeeCategoriesPage() {
     }
   };
 
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <FeesPageHeader
-        title="Fee Categories"
-        description="Group fee types for reporting and structure organization."
-      />
+  const toggleActive = async (cat: Category) => {
+    await fetch(`/api/fees/categories/${cat.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: !cat.is_active }),
+    });
+    load();
+  };
 
-      <form
-        onSubmit={handleCreate}
-        className="bg-white rounded-xl border border-gray-200 p-5 space-y-3"
-      >
-        <h2 className="text-sm font-semibold text-gray-900">Add Category</h2>
+  const remove = async (cat: Category) => {
+    const ok = await confirm(`Delete fee head "${cat.name}"? Linked heads are deactivated instead.`, {
+      type: 'danger',
+      confirmText: 'Delete',
+    });
+    if (!ok) return;
+    await fetch(`/api/fees/categories/${cat.id}`, { method: 'DELETE' });
+    load();
+  };
+
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <FeesPageHeader title="Fee Heads" description="Fee heads used on structures, miscellaneous receipts, and reports." />
+      <FeeSetupLinks />
+
+      <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-900">Add Fee Head</h2>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Category name (e.g. Tuition)"
+          placeholder="Fee head (e.g. Tuition)"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           required
         />
@@ -92,7 +107,7 @@ export default function FeeCategoriesPage() {
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
         >
           <FiPlus size={16} />
-          {saving ? 'Saving...' : 'Add Category'}
+          {saving ? 'Saving...' : 'Add Fee Head'}
         </button>
       </form>
 
@@ -100,25 +115,28 @@ export default function FeeCategoriesPage() {
         {loading ? (
           <p className="p-8 text-center text-gray-500 text-sm">Loading...</p>
         ) : categories.length === 0 ? (
-          <p className="p-8 text-center text-gray-500 text-sm">No categories yet</p>
+          <p className="p-8 text-center text-gray-500 text-sm">No fee heads yet</p>
         ) : (
           categories.map((cat) => (
             <div key={cat.id} className="px-5 py-4 flex justify-between gap-4">
               <div>
                 <p className="font-medium text-gray-900">{cat.name}</p>
-                {cat.description && (
-                  <p className="text-sm text-gray-500 mt-0.5">{cat.description}</p>
-                )}
+                {cat.description && <p className="text-sm text-gray-500 mt-0.5">{cat.description}</p>}
               </div>
-              <span
-                className={`text-xs px-2 py-1 rounded-full h-fit ${
-                  cat.is_active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {cat.is_active ? 'Active' : 'Inactive'}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleActive(cat)}
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    cat.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {cat.is_active ? 'Active' : 'Inactive'}
+                </button>
+                <button type="button" onClick={() => remove(cat)} className="text-red-600 p-1" aria-label="Delete fee head">
+                  <FiTrash2 size={16} />
+                </button>
+              </div>
             </div>
           ))
         )}

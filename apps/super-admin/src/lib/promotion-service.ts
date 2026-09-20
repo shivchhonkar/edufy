@@ -2,6 +2,13 @@ import type { RequestDb } from '@/lib/request-db';
 import type { StudentEnrollmentStatus } from '@/shared/types';
 import type { QueryResult } from 'pg';
 import { ensureClassSectionsTable } from '@/lib/ensure-class-sections';
+import {
+  getCurrentEnrollment,
+  type StudentEnrollment,
+  syncStudentDenormalizedFromEnrollment,
+} from '@/lib/enrollment-service';
+
+export type { StudentEnrollmentStatus };
 
 export type PromotionAction = 'promoted' | 'repeated' | 'transferred';
 
@@ -11,17 +18,7 @@ export interface AcademicYearRow {
   is_active: boolean;
 }
 
-export interface CurrentEnrollmentRow {
-  id: number;
-  student_id: number;
-  academic_year_id: number | null;
-  academic_year: string;
-  class_id: number | null;
-  section_id: number | null;
-  roll_number: string | null;
-  status: StudentEnrollmentStatus;
-  is_current: boolean;
-}
+export type CurrentEnrollmentRow = StudentEnrollment;
 
 export interface PromoteStudentInput {
   studentId: number;
@@ -115,21 +112,7 @@ export async function sectionBelongsToClass(
   }
 }
 
-export async function getCurrentEnrollment(
-  db: RequestDb,
-  studentId: number
-): Promise<CurrentEnrollmentRow | null> {
-  const result = await db.query<CurrentEnrollmentRow>(
-    `SELECT id, student_id, academic_year_id, academic_year, class_id, section_id,
-            roll_number, status, is_current
-     FROM student_enrollments
-     WHERE student_id = $1 AND is_current = true
-     ORDER BY id DESC
-     LIMIT 1`,
-    [studentId]
-  );
-  return result.rows[0] ?? null;
-}
+export { getCurrentEnrollment } from '@/lib/enrollment-service';
 
 export async function fetchEligibleStudents(
   db: RequestDb,
@@ -164,19 +147,11 @@ export async function fetchEligibleStudents(
   return result.rows;
 }
 
-async function syncStudentClassFields(
+async function finalizePromotionPlacement(
   db: RequestDb,
-  studentId: number,
-  classId: number,
-  sectionId: number | null,
-  rollNumber: string | null
+  studentId: number
 ): Promise<void> {
-  await db.query(
-    `UPDATE students
-     SET class_id = $2, section_id = $3, roll_number = $4, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [studentId, classId, sectionId, rollNumber]
-  );
+  await syncStudentDenormalizedFromEnrollment(db, studentId);
 }
 
 export async function promoteStudent(
@@ -193,6 +168,10 @@ export async function promoteStudent(
     rollNumber,
     preserveRollNumber = true,
   } = input;
+
+  if (!targetAcademicYearId) {
+    return { studentId, success: false, error: 'Target academic year id is required' };
+  }
 
   const studentCheck = await db.query<{ id: number; roll_number: string | null }>(
     'SELECT id, roll_number FROM students WHERE id = $1 AND status = $2',
@@ -244,7 +223,7 @@ export async function promoteStudent(
     [studentId, insertResult.rows[0].id]
   );
 
-  await syncStudentClassFields(db, studentId, targetClassId, targetSectionId, resolvedRoll);
+  await finalizePromotionPlacement(db, studentId);
   return { studentId, success: true, enrollmentId: insertResult.rows[0].id };
 }
 

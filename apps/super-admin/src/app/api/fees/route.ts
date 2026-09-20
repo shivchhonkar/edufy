@@ -115,13 +115,14 @@ export async function POST(request: NextRequest) {
         `INSERT INTO fee_payments (
           student_id, fee_structure_id, student_fee_id, amount_paid, payment_date,
           payment_method, transaction_id, receipt_number, status, remarks, created_by,
-          discount_applied, late_fee_charged, month, academic_year
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          discount_applied, late_fee_charged, month, academic_year, allocated_fee_ids
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *`,
         [
           student_id, fee_structure_id, student_fee_id, amount_paid, payment_date,
           payment_method, transaction_id, receipt_number, 'completed', remarks, created_by,
-          discount_applied || 0, late_fee_charged || 0, month, academic_year
+          discount_applied || 0, late_fee_charged || 0, month, academic_year,
+          student_fee_id ? [student_fee_id] : null,
         ]
       );
 

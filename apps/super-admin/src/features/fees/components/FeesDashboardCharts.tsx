@@ -230,7 +230,7 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
               <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs font-medium text-gray-500">Top Category</p>
                 <p className="text-sm font-semibold text-gray-900 mt-1">{topCategory?.name || 'N/A'}</p>
-                <p className="text-2xl font-semibold text-blue-700 mt-2">
+                <p className="text-xl font-medium text-blue-700 mt-2">
                   {formatFeeCurrency(topCategory?.total || 0)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -241,7 +241,7 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
               </div>
               <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs font-medium text-gray-500">Total Collection</p>
-                <p className="text-2xl font-semibold text-green-700 mt-2">
+                <p className="text-xl font-medium text-green-700 mt-2">
                   {formatFeeCurrency(categoryTotalCollection)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">

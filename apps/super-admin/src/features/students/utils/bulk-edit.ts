@@ -1,4 +1,5 @@
 import { Student } from '@/shared/types';
+import { DEFAULT_STUDENT_LOOKUP_SETTINGS } from '@/lib/student-lookup-settings';
 
 export interface BulkEditRow {
   id: number;
@@ -56,8 +57,8 @@ export const BULK_EDIT_COLUMNS: BulkEditColumn[] = [
   { key: 'section_name', label: 'Section', width: 90 },
   { key: 'roll_number', label: 'Roll No.', width: 90 },
   { key: 'blood_group', label: 'Blood Group', width: 100 },
-  { key: 'category', label: 'Category', width: 100 },
-  { key: 'nationality', label: 'Nationality', width: 100 },
+  { key: 'category', label: 'Caste Type', width: 110, type: 'select', options: DEFAULT_STUDENT_LOOKUP_SETTINGS.caste_types.items },
+  { key: 'nationality', label: 'Nationality', width: 100, type: 'select', options: DEFAULT_STUDENT_LOOKUP_SETTINGS.nationalities.items },
   { key: 'parent_name', label: 'Parent Name', width: 140 },
   { key: 'parent_phone', label: 'Parent Phone', width: 120 },
   { key: 'parent_email', label: 'Parent Email', width: 160 },
@@ -69,7 +70,7 @@ export const BULK_EDIT_COLUMNS: BulkEditColumn[] = [
   { key: 'admission_date', label: 'Admission Date', width: 130, type: 'date' },
   { key: 'status', label: 'Status', width: 110, type: 'select', options: ['active', 'inactive', 'graduated', 'transferred'] },
   { key: 'aadhaar_no', label: 'Aadhaar', width: 130 },
-  { key: 'religion', label: 'Religion', width: 100 },
+  { key: 'religion', label: 'Religion', width: 100, type: 'select', options: DEFAULT_STUDENT_LOOKUP_SETTINGS.religions.items },
   { key: 'caste', label: 'Caste', width: 100 },
   { key: 'mother_tongue', label: 'Mother Tongue', width: 120 },
   { key: 'remarks', label: 'Remarks', width: 160 },

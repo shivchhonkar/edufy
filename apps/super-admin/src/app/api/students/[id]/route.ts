@@ -8,6 +8,12 @@ import {
   syncStudentMedicalBloodGroup,
 } from '@/lib/student-profile-api';
 import { Student } from '@/shared/types';
+import {
+  JOIN_CURRENT_ENROLLMENT_ON_STUDENT,
+  STUDENT_PLACEMENT_SELECT,
+} from '@/lib/enrollment-sql';
+import { prepareEnrollmentSchema } from '@/lib/enrollment-service';
+import { assertClassAgeRestriction } from '@/lib/class-age-restriction';
 
 // GET single student
 export async function GET(
@@ -21,11 +27,16 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Invalid student id' }, { status: 400 });
     }
 
+    await prepareEnrollmentSchema(db);
+
     const result = await db.query<Student>(
-      `SELECT s.*, c.name as class_name, sec.name as section_name
+      `SELECT s.*,
+        ${STUDENT_PLACEMENT_SELECT},
+        c.name as class_name, sec.name as section_name
        FROM students s
-       LEFT JOIN classes c ON s.class_id = c.id
-       LEFT JOIN sections sec ON s.section_id = sec.id
+       ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+       LEFT JOIN classes c ON COALESCE(ce.class_id, s.class_id) = c.id
+       LEFT JOIN sections sec ON COALESCE(ce.section_id, s.section_id) = sec.id
        WHERE s.id = $1`,
       [studentId]
     );
@@ -98,6 +109,27 @@ export async function PUT(
     } = body;
 
     await ensureStudentMotherColumns(db);
+    await prepareEnrollmentSchema(db);
+
+    const current = await db.query<{
+      date_of_birth: string | Date | null;
+      admission_date: string | Date | null;
+      class_id: number | null;
+    }>(
+      `SELECT s.date_of_birth, s.admission_date, COALESCE(ce.class_id, s.class_id) AS class_id
+       FROM students s
+       ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+       WHERE s.id = $1`,
+      [studentId],
+    );
+    const ageCheck = await assertClassAgeRestriction(db, {
+      classId: class_id ?? current.rows[0]?.class_id,
+      dateOfBirth: date_of_birth || current.rows[0]?.date_of_birth?.toString().slice(0, 10),
+      admissionDate: admission_date || current.rows[0]?.admission_date?.toString().slice(0, 10),
+    });
+    if (!ageCheck.ok) {
+      return NextResponse.json({ success: false, error: ageCheck.error }, { status: 400 });
+    }
 
     const result = await db.query<Student>(
       `UPDATE students SET
@@ -120,25 +152,22 @@ export async function PUT(
         state = COALESCE($17, state),
         pincode = COALESCE($18, pincode),
         admission_date = COALESCE($19, admission_date),
-        class_id = COALESCE($20, class_id),
-        section_id = COALESCE($21, section_id),
-        roll_number = COALESCE($22, roll_number),
-        parent_name = COALESCE($23, parent_name),
-        parent_phone = COALESCE($24, parent_phone),
-        parent_email = COALESCE($25, parent_email),
-        mother_name = COALESCE($26, mother_name),
-        mother_phone = COALESCE($27, mother_phone),
-        mother_email = COALESCE($28, mother_email),
-        emergency_contact = COALESCE($29, emergency_contact),
-        photo_url = COALESCE($30, photo_url),
-        status = COALESCE($31, status),
+        parent_name = COALESCE($20, parent_name),
+        parent_phone = COALESCE($21, parent_phone),
+        parent_email = COALESCE($22, parent_email),
+        mother_name = COALESCE($23, mother_name),
+        mother_phone = COALESCE($24, mother_phone),
+        mother_email = COALESCE($25, mother_email),
+        emergency_contact = COALESCE($26, emergency_contact),
+        photo_url = COALESCE($27, photo_url),
+        status = COALESCE($28, status),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $32
+      WHERE id = $29
       RETURNING *`,
       [
         first_name, last_name, middle_name, student_code, date_of_birth, gender, blood_group,
         aadhaar_no, religion, caste, category, nationality, mother_tongue, remarks,
-        address, city, state, pincode, admission_date, class_id, section_id, roll_number,
+        address, city, state, pincode, admission_date,
         parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email,
         emergency_contact, photo_url, status, studentId,
       ]

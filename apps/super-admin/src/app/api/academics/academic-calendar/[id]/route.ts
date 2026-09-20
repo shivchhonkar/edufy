@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureAcademicCalendarSchema } from '@/lib/ensure-academic-calendar-schema';
+import { updateHoliday } from '@/lib/holiday-service';
 
 export async function PUT(
   request: NextRequest,
@@ -14,25 +15,25 @@ export async function PUT(
     const body = await request.json();
 
     if (sourceKind === 'holiday') {
-      const { date, name, type, description } = body;
-      if (!date || !name || !type) {
-        return NextResponse.json(
-          { success: false, error: 'Date, name, and type are required' },
-          { status: 400 },
-        );
+      const updated = await updateHoliday(db, parseInt(params.id, 10), {
+        date: body.date || body.start_date,
+        start_date: body.start_date || body.date,
+        end_date: body.end_date || body.start_date || body.date,
+        name: body.name || body.title,
+        remark: body.description || body.remark || body.name || body.title,
+        description: body.description || body.remark,
+        type: body.type || 'school',
+        academic_year: body.academic_year,
+        scope: body.scope || 'school',
+        class_id: body.class_id,
+      });
+      if (updated && 'error' in updated) {
+        return NextResponse.json({ success: false, error: updated.error }, { status: 400 });
       }
-
-      const result = await db.query(
-        `UPDATE holidays SET date = $1, name = $2, type = $3, description = $4
-         WHERE id = $5 RETURNING *`,
-        [date, name, type, description || null, params.id],
-      );
-
-      if (result.rows.length === 0) {
+      if (!updated) {
         return NextResponse.json({ success: false, error: 'Holiday not found' }, { status: 404 });
       }
-
-      return NextResponse.json({ success: true, data: result.rows[0] });
+      return NextResponse.json({ success: true, data: updated });
     }
 
     if (sourceKind === 'term_date') {

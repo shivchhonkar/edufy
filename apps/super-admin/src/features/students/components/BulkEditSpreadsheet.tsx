@@ -12,6 +12,8 @@ import {
   BulkEditSectionOption,
 } from '@/features/students/utils/bulk-edit';
 import { useAdmissionNumberFormat } from '@/shared/context/AdmissionNumberFormatContext';
+import { useStudentLookups } from '@/features/students/hooks/useStudentLookups';
+import { withCurrentLookupValue } from '@/lib/student-lookup-settings';
 
 const OVERSCAN = 12;
 
@@ -33,6 +35,23 @@ export default function BulkEditSpreadsheet({
   onCellChange,
 }: BulkEditSpreadsheetProps) {
   const formatAdmissionNumber = useAdmissionNumberFormat();
+  const { lookups } = useStudentLookups(true);
+  const columns = useMemo(
+    () =>
+      BULK_EDIT_COLUMNS.map((column) => {
+        if (column.key === 'nationality') {
+          return { ...column, type: 'select' as const, options: lookups.nationalities.items };
+        }
+        if (column.key === 'religion') {
+          return { ...column, type: 'select' as const, options: lookups.religions.items };
+        }
+        if (column.key === 'category') {
+          return { ...column, type: 'select' as const, options: lookups.caste_types.items };
+        }
+        return column;
+      }),
+    [lookups]
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -106,7 +125,7 @@ export default function BulkEditSpreadsheet({
     >
       <div style={{ minWidth: BULK_EDIT_TOTAL_WIDTH }}>
         <div className="sticky top-0 z-20 flex bg-gray-100 border-b border-gray-300">
-          {BULK_EDIT_COLUMNS.map((column) => (
+          {columns.map((column) => (
             <div
               key={column.key}
               className="shrink-0 px-2 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wide border-r border-gray-300 last:border-r-0"
@@ -139,7 +158,7 @@ export default function BulkEditSpreadsheet({
                   className={`flex border-b border-gray-200 ${isChanged ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'}`}
                   style={{ height: BULK_EDIT_ROW_HEIGHT }}
                 >
-                  {BULK_EDIT_COLUMNS.map((column) => (
+                  {columns.map((column) => (
                     <SpreadsheetCell
                       key={`${row.id}-${column.key}`}
                       column={column}
@@ -264,6 +283,7 @@ function SpreadsheetCell({
   }
 
   if (column.type === 'select' && column.options) {
+    const options = withCurrentLookupValue(column.options, value);
     return (
       <div className={baseClass} style={{ width: column.width }}>
         <select
@@ -271,7 +291,8 @@ function SpreadsheetCell({
           onChange={(e) => onChange(fieldKey, e.target.value)}
           className="w-full h-full px-1.5 border-0 bg-transparent focus:ring-1 focus:ring-primary-500 focus:bg-white text-xs"
         >
-          {column.options.map((option) => (
+          <option value="">—</option>
+          {options.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>

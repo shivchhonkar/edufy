@@ -1,8 +1,10 @@
 import type { RequestDb } from '@/lib/request-db';
 import { ensureSchoolEventsSchema } from '@/lib/ensure-school-events-schema';
+import { ensureHolidaySchema } from '@/lib/ensure-holiday-schema';
 
 export async function ensureAcademicCalendarSchema(db: RequestDb): Promise<void> {
   await ensureSchoolEventsSchema(db);
+  await ensureHolidaySchema(db);
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS academic_term_dates (

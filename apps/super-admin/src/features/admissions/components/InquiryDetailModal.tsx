@@ -10,8 +10,13 @@ import {
   STATUS_COLORS,
   STATUS_LABELS,
   PARENT_RELATION_LABELS,
+  STUDENT_TYPE_LABELS,
   inquiryStudentName,
 } from '@/features/admissions/utils/inquiry-labels';
+import {
+  parseAdditionalStudents,
+  parseSiblings,
+} from '@/lib/inquiry-write-values';
 
 interface Class {
   id: number;
@@ -30,16 +35,37 @@ interface Activity {
 export interface Inquiry {
   id: number;
   inquiry_number: string;
+  enquiry_serial?: number | null;
+  inquiry_date?: string | null;
+  academic_year?: string | null;
+  number_of_students?: number | null;
+  is_cancelled?: boolean | null;
+  student_type?: string | null;
+  student_title?: string | null;
   student_first_name: string;
   student_last_name: string | null;
   date_of_birth: string | null;
   gender: string | null;
+  student_email?: string | null;
+  last_school?: string | null;
   parent_relation?: 'father' | 'mother' | null;
   parent_name: string;
   parent_phone: string;
   parent_email: string | null;
+  father_qualification?: string | null;
+  father_occupation?: string | null;
+  father_office_address?: string | null;
+  mother_name?: string | null;
+  mother_phone?: string | null;
+  mother_email?: string | null;
+  mother_qualification?: string | null;
+  mother_occupation?: string | null;
+  mother_office_address?: string | null;
   address: string | null;
   city: string | null;
+  location?: string | null;
+  reporting?: string | null;
+  reporting_mobile?: string | null;
   interested_class_id: number | null;
   interested_class_name?: string | null;
   enrolled_class_id?: number | null;
@@ -49,6 +75,8 @@ export interface Inquiry {
   priority: string;
   follow_up_date: string | null;
   remarks: string | null;
+  additional_students?: unknown;
+  siblings?: unknown;
   converted_student_id: number | null;
   created_at: string;
   updated_at: string;
@@ -376,7 +404,122 @@ export default function InquiryDetailModal({
                       className="w-full border rounded px-2 py-1.5 mt-0.5"
                     />
                   </div>
+                  <div>
+                    <label className="text-gray-500 text-xs">Enquiry date</label>
+                    <p className="font-medium mt-0.5">
+                      {inquiry.inquiry_date
+                        ? new Date(inquiry.inquiry_date).toLocaleDateString('en-IN')
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs">Session</label>
+                    <p className="font-medium mt-0.5">{inquiry.academic_year || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs">Student type</label>
+                    <p className="font-medium mt-0.5">
+                      {STUDENT_TYPE_LABELS[inquiry.student_type || ''] || inquiry.student_type || '—'}
+                    </p>
+                  </div>
                 </div>
+
+                {(inquiry.is_cancelled || inquiry.enquiry_serial) && (
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {inquiry.enquiry_serial ? (
+                      <span className="text-gray-600">
+                        Enq. Sr. No. <strong>{inquiry.enquiry_serial}</strong>
+                      </span>
+                    ) : null}
+                    {inquiry.is_cancelled ? (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        Cancelled
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <label className="text-gray-500 text-xs">Father</label>
+                    <p className="font-medium">{inquiry.parent_name}</p>
+                    <p className="text-gray-600">{inquiry.parent_phone}</p>
+                    {inquiry.parent_email && <p className="text-gray-600">{inquiry.parent_email}</p>}
+                    {(inquiry.father_occupation || inquiry.father_qualification) && (
+                      <p className="text-gray-500 text-xs mt-1">
+                        {[inquiry.father_qualification, inquiry.father_occupation]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
+                  </div>
+                  {(inquiry.mother_name || inquiry.mother_phone) && (
+                    <div>
+                      <label className="text-gray-500 text-xs">Mother</label>
+                      <p className="font-medium">{inquiry.mother_name || '—'}</p>
+                      {inquiry.mother_phone && <p className="text-gray-600">{inquiry.mother_phone}</p>}
+                      {inquiry.mother_email && <p className="text-gray-600">{inquiry.mother_email}</p>}
+                      {(inquiry.mother_occupation || inquiry.mother_qualification) && (
+                        <p className="text-gray-500 text-xs mt-1">
+                          {[inquiry.mother_qualification, inquiry.mother_occupation]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {(inquiry.address || inquiry.location || inquiry.reporting) && (
+                  <div className="text-sm">
+                    <label className="text-gray-500 text-xs">Residence / reporting</label>
+                    {inquiry.address && <p className="mt-0.5 text-gray-700">{inquiry.address}</p>}
+                    {inquiry.location && (
+                      <p className="text-gray-600">Location: {inquiry.location}</p>
+                    )}
+                    {(inquiry.reporting || inquiry.reporting_mobile) && (
+                      <p className="text-gray-600">
+                        Reporting: {[inquiry.reporting, inquiry.reporting_mobile].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {inquiry.last_school && (
+                  <div className="text-sm">
+                    <label className="text-gray-500 text-xs">Last school</label>
+                    <p className="mt-0.5 text-gray-700">{inquiry.last_school}</p>
+                  </div>
+                )}
+
+                {parseAdditionalStudents(inquiry.additional_students).length > 0 && (
+                  <div className="text-sm">
+                    <label className="text-gray-500 text-xs">Additional students</label>
+                    <ul className="mt-1 space-y-1">
+                      {parseAdditionalStudents(inquiry.additional_students).map((student, index) => (
+                        <li key={`${student.name}-${index}`} className="text-gray-700">
+                          {[student.title, student.name].filter(Boolean).join(' ')}
+                          {student.last_school ? ` · last school ${student.last_school}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {parseSiblings(inquiry.siblings).length > 0 && (
+                  <div className="text-sm">
+                    <label className="text-gray-500 text-xs">Siblings</label>
+                    <ul className="mt-1 space-y-1">
+                      {parseSiblings(inquiry.siblings).map((sibling, index) => (
+                        <li key={`${sibling.name}-${index}`} className="text-gray-700">
+                          {[sibling.name, sibling.class_name, sibling.school]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {inquiry.remarks && (
                   <div className="text-sm">

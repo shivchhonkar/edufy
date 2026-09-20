@@ -88,6 +88,16 @@ export default function TimetableBuilderTab() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!classId) return;
+    fetch(`/api/settings/working-days?class_id=${classId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) setWorkingDays(data.data.working_days);
+      })
+      .catch(() => undefined);
+  }, [classId]);
+
   const loadCurriculum = useCallback(async (cid: string, signal?: AbortSignal) => {
     if (!cid) {
       setCurriculum([]);

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureExamsSchema, fetchExamSubjects } from '@/lib/ensure-exams-schema';
 import { gradeForSubjectMarks } from '@/services/exams/grading-engine';
+import { prepareEnrollmentSchema, resolveEnrollmentWriteContext } from '@/lib/enrollment-service';
+import { resolveAcademicYear } from '@/lib/ensure-system-settings';
 
 export async function GET(
   request: NextRequest,
@@ -62,8 +64,8 @@ export async function POST(
       examSubjects.map((s) => [s.subject_id, s.total_marks])
     );
 
-    const examResult = await db.query<{ total_marks: number }>(
-      'SELECT total_marks FROM exams WHERE id = $1',
+    const examResult = await db.query<{ total_marks: number; academic_year: string }>(
+      'SELECT total_marks, academic_year FROM exams WHERE id = $1',
       [params.id]
     );
 
@@ -71,7 +73,10 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Exam not found' }, { status: 404 });
     }
 
+    await prepareEnrollmentSchema(db);
     const defaultTotalMarks = examResult.rows[0].total_marks;
+    const examAcademicYear =
+      examResult.rows[0].academic_year ?? (await resolveAcademicYear(db, null));
     const insertedResults = [];
 
     for (const result of results) {
@@ -80,12 +85,17 @@ export async function POST(
       const totalMarks = sid != null ? (marksBySubject.get(sid) ?? defaultTotalMarks) : defaultTotalMarks;
       const grade = await gradeForSubjectMarks(db, marks_obtained || 0, totalMarks);
 
+      const writeCtx = await resolveEnrollmentWriteContext(db, student_id, {
+        academicYear: examAcademicYear,
+      });
+
       const insertResult = await db.query(
         `INSERT INTO exam_results (
-          exam_id, student_id, subject_id, marks_obtained, grade, remarks, is_absent, uploaded_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          exam_id, student_id, enrollment_id, subject_id, marks_obtained, grade, remarks, is_absent, uploaded_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (exam_id, student_id, subject_id)
         DO UPDATE SET 
+          enrollment_id = COALESCE(EXCLUDED.enrollment_id, exam_results.enrollment_id),
           marks_obtained = EXCLUDED.marks_obtained,
           grade = EXCLUDED.grade,
           remarks = EXCLUDED.remarks,
@@ -93,7 +103,17 @@ export async function POST(
           uploaded_by = EXCLUDED.uploaded_by,
           updated_at = CURRENT_TIMESTAMP
         RETURNING *`,
-        [params.id, student_id, sid, marks_obtained || 0, grade, remarks, is_absent || false, uploaded_by]
+        [
+          params.id,
+          student_id,
+          writeCtx?.enrollmentId ?? null,
+          sid,
+          marks_obtained || 0,
+          grade,
+          remarks,
+          is_absent || false,
+          uploaded_by,
+        ]
       );
 
       insertedResults.push(insertResult.rows[0]);

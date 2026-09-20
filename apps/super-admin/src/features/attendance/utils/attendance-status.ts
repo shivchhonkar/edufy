@@ -81,13 +81,22 @@ export function getRegisterWeekdayLabel(day: number, month: number, year: number
 }
 
 export function getSundayDayNumbers(month: number, year: number, daysInMonth: number) {
-  const sundays = new Set<number>()
+  return getNonWorkingDayNumbers(month, year, daysInMonth, new Set([0]))
+}
+
+export function getNonWorkingDayNumbers(
+  month: number,
+  year: number,
+  daysInMonth: number,
+  nonWorkingWeekdays: Set<number>,
+) {
+  const days = new Set<number>()
   for (let day = 1; day <= daysInMonth; day += 1) {
-    if (new Date(year, month - 1, day).getDay() === 0) {
-      sundays.add(day)
+    if (nonWorkingWeekdays.has(new Date(year, month - 1, day).getDay())) {
+      days.add(day)
     }
   }
-  return sundays
+  return days
 }
 
 export function getHolidayDayNumbers(month: number, year: number, holidayDates: Set<string>) {

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { NavGroup } from '@/shared/navigation/sidebar-navigation';
-import { isNavLinkActive } from '@/shared/navigation/sidebar-navigation';
+import { isNavItemTreeActive, isNavLinkActive, nestedNavKey } from '@/shared/navigation/sidebar-navigation';
+import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 
 interface CollapsedNavGroupFlyoutProps {
   group: NavGroup;
@@ -27,6 +28,7 @@ export default function CollapsedNavGroupFlyout({
   const closeTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [expandedNested, setExpandedNested] = useState<Record<string, boolean>>({});
 
   const Icon = group.icon;
 
@@ -127,35 +129,102 @@ export default function CollapsedNavGroupFlyout({
             </p>
             {group.items.map((item) => {
               const ItemIcon = item.icon;
-              const itemActive = isNavLinkActive(pathname, item.path);
+              const childItems = item.items ?? [];
+              const nestedKey = nestedNavKey(group.id, item.path);
+              const nestedOpen =
+                expandedNested[nestedKey] ?? (childItems.length > 0 && isNavItemTreeActive(pathname, item));
+              const itemActive =
+                childItems.length > 0
+                  ? isNavItemTreeActive(pathname, item)
+                  : isNavLinkActive(pathname, item.path);
 
               return (
-                <Link
-                  key={`${group.id}-${item.path}`}
-                  href={item.path}
-                  role="menuitem"
-                  onClick={() => {
-                    setOpen(false);
-                    onNavigate?.();
-                  }}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 text-xs transition-colors ${
-                    itemActive
-                      ? 'bg-primary-50 font-medium text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <ItemIcon
-                    className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
-                      itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
-                    }`}
-                  />
-                  <span className="min-w-0 flex-1">{item.name}</span>
-                  {item.comingSoon && (
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
-                      Soon
-                    </span>
-                  )}
-                </Link>
+                <div key={`${group.id}-${item.path}`}>
+                  <div className="flex items-center">
+                    <Link
+                      href={item.path}
+                      role="menuitem"
+                      onClick={() => {
+                        if (childItems.length > 0) {
+                          setExpandedNested((prev) => ({ ...prev, [nestedKey]: true }));
+                        }
+                        setOpen(false);
+                        onNavigate?.();
+                      }}
+                      className={`flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors ${
+                        itemActive
+                          ? 'bg-primary-50 font-medium text-primary-700'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <ItemIcon
+                        className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                          itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1">{item.name}</span>
+                      {item.comingSoon && (
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                          Soon
+                        </span>
+                      )}
+                    </Link>
+                    {childItems.length > 0 && (
+                      <button
+                        type="button"
+                        aria-label={nestedOpen ? `Collapse ${item.name}` : `Expand ${item.name}`}
+                        aria-expanded={nestedOpen}
+                        onClick={() =>
+                          setExpandedNested((prev) => ({
+                            ...prev,
+                            [nestedKey]: !nestedOpen,
+                          }))
+                        }
+                        className="mr-1 rounded p-1 text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                      >
+                        {nestedOpen ? (
+                          <FiChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <FiChevronRight className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {childItems.length > 0 && nestedOpen
+                    ? childItems.map((child) => {
+                        const ChildIcon = child.icon;
+                        const childActive = isNavLinkActive(pathname, child.path);
+                        return (
+                          <Link
+                            key={`${group.id}-${child.path}`}
+                            href={child.path}
+                            role="menuitem"
+                            onClick={() => {
+                              setOpen(false);
+                              onNavigate?.();
+                            }}
+                            className={`flex items-center gap-2 py-1.5 pl-7 pr-2.5 text-xs transition-colors ${
+                              childActive
+                                ? 'bg-primary-50 font-medium text-primary-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                          >
+                            <ChildIcon
+                              className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                                childActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                              }`}
+                            />
+                            <span className="min-w-0 flex-1">{child.name}</span>
+                            {child.comingSoon && (
+                              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                                Soon
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })
+                    : null}
+                </div>
               );
             })}
           </div>,

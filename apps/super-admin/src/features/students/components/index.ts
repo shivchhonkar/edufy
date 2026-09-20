@@ -4,6 +4,8 @@ export { default as ViewStudentModal } from './ViewStudentModal';
 export { default as ProfileTab } from './profile/ProfileTab';
 export { default as GuardiansTab } from './profile/GuardiansTab';
 export { default as DocumentsTab } from './profile/DocumentsTab';
+export { default as FeesTab } from './profile/FeesTab';
+export { default as ActivityTab } from './profile/ActivityTab';
 export { default as MedicalTab } from './profile/MedicalTab';
 export { default as EnrollmentsTab } from './profile/EnrollmentsTab';
 export { default as VirtualizedStudentsTable } from './VirtualizedStudentsTable';

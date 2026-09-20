@@ -142,7 +142,7 @@ CREATE TABLE class_sections (
 CREATE INDEX idx_class_sections_class ON class_sections (class_id);
 CREATE INDEX idx_class_sections_section ON class_sections (section_id);
 
--- Student enrollments (session-wise class history)
+-- Student enrollments (session-wise class history — source of truth for placement)
 CREATE TABLE student_enrollments (
     id SERIAL PRIMARY KEY,
     student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -194,6 +194,7 @@ CREATE TABLE fee_payments (
 CREATE TABLE attendance (
     id SERIAL PRIMARY KEY,
     student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+    enrollment_id INTEGER REFERENCES student_enrollments(id) ON DELETE SET NULL,
     date DATE NOT NULL,
     status VARCHAR(20) CHECK (status IN ('present', 'absent', 'late', 'half_day', 'on_leave')),
     remarks TEXT,
@@ -205,10 +206,16 @@ CREATE TABLE attendance (
 -- Holidays Table
 CREATE TABLE holidays (
     id SERIAL PRIMARY KEY,
-    date DATE NOT NULL UNIQUE,
+    date DATE NOT NULL,
     name VARCHAR(255) NOT NULL,
     type VARCHAR(50) CHECK (type IN ('public', 'school', 'national', 'festival')),
     description TEXT,
+    academic_year VARCHAR(50),
+    scope VARCHAR(20) DEFAULT 'school',
+    class_id INTEGER,
+    start_date DATE,
+    end_date DATE,
+    remark TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

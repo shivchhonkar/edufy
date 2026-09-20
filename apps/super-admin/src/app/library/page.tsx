@@ -12,6 +12,7 @@ import {
   FiUpload,
   FiUser,
 } from 'react-icons/fi';
+import LibraryModuleLinks from '@/features/library/components/LibraryModuleLinks';
 import {
   Bar,
   BarChart,
@@ -210,12 +211,12 @@ export default function LibraryDashboardPage() {
   };
 
   const statCards = [
-    { label: 'Total Books', value: metrics.totalBooks, tone: 'blue', href: '/library/catalog/books' },
-    { label: 'Available', value: metrics.availableBooks, tone: 'green' },
-    { label: 'Issued', value: metrics.issuedBooks, tone: 'indigo', href: '/library/circulation/issue' },
-    { label: 'Overdue', value: metrics.overdueBooks, tone: 'red', href: '/library/fines' },
-    { label: 'Members', value: metrics.activeMembers, tone: 'purple', href: '/library/members' },
-    { label: 'Titles', value: metrics.totalTitles, tone: 'amber' },
+    { label: 'Total Books', value: metrics.totalBooks, tone: 'blue' as const, href: '/library/catalog/books' },
+    { label: 'Available', value: metrics.availableBooks, tone: 'green' as const },
+    { label: 'Issued', value: metrics.issuedBooks, tone: 'indigo' as const, href: '/library/reports/issued' },
+    { label: 'Overdue', value: metrics.overdueBooks, tone: 'red' as const, href: '/library/registers/overdue' },
+    { label: 'Members', value: metrics.activeMembers, tone: 'purple' as const, href: '/library/masters' },
+    { label: 'Titles', value: metrics.totalTitles, tone: 'amber' as const },
   ];
 
   return (
@@ -238,6 +239,7 @@ export default function LibraryDashboardPage() {
             Refresh
           </button>
         </header>
+        <LibraryModuleLinks />
 
         {loading ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -254,11 +256,11 @@ export default function LibraryDashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <QuickAction href="/library/circulation/issue" icon={FiUpload} label="Issue Book" primary />
-              <QuickAction href="/library/circulation/return" icon={FiBook} label="Return Book" />
-              <QuickAction href="/library/catalog/books" icon={FiPlus} label="Add Book" />
-              <QuickAction href="/library/members" icon={FiUser} label="Members" />
-              <QuickAction href="/library/masters/categories" icon={FiLayers} label="Categories" />
+              <QuickAction href="/library/students/issue" icon={FiUpload} label="Student Issue" primary />
+              <QuickAction href="/library/students/return" icon={FiBook} label="Student Return" />
+              <QuickAction href="/library/staff/issue" icon={FiUser} label="Staff Issue" />
+              <QuickAction href="/library/catalog/books" icon={FiPlus} label="Books" />
+              <QuickAction href="/library/masters" icon={FiLayers} label="Masters" />
               <QuickAction href="/library/reports" icon={FiClock} label="Reports" />
             </div>
 
@@ -394,7 +396,7 @@ export default function LibraryDashboardPage() {
               title="Overdue Books"
               icon={FiClock}
               action={
-                <Link href="/library/fines" className="text-xs text-primary-600 hover:underline">
+                <Link href="/library/registers/overdue" className="text-xs text-primary-600 hover:underline">
                   View all
                 </Link>
               }

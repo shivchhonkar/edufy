@@ -42,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_academic_years_start_date ON academic_years(start
 
 ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS report_settings JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS theme_settings JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS student_lookup_settings JSONB DEFAULT '{}'::jsonb;
 `;
 
 /** Idempotent — creates system_settings + academic_years on tenant DBs. */

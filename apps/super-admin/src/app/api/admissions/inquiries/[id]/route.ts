@@ -10,6 +10,7 @@ import {
   isValidParentRelation,
   logInquiryActivity,
 } from '@/lib/admission-inquiry-api';
+import { parseAdditionalStudents, parseSiblings } from '@/lib/inquiry-write-values';
 
 function parseId(id: string): number | null {
   const parsed = parseInt(id, 10);
@@ -98,23 +99,45 @@ export async function PUT(
     const allowed = [
       'student_first_name',
       'student_last_name',
+      'student_title',
       'date_of_birth',
       'gender',
+      'student_email',
+      'last_school',
       'parent_relation',
       'parent_name',
       'parent_phone',
       'parent_email',
+      'father_qualification',
+      'father_occupation',
+      'father_office_address',
+      'mother_name',
+      'mother_phone',
+      'mother_email',
+      'mother_qualification',
+      'mother_occupation',
+      'mother_office_address',
       'address',
       'city',
       'state',
       'pincode',
+      'location',
+      'reporting',
+      'reporting_mobile',
       'interested_class_id',
       'academic_year',
+      'inquiry_date',
+      'enquiry_serial',
+      'number_of_students',
+      'is_cancelled',
+      'student_type',
       'source',
       'status',
       'priority',
       'follow_up_date',
       'remarks',
+      'additional_students',
+      'siblings',
     ] as const;
 
     if (
@@ -145,8 +168,15 @@ export async function PUT(
             { status: 400 },
           );
         }
+        const raw = body[key];
+        const value =
+          key === 'additional_students'
+            ? parseAdditionalStudents(raw)
+            : key === 'siblings'
+              ? parseSiblings(raw)
+              : raw;
         fields.push(`${key} = $${idx}`);
-        values.push(body[key]);
+        values.push(value);
         idx += 1;
       }
     }

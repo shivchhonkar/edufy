@@ -120,6 +120,8 @@ CREATE INDEX IF NOT EXISTS idx_exam_results_subject ON exam_results(subject_id);
 /** Idempotent — ensures exams / exam_results schema on tenant DBs. */
 export async function ensureExamsSchema(db: RequestDb): Promise<void> {
   await db.query(MIGRATION_SQL);
+  const { ensureExamOperationsSchema } = await import('@/lib/ensure-exam-operations-schema');
+  await ensureExamOperationsSchema(db);
 }
 
 export type ExamSubjectRow = {

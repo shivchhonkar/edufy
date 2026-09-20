@@ -1,5 +1,6 @@
 import type { RequestDb } from '@/lib/request-db';
 import { classNameOrderSql } from '@/lib/class-sort';
+import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
 
 export interface DashboardNamedCount {
   name: string;
@@ -18,15 +19,26 @@ function formatAdmissionStatus(status: string) {
 
 export async function fetchDashboardCompositionCharts(
   db: RequestDb,
+  academicYear: string,
+  academicYearId: number | null = null,
 ): Promise<DashboardCompositionCharts> {
+  const yearVariants = academicYearFilterValues(academicYear);
+
   const [studentsResult, admissionsResult, staffResult] = await Promise.all([
     db.query<{ name: string; count: string }>(
-      `SELECT COALESCE(c.name, 'Unassigned') AS name, COUNT(s.id)::text AS count
+      `SELECT COALESCE(c.name, 'Unassigned') AS name, COUNT(DISTINCT s.id)::text AS count
        FROM students s
-       LEFT JOIN classes c ON s.class_id = c.id
+       INNER JOIN student_enrollments se ON se.student_id = s.id
+         AND (
+           se.academic_year = ANY($1::text[])
+           OR ($2::int IS NOT NULL AND se.academic_year_id = $2)
+         )
+         AND se.status IN ('active', 'promoted', 'repeated')
+       LEFT JOIN classes c ON c.id = COALESCE(se.class_id, s.class_id)
        WHERE s.status = 'active'
        GROUP BY c.name
        ORDER BY ${classNameOrderSql('c.name', { nullsFirst: true, prioritizeNull: true })}`,
+      [yearVariants, academicYearId],
     ),
     db.query<{ status: string; count: string }>(
       `SELECT COALESCE(status, 'unknown') AS status, COUNT(*)::text AS count

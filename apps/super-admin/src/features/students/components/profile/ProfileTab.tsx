@@ -64,7 +64,7 @@ export default function ProfileTab({ student }: ProfileTabProps) {
           <InfoRow label="Admission Date" value={formatStudentDate(student.admission_date)} icon={FiCalendar} />
           <InfoRow label="Religion" value={student.religion} />
           <InfoRow label="Caste" value={student.caste} />
-          <InfoRow label="Category" value={student.category} />
+          <InfoRow label="Caste Type" value={student.category} />
           <InfoRow label="Nationality" value={student.nationality} />
           <InfoRow label="Mother Tongue" value={student.mother_tongue} />
         </div>

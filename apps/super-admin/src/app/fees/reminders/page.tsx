@@ -108,8 +108,27 @@ export default function FeesSendRemindersPage() {
 
     setSending(true);
     try {
-      // Placeholder until communication API integration is added.
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const amounts = Object.fromEntries(
+        dueStudents
+          .filter((student) => selectedIds.includes(student.id))
+          .map((student) => [String(student.id), student.pendingAmount || 0]),
+      );
+      const res = await fetch('/api/fees/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_ids: selectedIds,
+          channels,
+          message: message.trim(),
+          academic_year: settings.academic_year,
+          amounts,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        await alert(data.error || 'Failed to send reminders', { title: 'Error', type: 'error' });
+        return;
+      }
       await alert(
         `Reminder queued for ${selectedStudentsCount} students via ${channels
           .map((c) => c.toUpperCase())
@@ -127,6 +146,11 @@ export default function FeesSendRemindersPage() {
       <FeesPageHeader
         title="Send Reminders"
         description="Send pending fee reminders to students and parents using your preferred channels."
+        actions={
+          <Link href="/fees/reminders/report" className="text-sm text-primary-700 hover:underline">
+            Reminder report
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

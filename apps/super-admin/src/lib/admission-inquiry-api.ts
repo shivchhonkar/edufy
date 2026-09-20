@@ -16,6 +16,8 @@ export type InquirySource =
   | 'website'
   | 'referral'
   | 'social_media'
+  | 'android'
+  | 'advertisement'
   | 'other';
 
 export type InquiryPriority = 'low' | 'normal' | 'high';
@@ -43,8 +45,23 @@ export const INQUIRY_SOURCES: InquirySource[] = [
   'website',
   'referral',
   'social_media',
+  'android',
+  'advertisement',
   'other',
 ];
+
+export async function nextEnquirySerial(
+  db: RequestDb,
+  academicYear: string | null
+): Promise<number> {
+  const result = await db.query<{ next: string | number }>(
+    `SELECT COALESCE(MAX(enquiry_serial), 0) + 1 AS next
+     FROM admission_inquiries
+     WHERE COALESCE(academic_year, '') = COALESCE($1, '')`,
+    [academicYear]
+  );
+  return Number(result.rows[0]?.next ?? 1);
+}
 
 export function isValidInquiryStatus(value: string): value is InquiryStatus {
   return INQUIRY_STATUSES.includes(value as InquiryStatus);

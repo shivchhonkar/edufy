@@ -13,6 +13,7 @@ import FeesTab from '@/features/students/components/profile/FeesTab'
 import AttendanceTab from '@/features/students/components/profile/AttendanceTab'
 import SiblingsTab from '@/features/students/components/profile/SiblingsTab'
 import MessagesTab from '@/features/students/components/profile/MessagesTab'
+import ActivityTab from '@/features/students/components/profile/ActivityTab'
 import { Student } from '@/shared/types'
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile'
 import { FiArrowLeft, FiEdit2 } from 'react-icons/fi'
@@ -25,6 +26,7 @@ type ProfileTabId =
   | 'medical'
   | 'history'
   | 'fees'
+  | 'activity'
   | 'attendance'
   | 'messages'
 
@@ -36,6 +38,7 @@ const TABS: { id: ProfileTabId; label: string }[] = [
   { id: 'medical', label: 'Medical' },
   { id: 'history', label: 'Academic History' },
   { id: 'fees', label: 'Fees' },
+  { id: 'activity', label: 'Activity' },
   { id: 'attendance', label: 'Attendance' },
   { id: 'messages', label: 'Messages' },
 ]
@@ -174,6 +177,7 @@ export default function StudentDetailPage() {
               {activeTab === 'medical' && <MedicalTab studentId={student.id} />}
               {activeTab === 'history' && <EnrollmentsTab studentId={student.id} />}
               {activeTab === 'fees' && <FeesTab studentId={student.id} />}
+              {activeTab === 'activity' && <ActivityTab studentId={student.id} />}
               {activeTab === 'attendance' && <AttendanceTab studentId={student.id} />}
               {activeTab === 'messages' && <MessagesTab studentId={student.id} />}
             </div>

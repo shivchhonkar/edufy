@@ -5,6 +5,7 @@ import { FiPlus } from 'react-icons/fi';
 import { useSettings } from '@/shared/SettingsContext';
 import FeeStructuresPanel from '@/features/fees/components/FeeStructuresPanel';
 import FeesPageHeader from '@/features/fees/components/FeesPageHeader';
+import FeeSetupLinks from '@/features/fees/components/FeeSetupLinks';
 
 export default function FeeStructuresPage() {
   const { settings } = useSettings();
@@ -49,6 +50,7 @@ export default function FeeStructuresPage() {
           </button>
         }
       />
+      <FeeSetupLinks />
       {loading ? (
         <div className="py-16 text-center text-gray-500">Loading structures...</div>
       ) : (

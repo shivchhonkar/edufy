@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import type { IconType } from 'react-icons';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SettingsNav from '@/features/settings/components/SettingsNav';
+import { SettingsPageSkeleton } from '@/features/settings/components/SettingsPageSkeleton';
 import { useDialog } from '@/shared/context/DialogContext';
 import RupeeIcon from '@/shared/components/icons/RupeeIcon';
 import { 
@@ -115,6 +116,8 @@ function SettingsPageContent() {
   const { confirm } = useDialog();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
   const [systemStats, setSystemStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -188,12 +191,23 @@ function SettingsPageContent() {
   });
 
   useEffect(() => {
-    fetchSystemStats();
-    fetchAcademicYears();
-    fetchSystemSettings();
-    fetchSystemPerformance();
-    fetchUsers();
+    void loadInitialPageData();
   }, []);
+
+  const loadInitialPageData = async () => {
+    setPageLoading(true);
+    try {
+      await Promise.all([
+        fetchSystemStats(),
+        fetchAcademicYears(),
+        fetchSystemSettings(),
+        fetchSystemPerformance(),
+        fetchUsers(),
+      ]);
+    } finally {
+      setPageLoading(false);
+    }
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -213,10 +227,17 @@ function SettingsPageContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
+    if (activeTab === 'users' && !pageLoading) {
+      void (async () => {
+        setUsersLoading(true);
+        try {
+          await fetchUsers();
+        } finally {
+          setUsersLoading(false);
+        }
+      })();
     }
-  }, [activeTab, userFilter]);
+  }, [activeTab, userFilter, pageLoading]);
 
   // Calculate password strength
   useEffect(() => {
@@ -901,6 +922,10 @@ function SettingsPageContent() {
           </aside>
 
           <div className="flex-1 min-w-0">
+          {pageLoading ? (
+            <SettingsPageSkeleton tab={activeTab} />
+          ) : (
+            <>
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className={SET_TAB}>
@@ -1336,7 +1361,21 @@ function SettingsPageContent() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.length === 0 ? (
+                      {usersLoading ? (
+                        Array.from({ length: 6 }).map((_, i) => (
+                          <tr key={i}>
+                            <td colSpan={5} className="px-3 py-3">
+                              <div className="flex items-center gap-4">
+                                <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse shrink-0" />
+                                <div className="flex-1 space-y-1.5">
+                                  <div className="h-3.5 w-32 bg-gray-200 animate-pulse rounded" />
+                                  <div className="h-3 w-44 bg-gray-200 animate-pulse rounded" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : filteredUsers.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                             No users found
@@ -2255,6 +2294,8 @@ function SettingsPageContent() {
               )}
             </div>
           )}
+            </>
+          )}
           </div>
         </div>
       </div>
@@ -2267,7 +2308,22 @@ export default function SettingsPage() {
     <Suspense
       fallback={
         <DashboardLayout>
-          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="h-6 w-40 bg-gray-200 animate-pulse rounded-md" />
+              <div className="h-7 w-16 bg-gray-200 animate-pulse rounded-md" />
+            </div>
+            <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
+              <aside className="lg:w-40 xl:w-44 shrink-0 space-y-1">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-8 bg-gray-200 animate-pulse rounded-md" />
+                ))}
+              </aside>
+              <div className="flex-1">
+                <SettingsPageSkeleton tab="overview" />
+              </div>
+            </div>
+          </div>
         </DashboardLayout>
       }
     >

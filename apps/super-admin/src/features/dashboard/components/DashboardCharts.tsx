@@ -227,7 +227,7 @@ export function CompositionDonutChart({
       </ResponsiveContainer>
       {centerLabel && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-8">
-          <p className="text-xs font-semibold text-gray-700 text-center px-4">{centerLabel}</p>
+          <p className="text-xs font-semibold text-gray-700 text-center px-4 whitespace-pre-line">{centerLabel}</p>
         </div>
       )}
     </div>

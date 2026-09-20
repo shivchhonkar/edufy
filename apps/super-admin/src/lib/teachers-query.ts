@@ -32,11 +32,12 @@ export const NON_TEACHING_ROLE_SQL = `
   ])
 `;
 
-/** Only staff in the Teaching department, excluding known non-teaching roles. */
+/** Teaching staff: Teaching department or Type = TEACHER, excluding known non-teaching roles. */
 export const TEACHER_WHERE_CLAUSE = `
   (
     d.code = 'TCH'
     OR LOWER(TRIM(COALESCE(d.name, ''))) = 'teaching'
+    OR UPPER(TRIM(COALESCE(s.staff_type, ''))) = 'TEACHER'
   )
   AND NOT (${NON_TEACHING_ROLE_SQL})
 `;
@@ -64,4 +65,41 @@ export async function resolveTeachingDepartmentId(db: RequestDb): Promise<number
 
 export function isTeachingDepartmentName(name?: string | null) {
   return (name || '').trim().toLowerCase() === 'teaching';
+}
+
+type StaffTypeFields = {
+  staff_type: string | null;
+  department: string | null;
+  department_id: number | null;
+  designation: string | null;
+  designation_id: number | null;
+};
+
+/** When Type is TEACHER, fill Teaching department and Teacher designation if those are blank. */
+export async function applyStaffTypeDefaults<T extends StaffTypeFields>(db: RequestDb, fields: T): Promise<T> {
+  const type = (fields.staff_type || '').trim().toUpperCase();
+  if (type !== 'TEACHER') return fields;
+
+  const teachingDepartmentId = await resolveTeachingDepartmentId(db);
+  if (!fields.department_id && teachingDepartmentId) {
+    fields.department_id = teachingDepartmentId;
+    fields.department = fields.department || 'Teaching';
+  }
+  if (!fields.designation) {
+    fields.designation = 'Teacher';
+  }
+  if (!fields.designation_id && teachingDepartmentId) {
+    const designation = await db.query<{ id: number }>(
+      `SELECT id FROM designations
+       WHERE name ILIKE 'Teacher'
+         AND (department_id = $1 OR department_id IS NULL)
+       ORDER BY CASE WHEN department_id = $1 THEN 0 ELSE 1 END, id
+       LIMIT 1`,
+      [teachingDepartmentId],
+    );
+    if (designation.rows[0]) {
+      fields.designation_id = designation.rows[0].id;
+    }
+  }
+  return fields;
 }

@@ -7,6 +7,10 @@ import { usePathname, useSearchParams } from 'next/navigation';
 /** Horizontal nav shared across all settings pages — kept in sync with Settings sidebar group. */
 export const SETTINGS_NAV_LINKS = [
   { href: '/settings/setup', label: 'School Setup' },
+  { href: '/settings/student-lookups', label: 'Student Master Data' },
+  { href: '/settings/holidays', label: 'Holidays' },
+  { href: '/settings/working-days', label: 'Working Days' },
+  { href: '/settings/age-restrictions', label: 'Age Restrictions' },
   { href: '/settings', label: 'System Settings' },
   { href: '/settings/user-access', label: 'Parent Portal' },
   { href: '/settings/staff-access', label: 'Staff Portal' },

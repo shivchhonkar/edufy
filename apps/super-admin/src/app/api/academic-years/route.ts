@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureSystemSettings, syncActiveAcademicYear } from '@/lib/ensure-system-settings';
+import { prepareEnrollmentSchema } from '@/lib/enrollment-service';
 import {
   getAcademicYearAssociations,
   isAcademicYearDeletable,
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureSystemSettings(db);
+    await prepareEnrollmentSchema(db);
     const result = await db.query(
       `SELECT * FROM academic_years ORDER BY start_date DESC`,
       []
@@ -51,6 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureSystemSettings(db);
+    await prepareEnrollmentSchema(db);
     const body = await request.json();
     const { name, start_date, end_date, is_active } = body;
 

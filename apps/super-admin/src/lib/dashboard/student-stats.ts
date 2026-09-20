@@ -4,6 +4,7 @@ import {
   parseAcademicYear,
 } from '@/lib/fees/AcademicYear';
 import type { DashboardStudentStats } from '@/shared/types';
+import { studentInSessionSql } from '@/lib/dashboard/resolve-dashboard-session';
 
 const EMPTY_STATS: DashboardStudentStats = {
   total: 0,
@@ -16,9 +17,11 @@ const EMPTY_STATS: DashboardStudentStats = {
 export async function fetchStudentDashboardStats(
   db: RequestDb,
   academicYear: string,
+  academicYearId: number | null = null,
 ): Promise<DashboardStudentStats> {
   const yearVariants = academicYearFilterValues(academicYear);
   const sessionStart = parseAcademicYear(academicYear).startDate;
+  const sessionFilter = studentInSessionSql('s');
 
   const genderResult = await db.query<{
     total: string;
@@ -29,8 +32,10 @@ export async function fetchStudentDashboardStats(
       COUNT(*)::text AS total,
       COUNT(*) FILTER (WHERE gender = 'Male')::text AS boys,
       COUNT(*) FILTER (WHERE gender = 'Female')::text AS girls
-     FROM students
-     WHERE status = 'active'`,
+     FROM students s
+     WHERE s.status = 'active'
+       AND ${sessionFilter}`,
+    [yearVariants, academicYearId],
   );
 
   let newAdmissions = 0;
@@ -54,19 +59,21 @@ export async function fetchStudentDashboardStats(
           )
         )::text AS old_count
        FROM students s
-       WHERE s.status = 'active'`,
-      [yearVariants],
+       WHERE s.status = 'active'
+         AND ${sessionFilter}`,
+      [yearVariants, academicYearId],
     );
     newAdmissions = parseInt(cohortResult.rows[0]?.new_count || '0', 10);
     previousStudents = parseInt(cohortResult.rows[0]?.old_count || '0', 10);
   } catch {
     const fallback = await db.query<{ new_count: string; old_count: string }>(
       `SELECT
-        COUNT(*) FILTER (WHERE admission_date >= $1::date)::text AS new_count,
-        COUNT(*) FILTER (WHERE admission_date < $1::date)::text AS old_count
-       FROM students
-       WHERE status = 'active'`,
-      [sessionStart],
+        COUNT(*) FILTER (WHERE admission_date >= $3::date)::text AS new_count,
+        COUNT(*) FILTER (WHERE admission_date < $3::date)::text AS old_count
+       FROM students s
+       WHERE s.status = 'active'
+         AND ${sessionFilter}`,
+      [yearVariants, academicYearId, sessionStart],
     );
     newAdmissions = parseInt(fallback.rows[0]?.new_count || '0', 10);
     previousStudents = parseInt(fallback.rows[0]?.old_count || '0', 10);

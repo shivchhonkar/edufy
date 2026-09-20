@@ -6,6 +6,7 @@ import {
   getMonthLabel,
   getRegisterCellStyle,
   getRegisterWeekdayLabel,
+  getNonWorkingDayNumbers,
   getSundayDayNumbers,
   REGISTER_LEGEND,
   REGISTER_NON_WORKING_COLUMN_CLASS,
@@ -22,6 +23,7 @@ interface MonthlyAttendanceRegisterProps {
   monthLabel?: string
   entityLabel?: string
   holidayDates?: Set<string>
+  nonWorkingWeekdays?: Set<number>
   loading?: boolean
   emptyMessage?: string
   editable?: boolean
@@ -36,22 +38,26 @@ export default function MonthlyAttendanceRegister({
   monthLabel,
   entityLabel = 'Student',
   holidayDates,
+  nonWorkingWeekdays,
   loading = false,
   emptyMessage = 'No records found for the selected filters.',
   editable = false,
   onCellClick,
 }: MonthlyAttendanceRegisterProps) {
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [month, year])
-  const sundays = useMemo(
-    () => getSundayDayNumbers(month, year, daysInMonth),
-    [month, year, daysInMonth],
+  const closedDays = useMemo(
+    () =>
+      nonWorkingWeekdays
+        ? getNonWorkingDayNumbers(month, year, daysInMonth, nonWorkingWeekdays)
+        : getSundayDayNumbers(month, year, daysInMonth),
+    [month, year, daysInMonth, nonWorkingWeekdays],
   )
   const holidays = useMemo(
     () => getHolidayDayNumbers(month, year, holidayDates ?? new Set()),
     [month, year, holidayDates],
   )
 
-  const isNonWorkingDay = (day: number) => sundays.has(day) || holidays.has(day)
+  const isNonWorkingDay = (day: number) => closedDays.has(day) || holidays.has(day)
   const resolvedMonthLabel = monthLabel ?? `${getMonthLabel(month)} ${year}`
 
   const buildDate = (day: number) =>

@@ -38,7 +38,7 @@ export const APP_MODAL_PANEL_BASE =
  * Default panel — entire modal content scrolls (sticky header/footer stay visible).
  * Use for most forms and detail views.
  */
-export const APP_MODAL_PANEL = `${APP_MODAL_PANEL_BASE} overflow-y-auto overscroll-contain`;
+export const APP_MODAL_PANEL = `${APP_MODAL_PANEL_BASE} overflow-y-auto overscroll-y-contain scroll-smooth`;
 
 /**
  * Structured panel — fixed header/footer with scrollable body via APP_MODAL_BODY.
@@ -48,7 +48,8 @@ export const APP_MODAL_PANEL_STRUCTURED = `${APP_MODAL_PANEL_BASE} overflow-hidd
 export const APP_MODAL_HEADER =
   'sticky top-0 z-10 shrink-0 border-b px-4 sm:px-6 py-3 flex justify-between items-center bg-white';
 
-export const APP_MODAL_BODY = 'flex-1 min-h-0 overflow-y-auto overscroll-contain';
+export const APP_MODAL_BODY =
+  'flex-1 min-h-0 overflow-y-auto overscroll-y-contain scroll-smooth [scrollbar-gutter:stable]';
 
 export const APP_MODAL_FOOTER =
   'sticky bottom-0 z-10 shrink-0 border-t bg-white px-4 sm:px-6 py-3 flex justify-end gap-3';

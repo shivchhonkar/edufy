@@ -8,6 +8,8 @@ import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { INDIAN_STATES, isIndianState } from '@/shared/constants/indian-states';
 import { BLOOD_GROUPS } from '@/shared/constants/student-personal';
 import { useAdmissionNumberFormat } from '@/shared/context/AdmissionNumberFormatContext';
+import { useStudentLookups } from '@/features/students/hooks/useStudentLookups';
+import { DEFAULT_STUDENT_LOOKUP_SETTINGS, withCurrentLookupValue } from '@/lib/student-lookup-settings';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -27,8 +29,6 @@ interface SectionOption {
   class_id: number;
   name: string;
 }
-
-const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
 
 // Helper to format date for input type="date"
 const formatDateForInput = (date: Date | string | null | undefined): string => {
@@ -57,7 +57,7 @@ function validateIndianMobile(phone: string, required = false): string | undefin
 
 export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStudent }: AddStudentModalProps) {
   const formatAdmissionNumber = useAdmissionNumberFormat();
-  // Get sidebar collapsed state from localStorage
+  const { lookups } = useStudentLookups(isOpen);
 
   // Refs for form fields
   const modalContentRef = useRef<HTMLDivElement>(null);
@@ -76,9 +76,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
     gender: 'Male' as 'Male' | 'Female' | 'Other',
     blood_group: '',
     aadhaar_no: '',
-    religion: '',
+    religion: 'Hindu',
     caste: '',
-    category: '',
+    category: 'GEN',
     nationality: 'Indian',
     mother_tongue: '',
     remarks: '',
@@ -111,6 +111,10 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   const [sections, setSections] = useState<SectionOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingSections, setLoadingSections] = useState(false);
+
+  const religionOptions = withCurrentLookupValue(lookups.religions.items, formData.religion);
+  const casteTypeOptions = withCurrentLookupValue(lookups.caste_types.items, formData.category);
+  const nationalityOptions = withCurrentLookupValue(lookups.nationalities.items, formData.nationality);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -190,10 +194,10 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
         gender: editingStudent.gender || 'Male' as 'Male' | 'Female' | 'Other',
         blood_group: editingStudent.blood_group || '',
         aadhaar_no: editingStudent.aadhaar_no || '',
-        religion: editingStudent.religion || '',
+        religion: editingStudent.religion || lookups.religions.default_value,
         caste: editingStudent.caste || '',
-        category: editingStudent.category || '',
-        nationality: editingStudent.nationality || 'Indian',
+        category: editingStudent.category || lookups.caste_types.default_value,
+        nationality: editingStudent.nationality || lookups.nationalities.default_value,
         mother_tongue: editingStudent.mother_tongue || '',
         remarks: editingStudent.remarks || '',
         address: editingStudent.address || '',
@@ -228,10 +232,10 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
         gender: 'Male' as 'Male' | 'Female' | 'Other',
         blood_group: '',
         aadhaar_no: '',
-        religion: '',
+        religion: lookups.religions.default_value,
         caste: '',
-        category: '',
-        nationality: 'Indian',
+        category: lookups.caste_types.default_value,
+        nationality: lookups.nationalities.default_value,
         mother_tongue: '',
         remarks: '',
         address: '',
@@ -259,6 +263,35 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
     setError('');
     setFieldErrors({});
   }, [editingStudent, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || editingStudent) return;
+
+    const applyDefaults = <T extends { religion: string; category: string; nationality: string }>(prev: T): T => {
+      const religion = !prev.religion || prev.religion === DEFAULT_STUDENT_LOOKUP_SETTINGS.religions.default_value
+        ? lookups.religions.default_value
+        : prev.religion;
+      const category = !prev.category || prev.category === DEFAULT_STUDENT_LOOKUP_SETTINGS.caste_types.default_value
+        ? lookups.caste_types.default_value
+        : prev.category;
+      const nationality = !prev.nationality || prev.nationality === DEFAULT_STUDENT_LOOKUP_SETTINGS.nationalities.default_value
+        ? lookups.nationalities.default_value
+        : prev.nationality;
+      if (religion === prev.religion && category === prev.category && nationality === prev.nationality) {
+        return prev;
+      }
+      return { ...prev, religion, category, nationality };
+    };
+
+    setFormData(applyDefaults);
+    setInitialFormData(applyDefaults);
+  }, [
+    isOpen,
+    editingStudent,
+    lookups.religions.default_value,
+    lookups.caste_types.default_value,
+    lookups.nationalities.default_value,
+  ]);
 
   // Check if form has been modified
   const hasUnsavedChanges = () => {
@@ -586,12 +619,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Religion
                 </label>
-                <input
-                  type="text"
+                <select
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
                   value={formData.religion}
                   onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
-                />
+                >
+                  <option value="">Select religion</option>
+                  {religionOptions.map((religion) => (
+                    <option key={religion} value={religion}>{religion}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -606,16 +643,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  Caste Type
                 </label>
                 <select
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <option value="">Select category</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  <option value="">Select caste type</option>
+                  {casteTypeOptions.map((casteType) => (
+                    <option key={casteType} value={casteType}>{casteType}</option>
                   ))}
                 </select>
               </div>
@@ -623,12 +660,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nationality
                 </label>
-                <input
-                  type="text"
+                <select
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
                   value={formData.nationality}
                   onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                />
+                >
+                  <option value="">Select nationality</option>
+                  {nationalityOptions.map((nationality) => (
+                    <option key={nationality} value={nationality}>{nationality}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

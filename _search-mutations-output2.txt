@@ -1,0 +1,104 @@
+
+=== students_class_section_roll (6) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\access\parent-portal\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\portal-passwords\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\promotion-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-exit-service.ts
+
+=== students_insert_class (3) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\import\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\admission-convert-service.ts
+
+=== student_enrollments_mut (7) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\import\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\admission-convert-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\house-utils.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\promotion-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-exit-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-profile-api.ts
+
+=== attendance_mut (3) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\attendance\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\attendance\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\teacher\attendance\route.ts
+
+=== student_fees_mut (15) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\auto-sync\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\bulk-payment\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\clear-payments\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\exempt-all\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\exempt\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\student-fees\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\update-fee-structure-amount\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\ensure-fee-schema.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fee-manager.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fees\FeeGenerationService.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fees\InstallmentService.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fees\LateFeePolicyEngine.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fees\PaymentReconciliationService.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\parent-portal\fee-online-payment.ts
+
+=== exam_results_mut (2) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\exams\[id]\results\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\ensure-exams-schema.ts
+
+=== student_transport_mut (3) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\transport\assignments\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\transport\assignments\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-exit-service.ts
+
+=== homework_submissions_mut (7) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\homework\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\homework\submissions\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\homework\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\homework\submit\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\teacher\homework\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\parent-portal\ensure-homework-schema.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\teacher-homework.ts
+
+=== fee_payments_mut (4) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\bulk-payment\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\fees\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\fees\PaymentReconciliationService.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\parent-portal\fee-online-payment.ts
+
+=== enrollment_helper (34) ===
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\access\parent-portal\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\access\parent-portal\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\classes\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\houses\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\houses\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\houses\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\import\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\fees\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\homework\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\students\[id]\enrollments\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\parent\students\[id]\profile\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\promotions\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\[id]\enrollments\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\[id]\promote\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\[id]\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\[id]\siblings\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\document-report\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\portal-access\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\portal-passwords\bulk\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\app\api\students\route.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\features\students\components\profile\EnrollmentsTab.tsx
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\academic-year-usage.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\admission-convert-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\alumni-eligibility.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\dashboard\student-stats.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\email-recipients.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\ensure-houses-schema.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\house-utils.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\parent-portal\dashboard-stats.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\parent-students.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\promotion-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\sms-recipients.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-exit-service.ts
+C:\Shiv\Projects\edufy\apps\super-admin\src\lib\student-profile-api.ts

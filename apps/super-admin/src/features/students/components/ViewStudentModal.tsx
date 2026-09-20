@@ -14,6 +14,7 @@ import FeesTab from '@/features/students/components/profile/FeesTab';
 import AttendanceTab from '@/features/students/components/profile/AttendanceTab';
 import SiblingsTab from '@/features/students/components/profile/SiblingsTab';
 import MessagesTab from '@/features/students/components/profile/MessagesTab';
+import ActivityTab from '@/features/students/components/profile/ActivityTab';
 
 interface ViewStudentModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ type ProfileTabId =
   | 'medical'
   | 'history'
   | 'fees'
+  | 'activity'
   | 'attendance'
   | 'messages';
 
@@ -42,6 +44,7 @@ const TABS: { id: ProfileTabId; label: string }[] = [
   { id: 'medical', label: 'Medical' },
   { id: 'history', label: 'Academic History' },
   { id: 'fees', label: 'Fees' },
+  { id: 'activity', label: 'Activity' },
   { id: 'attendance', label: 'Attendance' },
   { id: 'messages', label: 'Messages' },
 ];
@@ -189,6 +192,7 @@ export default function ViewStudentModal({
           )}
           {activeTab === 'history' && <EnrollmentsTab studentId={studentData.id} />}
           {activeTab === 'fees' && <FeesTab studentId={studentData.id} />}
+          {activeTab === 'activity' && <ActivityTab studentId={studentData.id} />}
           {activeTab === 'attendance' && <AttendanceTab studentId={studentData.id} />}
           {activeTab === 'messages' && <MessagesTab studentId={studentData.id} />}
         </div>

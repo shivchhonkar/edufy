@@ -17,6 +17,7 @@ import {
   getMonthLabel,
   type RegisterCellClick,
 } from '@/features/attendance/utils/attendance-status'
+import { collectHolidayDates } from '@/lib/holiday-utils'
 import {
   downloadRegisterExcel,
   printRegister,
@@ -43,6 +44,7 @@ export default function StaffMonthlyRegisterPage() {
   const [staff, setStaff] = useState<StaffRow[]>([])
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set())
+  const [nonWorkingWeekdays, setNonWorkingWeekdays] = useState<Set<number>>(new Set([0]))
   const [loading, setLoading] = useState(true)
   const [migrationRequired, setMigrationRequired] = useState(false)
   const [cellEdit, setCellEdit] = useState<RegisterCellEditContext | null>(null)
@@ -53,17 +55,19 @@ export default function StaffMonthlyRegisterPage() {
     try {
       const { start, end } = getMonthDateRange(month, year)
       const attendanceParams = new URLSearchParams({ start_date: start, end_date: end })
-      const holidayParams = new URLSearchParams({ start_date: start, end_date: end })
+      const holidayParams = new URLSearchParams({ start_date: start, end_date: end, scope: 'school' })
 
-      const [staffRes, attendanceRes, holidaysRes] = await Promise.all([
+      const [staffRes, attendanceRes, holidaysRes, workingRes] = await Promise.all([
         fetch('/api/staff?limit=500&status=active'),
         fetch(`/api/attendance?${attendanceParams.toString()}`),
         fetch(`/api/holidays?${holidayParams.toString()}`),
+        fetch('/api/settings/working-days'),
       ])
 
       const staffData = await staffRes.json()
       const attendanceData = await attendanceRes.json()
       const holidaysData = await holidaysRes.json()
+      const workingData = await workingRes.json()
 
       setStaff(staffData.success ? staffData.data : [])
 
@@ -78,12 +82,18 @@ export default function StaffMonthlyRegisterPage() {
       }
 
       if (holidaysData.success) {
-        const dates = new Set<string>(
-          (holidaysData.data as { date: string }[]).map((h) => String(h.date).slice(0, 10)),
-        )
-        setHolidayDates(dates)
+        setHolidayDates(new Set(collectHolidayDates(holidaysData.data || [])))
       } else {
         setHolidayDates(new Set())
+      }
+
+      if (workingData.success) {
+        const closed = (workingData.data.school_days as { day_of_week: number; is_working: boolean }[])
+          .filter((day) => !day.is_working)
+          .map((day) => day.day_of_week)
+        setNonWorkingWeekdays(new Set(closed))
+      } else {
+        setNonWorkingWeekdays(new Set([0]))
       }
     } catch (error) {
       console.error('Error loading staff register:', error)
@@ -251,6 +261,7 @@ export default function StaffMonthlyRegisterPage() {
           year={year}
           entityLabel="Staff"
           holidayDates={holidayDates}
+          nonWorkingWeekdays={nonWorkingWeekdays}
           loading={loading}
           editable={!migrationRequired}
           onCellClick={handleCellClick}

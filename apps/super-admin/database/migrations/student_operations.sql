@@ -1,0 +1,2 @@
+-- Student operations: registration, physical reports, PTM, certificates, late pass, interactions.
+-- Tables are also created at runtime by ensureStudentOperationsSchema().

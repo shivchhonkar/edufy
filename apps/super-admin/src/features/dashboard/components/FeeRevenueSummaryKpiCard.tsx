@@ -5,7 +5,6 @@ import {
   dashboardStatCardClass,
   dashboardStatHeadingClass,
   dashboardStatMutedClass,
-  dashboardStatValueClass,
 } from './dashboard-stat-card-styles';
 
 interface FeeRevenueSummaryKpiCardProps {
@@ -13,61 +12,12 @@ interface FeeRevenueSummaryKpiCardProps {
   onClick?: () => void;
 }
 
-function formatAmount(amount: number) {
-  return amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+function formatCurrency(amount: number) {
+  return `₹ ${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
-type RevenueBarVariant = 'due' | 'received' | 'discount';
-
-const BAR_STYLES: Record<RevenueBarVariant, { percentClass: string; barClass: string }> = {
-  due: {
-    percentClass: 'text-[var(--theme-primary-800)]',
-    barClass: 'bg-[var(--theme-primary-800)]',
-  },
-  received: {
-    percentClass: 'text-[var(--theme-primary-600)]',
-    barClass: 'bg-[var(--theme-primary-600)]',
-  },
-  discount: {
-    percentClass: 'text-[var(--theme-secondary)]',
-    barClass: 'bg-[var(--theme-secondary)]',
-  },
-};
-
-function ProgressRow({
-  label,
-  amount,
-  percent,
-  variant,
-  showBar = true,
-}: {
-  label: string;
-  amount: number;
-  percent: number;
-  variant: RevenueBarVariant;
-  showBar?: boolean;
-}) {
-  const styles = BAR_STYLES[variant];
-
-  return (
-    <div className={showBar ? 'space-y-1' : ''}>
-      <div className="flex items-center justify-between gap-2 text-[11px]">
-        <span className={dashboardStatMutedClass}>{label}</span>
-        <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
-          {formatAmount(amount)}{' '}
-          <span className={`font-medium ${styles.percentClass}`}>({percent}%)</span>
-        </span>
-      </div>
-      {showBar && (
-        <div className="h-1 w-full rounded-full bg-[var(--theme-primary-100)] overflow-hidden">
-          <div
-            className={`h-full rounded-full ${styles.barClass} transition-all`}
-            style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
+function formatCompact(amount: number) {
+  return amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
 export default function FeeRevenueSummaryKpiCard({
@@ -75,6 +25,7 @@ export default function FeeRevenueSummaryKpiCard({
   onClick,
 }: FeeRevenueSummaryKpiCardProps) {
   const hasData = stats.total > 0;
+  const collectionRate = hasData ? stats.received_percent : 0;
 
   return (
     <div
@@ -84,31 +35,45 @@ export default function FeeRevenueSummaryKpiCard({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <p className={dashboardStatHeadingClass}>Fee Revenue Summary</p>
-      <p className={`text-xl ${dashboardStatValueClass} mt-0.5`}>
-        {hasData ? formatAmount(stats.total) : '—'}
+      <p className={dashboardStatHeadingClass}>Fee Revenue (YTD)</p>
+      <p className="text-xl font-medium text-green-600 leading-none mt-1 tabular-nums">
+        {hasData ? formatCurrency(stats.total_received) : '₹ 0'}
       </p>
 
-      <div className="mt-2.5 space-y-2 flex-1">
-        <ProgressRow
-          label="Total Due"
-          amount={stats.total_due}
-          percent={stats.due_percent}
-          variant="due"
-        />
-        <ProgressRow
-          label="Total Received (YTD)"
-          amount={stats.total_received}
-          percent={stats.received_percent}
-          variant="received"
-        />
-        <ProgressRow
-          label="Total Discount"
-          amount={stats.total_discount}
-          percent={stats.discount_percent}
-          variant="discount"
-          showBar={false}
-        />
+      <div className="mt-3 space-y-1.5 flex-1 text-[11px]">
+        <div className="flex items-center justify-between gap-2">
+          <span className={dashboardStatMutedClass}>Total Due</span>
+          <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
+            {hasData ? formatCompact(stats.total_due) : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className={dashboardStatMutedClass}>Collected</span>
+          <span className="font-semibold text-green-600 tabular-nums">
+            {hasData ? formatCompact(stats.total_received) : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className={dashboardStatMutedClass}>Discount</span>
+          <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
+            {hasData ? formatCompact(stats.total_discount) : '—'}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-[var(--theme-primary-100)]">
+        <div className="flex items-center justify-between gap-2 text-[11px] mb-1.5">
+          <span className={dashboardStatMutedClass}>Collection Rate</span>
+          <span className="font-semibold text-[var(--theme-primary-700)] tabular-nums">
+            {collectionRate}%
+          </span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-[var(--theme-primary-100)] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[var(--theme-primary-600)] transition-all"
+            style={{ width: `${Math.min(100, Math.max(0, collectionRate))}%` }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,65 +1,276 @@
 'use client';
 
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import AppModal, { AppModalShell, APP_MODAL_BODY } from '@/shared/components/common/AppModal';
-import { useEffect, useState } from 'react';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiEdit2, FiTrash2, FiSearch, FiX, FiPlus, FiBook } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSearch, FiX, FiPlus, FiBook, FiCheckCircle, FiBookOpen } from 'react-icons/fi';
+import LibraryModuleLinks from '@/features/library/components/LibraryModuleLinks';
+import LibraryMasterLinks from '@/features/library/components/LibraryMasterLinks';
+import Link from 'next/link';
+
+type MasterOption = { id: number; name: string };
 
 type Book = {
   id: number;
   title: string;
   author?: string | null;
   publisher?: string | null;
+  author2?: string | null;
   isbn?: string | null;
+  author_id?: number | null;
+  publisher_id?: number | null;
+  vendor_id?: number | null;
+  subject_id?: number | null;
   category_id?: number | null;
   total_copies?: number;
   publish_year?: number | null;
   description?: string | null;
+  remarks?: string | null;
+  price?: number | string | null;
+  language?: string | null;
+  edition?: string | null;
+  pages?: number | null;
+  accession_prefix?: string | null;
+  accession_no?: string | null;
+  purchase_date?: string | null;
+  location?: string | null;
+  class_no?: string | null;
+  binding?: string | null;
+  is_reference?: boolean | null;
+  book_type?: string | null;
+  volume?: string | null;
+  bill_no?: string | null;
+  with_cd?: boolean | null;
+  accession_date?: string | null;
+  book_status?: string | null;
   copies?: { id: number; book_id: number; status: string }[];
 };
 
+type BookForm = {
+  accessionPrefix: string;
+  accessionNo: string;
+  medium: string;
+  title: string;
+  edition: string;
+  pages: string;
+  authorId: string;
+  subjectId: string;
+  remarks: string;
+  publisherId: string;
+  vendorId: string;
+  price: string;
+  purchaseDate: string;
+  location: string;
+  classNo: string;
+  binding: string;
+  isReference: 'Yes' | 'No';
+  bookType: string;
+  author2: string;
+  volume: string;
+  year: string;
+  billNo: string;
+  withCd: 'Yes' | 'No';
+  accessionDate: string;
+  isbn: string;
+  bookStatus: string;
+  totalCopies: string;
+};
+
 const ITEMS_PER_PAGE = 10;
+const MEDIA = [
+  'English',
+  'Hindi',
+  'Sanskrit',
+  'Urdu',
+  'Arabic',
+  'Chinese',
+  'Japanese',
+  'German',
+  'French',
+  'Spanish',
+  'Russian',
+  'Portuguese',
+  'Italian',
+  'Korean',
+  'Bengali',
+  'Tamil',
+  'Telugu',
+  'Marathi',
+  'Gujarati',
+  'Punjabi',
+  'Malayalam',
+  'Kannada',
+  'Odia',
+  'Assamese',
+  'Nepali',
+  'Persian',
+  'Turkish',
+  'Dutch',
+  'Thai',
+  'Vietnamese',
+  'Indonesian',
+  'Malay',
+  'Other',
+];
+const DEFAULT_MEDIUM = 'English';
+const BOOK_STATUSES = ['On Shelf', 'Issued', 'Lost', 'Damaged', 'Binding', 'Withdrawn'];
+const INPUT =
+  'w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-[var(--theme-font)] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20';
+
+const EMPTY_FORM: BookForm = {
+  accessionPrefix: '',
+  accessionNo: '',
+  medium: DEFAULT_MEDIUM,
+  title: '',
+  edition: '',
+  pages: '',
+  authorId: '',
+  subjectId: '',
+  remarks: '',
+  publisherId: '',
+  vendorId: '',
+  price: '',
+  purchaseDate: '',
+  location: '',
+  classNo: '',
+  binding: '',
+  isReference: 'Yes',
+  bookType: '',
+  author2: '',
+  volume: '',
+  year: '',
+  billNo: '',
+  withCd: 'Yes',
+  accessionDate: '',
+  isbn: '',
+  bookStatus: 'On Shelf',
+  totalCopies: '1',
+};
+
+function toDateInput(value?: string | null) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function yesNo(value: unknown): 'Yes' | 'No' {
+  return value === true || value === 't' || value === 'Yes' ? 'Yes' : 'No';
+}
+
+function FieldRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+      <label className="text-sm font-medium text-[var(--theme-muted-font)]">{label}</label>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Pulse({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded bg-gray-200/90 ${className}`} />;
+}
+
+function BooksTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+        <tr key={index}>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-5" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-10 w-8" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3.5 w-40 max-w-full" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3.5 w-24 max-w-full" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-20" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-24" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-8" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-8" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-3 w-8" />
+          </td>
+          <td className="px-3 py-3">
+            <Pulse className="h-5 w-16 rounded-full" />
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex justify-end gap-1">
+              <Pulse className="h-6 w-6" />
+              <Pulse className="h-6 w-6" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
 
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<MasterOption[]>([]);
+  const [authors, setAuthors] = useState<MasterOption[]>([]);
+  const [publishers, setPublishers] = useState<MasterOption[]>([]);
+  const [vendors, setVendors] = useState<MasterOption[]>([]);
+  const [subjects, setSubjects] = useState<MasterOption[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [formTitle, setFormTitle] = useState('');
-  const [formAuthor, setFormAuthor] = useState('');
-  const [formPublisher, setFormPublisher] = useState('');
-  const [formIsbn, setFormIsbn] = useState('');
-  const [formCategoryId, setFormCategoryId] = useState('');
-  const [formTotalCopies, setFormTotalCopies] = useState(1);
-  const [formPublishYear, setFormPublishYear] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formBookCover, setFormBookCover] = useState<File | null>(null);
-  const [formBookCoverPreview, setFormBookCoverPreview] = useState('');
+  const [form, setForm] = useState<BookForm>(EMPTY_FORM);
   const [formLoading, setFormLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const { alert, confirm } = useDialog();
 
+  const patchForm = (partial: Partial<BookForm>) => setForm((prev) => ({ ...prev, ...partial }));
+
   const loadBooks = async () => {
     try {
-      const res = await fetch('/api/library/books');
+      const res = await fetch('/api/library/books', { cache: 'no-store' });
       const d = await res.json();
       if (d.success) setBooks(d.data || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadCategories = async () => {
+  const loadMasters = async () => {
     try {
-      const res = await fetch('/api/library/categories');
-      const d = await res.json();
-      if (d.success) setCategories(d.data || []);
+      const [cRes, aRes, pRes, vRes, sRes] = await Promise.all([
+        fetch('/api/library/categories'),
+        fetch('/api/library/masters/authors'),
+        fetch('/api/library/masters/publishers'),
+        fetch('/api/library/vendors'),
+        fetch('/api/library/masters/subjects'),
+      ]);
+      const [cData, aData, pData, vData, sData] = await Promise.all([
+        cRes.json(),
+        aRes.json(),
+        pRes.json(),
+        vRes.json(),
+        sRes.json(),
+      ]);
+      if (cData.success) setCategories(cData.data || []);
+      if (aData.success) setAuthors(aData.data || []);
+      if (pData.success) setPublishers(pData.data || []);
+      if (vData.success) setVendors(vData.data || []);
+      if (sData.success) setSubjects(sData.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -67,21 +278,10 @@ export default function BooksPage() {
 
   useEffect(() => {
     loadBooks();
-    loadCategories();
+    loadMasters();
   }, []);
 
-  const resetForm = () => {
-    setFormTitle('');
-    setFormAuthor('');
-    setFormPublisher('');
-    setFormIsbn('');
-    setFormCategoryId('');
-    setFormTotalCopies(1);
-    setFormPublishYear('');
-    setFormDescription('');
-    setFormBookCover(null);
-    setFormBookCoverPreview('');
-  };
+  const resetForm = () => setForm({ ...EMPTY_FORM, medium: DEFAULT_MEDIUM });
 
   const closeModal = () => {
     setShowModal(false);
@@ -97,66 +297,87 @@ export default function BooksPage() {
 
   const openEditModal = (book: Book) => {
     setEditingBook(book);
-    setFormTitle(book.title || '');
-    setFormAuthor(book.author || '');
-    setFormPublisher(book.publisher || '');
-    setFormIsbn(book.isbn || '');
-    setFormCategoryId(book.category_id?.toString() || '');
-    setFormTotalCopies(book.total_copies || 1);
-    setFormPublishYear(book.publish_year?.toString() || '');
-    setFormDescription(book.description || '');
-    setFormBookCover(null);
-    setFormBookCoverPreview('');
+    setForm({
+      accessionPrefix: book.accession_prefix || '',
+      accessionNo: book.accession_no || '',
+      medium: book.language || DEFAULT_MEDIUM,
+      title: book.title || '',
+      edition: book.edition || '',
+      pages: book.pages != null ? String(book.pages) : '',
+      authorId: book.author_id?.toString() || '',
+      subjectId: book.subject_id?.toString() || '',
+      remarks: book.remarks || book.description || '',
+      publisherId: book.publisher_id?.toString() || '',
+      vendorId: book.vendor_id?.toString() || '',
+      price: book.price != null && book.price !== '' ? String(book.price) : '',
+      purchaseDate: toDateInput(book.purchase_date),
+      location: book.location || '',
+      classNo: book.class_no || '',
+      binding: book.binding || '',
+      isReference: yesNo(book.is_reference),
+      bookType: book.book_type || '',
+      author2: book.author2 || '',
+      volume: book.volume || '',
+      year: book.publish_year != null ? String(book.publish_year) : '',
+      billNo: book.bill_no || '',
+      withCd: yesNo(book.with_cd),
+      accessionDate: toDateInput(book.accession_date),
+      isbn: book.isbn || '',
+      bookStatus: book.book_status || 'On Shelf',
+      totalCopies: String(book.copies?.length ?? book.total_copies ?? 0),
+    });
     setShowModal(true);
   };
 
   const validateForm = async () => {
-    if (!formTitle.trim()) {
-      await alert('Title is required', { title: 'Validation Error' });
+    if (!form.title.trim()) {
+      await alert('Book Title is required', { title: 'Validation Error' });
       return false;
     }
-    if (!formAuthor.trim()) {
-      await alert('Author is required', { title: 'Validation Error' });
-      return false;
-    }
-    if (!formIsbn.trim()) {
-      await alert('ISBN is required', { title: 'Validation Error' });
-      return false;
-    }
-    if (!formCategoryId) {
-      await alert('Category is required', { title: 'Validation Error' });
-      return false;
-    }
-    if (!formPublisher.trim()) {
-      await alert('Publisher is required', { title: 'Validation Error' });
-      return false;
-    }
-    if (!editingBook && !formPublishYear.trim()) {
-      await alert('Publish Year is required', { title: 'Validation Error' });
-      return false;
-    }
-    if (!editingBook && formTotalCopies <= 0) {
-      await alert('Quantity must be at least 1', { title: 'Validation Error' });
+    if (!editingBook && Number(form.totalCopies) < 0) {
+      await alert('No Of Books cannot be negative', { title: 'Validation Error' });
       return false;
     }
     return true;
   };
+
+  const buildPayload = (): Record<string, unknown> => ({
+    title: form.title.trim(),
+    accession_prefix: form.accessionPrefix.trim(),
+    accession_no: form.accessionNo.trim(),
+    medium: form.medium || DEFAULT_MEDIUM,
+    edition: form.edition.trim(),
+    pages: form.pages,
+    author_id: form.authorId ? parseInt(form.authorId, 10) : null,
+    author: authors.find((a) => String(a.id) === form.authorId)?.name || '',
+    subject_id: form.subjectId ? parseInt(form.subjectId, 10) : null,
+    remarks: form.remarks.trim(),
+    publisher_id: form.publisherId ? parseInt(form.publisherId, 10) : null,
+    publisher: publishers.find((p) => String(p.id) === form.publisherId)?.name || '',
+    vendor_id: form.vendorId ? parseInt(form.vendorId, 10) : null,
+    price: form.price,
+    purchase_date: form.purchaseDate,
+    location: form.location.trim(),
+    class_no: form.classNo.trim(),
+    binding: form.binding.trim(),
+    is_reference: form.isReference === 'Yes',
+    book_type: form.bookType.trim(),
+    author2: form.author2.trim(),
+    volume: form.volume.trim(),
+    publish_year: form.year,
+    bill_no: form.billNo.trim(),
+    with_cd: form.withCd === 'Yes',
+    accession_date: form.accessionDate,
+    isbn: form.isbn.trim(),
+    book_status: form.bookStatus,
+  });
 
   const handleSaveBook = async () => {
     if (!(await validateForm())) return;
 
     setFormLoading(true);
     try {
-      const payload: Record<string, unknown> = {
-        title: formTitle.trim(),
-        author: formAuthor.trim(),
-        publisher: formPublisher.trim(),
-        isbn: formIsbn.trim(),
-        category_id: parseInt(formCategoryId, 10),
-      };
-      if (formDescription.trim()) payload.description = formDescription.trim();
-      if (formPublishYear.trim()) payload.publish_year = parseInt(formPublishYear, 10);
-
+      const payload = buildPayload();
       if (editingBook) {
         const res = await fetch(`/api/library/books/${editingBook.id}`, {
           method: 'PUT',
@@ -172,7 +393,7 @@ export default function BooksPage() {
           await alert(d.error || 'Failed to update book', { title: 'Error', type: 'error' });
         }
       } else {
-        payload.total_copies = formTotalCopies;
+        payload.total_copies = parseInt(form.totalCopies || '0', 10) || 0;
         const res = await fetch('/api/library/books', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -196,23 +417,6 @@ export default function BooksPage() {
     } finally {
       setFormLoading(false);
     }
-  };
-
-  const handleBookCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-      void alert('Please upload a JPG, PNG, or JPEG image', { title: 'Invalid File', type: 'warning' });
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      void alert('File size must be less than 2MB', { title: 'File Too Large', type: 'warning' });
-      return;
-    }
-    setFormBookCover(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setFormBookCoverPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
   };
 
   const handleDeleteBook = async (book: Book) => {
@@ -249,7 +453,8 @@ export default function BooksPage() {
     const matchesSearch =
       book.title.toLowerCase().includes(q) ||
       (book.author && book.author.toLowerCase().includes(q)) ||
-      (book.isbn && book.isbn.toLowerCase().includes(q));
+      (book.isbn && book.isbn.toLowerCase().includes(q)) ||
+      (book.accession_no && book.accession_no.toLowerCase().includes(q));
     const matchesCategory = !filterCategory || book.category_id?.toString() === filterCategory;
 
     let matchesStatus = true;
@@ -267,18 +472,35 @@ export default function BooksPage() {
     return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
   };
 
-  const getBookStatus = (book: Book) => {
+  const copyCounts = (book: Book) => {
     const copies = book.copies || [];
     const available = copies.filter((c) => c.status === 'available').length;
     const issued = copies.filter((c) => c.status === 'issued').length;
+    const total = copies.length || book.total_copies || 0;
+    return { available, issued, total };
+  };
+
+  const getBookStatus = (book: Book) => {
+    const { available, issued } = copyCounts(book);
     if (available > 0 && issued > 0) return 'Partial';
     if (available > 0) return 'Available';
     if (issued > 0) return 'Issued';
-    return 'N/A';
+    return book.book_status || 'N/A';
   };
 
+  const inventory = books.reduce(
+    (acc, book) => {
+      const counts = copyCounts(book);
+      acc.available += counts.available;
+      acc.issued += counts.issued;
+      acc.total += counts.total;
+      return acc;
+    },
+    { available: 0, issued: 0, total: 0 }
+  );
+
   const statusClass = (status: string) => {
-    if (status === 'Available') return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+    if (status === 'Available' || status === 'On Shelf') return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
     if (status === 'Issued') return 'bg-amber-50 text-amber-700 ring-amber-600/20';
     if (status === 'Partial') return 'bg-blue-50 text-blue-700 ring-blue-600/20';
     return 'bg-gray-50 text-gray-600 ring-gray-500/20';
@@ -300,11 +522,9 @@ export default function BooksPage() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-medium text-gray-900">Books</h1>
-            {/* <p className="text-sm text-gray-500">Manage your library catalog</p> */}
           </div>
           <button
             onClick={openAddModal}
@@ -314,15 +534,51 @@ export default function BooksPage() {
             Add Book
           </button>
         </div>
+        {/* LibraryModuleLinks /> */}
+        <LibraryMasterLinks />
 
-        {/* Stats + Filters */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-[68px] animate-pulse rounded-xl bg-gray-100" />
+            ))
+          ) : (
+            <>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-700">
+                <div className="flex items-center gap-2">
+                  <FiCheckCircle size={16} />
+                  <p className="text-[11px] font-medium opacity-80">Available copies</p>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold">{inventory.available}</p>
+              </div>
+              <Link
+                href="/library/reports/issued"
+                className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-amber-700 hover:opacity-90"
+              >
+                <div className="flex items-center gap-2">
+                  <FiBookOpen size={16} />
+                  <p className="text-[11px] font-medium opacity-80">Issued copies</p>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold">{inventory.issued}</p>
+              </Link>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-blue-700">
+                <div className="flex items-center gap-2">
+                  <FiBook size={16} />
+                  <p className="text-[11px] font-medium opacity-80">Total copies</p>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold">{inventory.total}</p>
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Search by title, author or ISBN..."
+                placeholder="Search by title, author, ISBN or accession no..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -363,15 +619,18 @@ export default function BooksPage() {
           </div>
           <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
             <FiBook size={14} />
-            <span>
-              {filteredBooks.length} book{filteredBooks.length !== 1 ? 's' : ''}
-              {filteredBooks.length !== books.length ? ` (of ${books.length} total)` : ''}
-            </span>
+            {loading ? (
+              <Pulse className="h-3 w-24" />
+            ) : (
+              <span>
+                {filteredBooks.length} book{filteredBooks.length !== 1 ? 's' : ''}
+                {filteredBooks.length !== books.length ? ` (of ${books.length} total)` : ''}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Books Table */}
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm" aria-busy={loading} aria-live="polite">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -395,7 +654,13 @@ export default function BooksPage() {
                     ISBN
                   </th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Copies
+                    Total
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Available
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Issued
                   </th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Status
@@ -406,16 +671,18 @@ export default function BooksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {paginatedBooks.length === 0 ? (
+                {loading ? (
+                  <BooksTableSkeleton />
+                ) : paginatedBooks.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-3 py-10 text-center text-gray-500">
+                    <td colSpan={11} className="px-3 py-10 text-center text-gray-500">
                       No books found
                     </td>
                   </tr>
                 ) : (
                   paginatedBooks.map((book, idx) => {
                     const status = getBookStatus(book);
-                    const copyCount = book.copies?.length ?? book.total_copies ?? 0;
+                    const { available, issued, total } = copyCounts(book);
                     return (
                       <tr key={book.id} className="hover:bg-gray-50/80">
                         <td className="whitespace-nowrap px-3 py-2 text-gray-500">
@@ -440,7 +707,9 @@ export default function BooksPage() {
                         <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-gray-600">
                           {book.isbn || '—'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2 text-gray-600">{copyCount}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-gray-600">{total}</td>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-emerald-700">{available}</td>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-amber-700">{issued}</td>
                         <td className="px-3 py-2">
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${statusClass(status)}`}
@@ -476,8 +745,7 @@ export default function BooksPage() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {filteredBooks.length > 0 && (
+          {!loading && filteredBooks.length > 0 && (
             <div className="flex flex-col gap-2 border-t border-gray-200 bg-gray-50/50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-gray-500">
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
@@ -525,12 +793,11 @@ export default function BooksPage() {
           )}
         </div>
 
-        {/* Add / Edit Book Modal — full content area */}
         <AppModal open={showModal} onClose={closeModal}>
           <AppModalShell
             header={
               <>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-medium text-[var(--theme-font)]">
                   {editingBook ? 'Edit Book' : 'Add Book'}
                 </h2>
                 <button
@@ -547,10 +814,17 @@ export default function BooksPage() {
               <>
                 <button
                   type="button"
+                  onClick={closeModal}
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
                   onClick={resetForm}
                   className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  Reset
+                  New
                 </button>
                 <button
                   type="button"
@@ -558,175 +832,292 @@ export default function BooksPage() {
                   disabled={formLoading}
                   className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
                 >
-                  {formLoading ? 'Saving…' : editingBook ? 'Update Book' : 'Save Book'}
+                  {formLoading ? 'Saving…' : 'Save'}
                 </button>
               </>
             }
           >
-            <div className={`${APP_MODAL_BODY} p-4 sm:p-6`}>
-              <div className="mx-auto max-w-4xl">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Title <span className="text-red-500">*</span>
-                      </label>
+            <div className="p-4 sm:p-6">
+              <div className="mx-auto max-w-5xl">
+                <h3 className="mb-4 text-center text-sm font-semibold text-[var(--theme-primary-800)]">
+                  Book Details
+                </h3>
+                <div className="grid grid-cols-1 gap-x-10 gap-y-3 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <FieldRow label="Sr.No">
                       <input
                         type="text"
-                        value={formTitle}
-                        onChange={(e) => setFormTitle(e.target.value)}
-                        placeholder="Enter book title"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        readOnly
+                        value={editingBook?.id ?? ''}
+                        className={`${INPUT} bg-gray-50 text-gray-500`}
                       />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        ISBN <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formIsbn}
-                        onChange={(e) => setFormIsbn(e.target.value)}
-                        placeholder="Enter ISBN"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Publisher <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formPublisher}
-                        onChange={(e) => setFormPublisher(e.target.value)}
-                        placeholder="Enter publisher"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                      />
-                    </div>
-                    {!editingBook && (
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Quantity <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={formTotalCopies}
-                          onChange={(e) =>
-                            setFormTotalCopies(parseInt(e.target.value || '1', 10))
-                          }
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                        />
-                      </div>
-                    )}
-                    {editingBook && (
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Total Copies
-                        </label>
+                    </FieldRow>
+                    <FieldRow label="Acc No.">
+                      <div className="grid grid-cols-2 gap-2">
                         <input
                           type="text"
-                          readOnly
-                          value={editingBook.copies?.length ?? editingBook.total_copies ?? 0}
-                          className="w-full rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+                          value={form.accessionPrefix}
+                          onChange={(e) => patchForm({ accessionPrefix: e.target.value })}
+                          className={INPUT}
+                        />
+                        <input
+                          type="text"
+                          value={form.accessionNo}
+                          onChange={(e) => patchForm({ accessionNo: e.target.value })}
+                          className={INPUT}
                         />
                       </div>
-                    )}
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <textarea
-                        value={formDescription}
-                        onChange={(e) => setFormDescription(e.target.value)}
-                        placeholder="Enter book description"
-                        rows={4}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Author <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formAuthor}
-                        onChange={(e) => setFormAuthor(e.target.value)}
-                        placeholder="Enter author name"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Category <span className="text-red-500">*</span>
-                      </label>
+                    </FieldRow>
+                    <FieldRow label="Medium">
                       <select
-                        value={formCategoryId}
-                        onChange={(e) => setFormCategoryId(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        value={form.medium || DEFAULT_MEDIUM}
+                        onChange={(e) => patchForm({ medium: e.target.value || DEFAULT_MEDIUM })}
+                        className={INPUT}
                       >
-                        <option value="">Select category</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
+                        {(form.medium && !MEDIA.includes(form.medium)
+                          ? [form.medium, ...MEDIA]
+                          : MEDIA
+                        ).map((medium) => (
+                          <option key={medium} value={medium}>
+                            {medium}
                           </option>
                         ))}
                       </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Publish Year {!editingBook && <span className="text-red-500">*</span>}
-                      </label>
-                      <select
-                        value={formPublishYear}
-                        onChange={(e) => setFormPublishYear(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                      >
-                        <option value="">Select year</option>
-                        {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(
-                          (year) => (
-                            <option key={year} value={year}>
-                              {year}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Book Cover
-                      </label>
+                    </FieldRow>
+                    <FieldRow label="Book Title">
                       <input
-                        type="file"
-                        accept=".jpg,.jpeg,.png"
-                        onChange={handleBookCoverChange}
-                        className="hidden"
-                        id="book-cover-input"
+                        type="text"
+                        value={form.title}
+                        onChange={(e) => patchForm({ title: e.target.value })}
+                        className={INPUT}
                       />
-                      <label
-                        htmlFor="book-cover-input"
-                        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 px-4 py-6 text-center hover:border-primary-300 hover:bg-primary-50/30"
+                    </FieldRow>
+                    <FieldRow label="Edition">
+                      <input
+                        type="text"
+                        value={form.edition}
+                        onChange={(e) => patchForm({ edition: e.target.value })}
+                        className={`${INPUT} max-w-[10rem]`}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Pages">
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.pages}
+                        onChange={(e) => patchForm({ pages: e.target.value })}
+                        className={`${INPUT} max-w-[10rem]`}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Author">
+                      <select
+                        value={form.authorId}
+                        onChange={(e) => patchForm({ authorId: e.target.value })}
+                        className={INPUT}
                       >
-                        {formBookCoverPreview ? (
-                          <img
-                            src={formBookCoverPreview}
-                            alt="Cover preview"
-                            className="mb-2 h-32 w-auto rounded object-cover"
-                          />
-                        ) : (
-                          <FiBook className="mb-2 text-2xl text-gray-300" />
-                        )}
-                        <span className="text-sm text-gray-600">
-                          {formBookCover ? formBookCover.name : 'Choose file'}
-                        </span>
-                        <span className="mt-1 text-xs text-gray-400">
-                          JPG, PNG or JPEG · Max 2MB
-                        </span>
-                      </label>
-                    </div>
+                        <option value="">Select author</option>
+                        {authors.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Subject">
+                      <select
+                        value={form.subjectId}
+                        onChange={(e) => patchForm({ subjectId: e.target.value })}
+                        className={INPUT}
+                      >
+                        <option value="">Select subject</option>
+                        {subjects.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Remarks">
+                      <input
+                        type="text"
+                        value={form.remarks}
+                        onChange={(e) => patchForm({ remarks: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Publisher">
+                      <select
+                        value={form.publisherId}
+                        onChange={(e) => patchForm({ publisherId: e.target.value })}
+                        className={INPUT}
+                      >
+                        <option value="">Select publisher</option>
+                        {publishers.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Vendor">
+                      <select
+                        value={form.vendorId}
+                        onChange={(e) => patchForm({ vendorId: e.target.value })}
+                        className={INPUT}
+                      >
+                        <option value="">Select vendor</option>
+                        {vendors.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Price">
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={form.price}
+                        onChange={(e) => patchForm({ price: e.target.value })}
+                        className={`${INPUT} max-w-[10rem]`}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Pur Date">
+                      <input
+                        type="date"
+                        value={form.purchaseDate}
+                        onChange={(e) => patchForm({ purchaseDate: e.target.value })}
+                        className={`${INPUT} max-w-[12rem]`}
+                      />
+                    </FieldRow>
+                  </div>
+
+                  <div className="space-y-3">
+                    <FieldRow label="Location">
+                      <input
+                        type="text"
+                        value={form.location}
+                        onChange={(e) => patchForm({ location: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Class No">
+                      <input
+                        type="text"
+                        value={form.classNo}
+                        onChange={(e) => patchForm({ classNo: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Binding">
+                      <input
+                        type="text"
+                        value={form.binding}
+                        onChange={(e) => patchForm({ binding: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Reference Book">
+                      <select
+                        value={form.isReference}
+                        onChange={(e) => patchForm({ isReference: e.target.value as 'Yes' | 'No' })}
+                        className={`${INPUT} max-w-[8rem]`}
+                      >
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Type">
+                      <input
+                        type="text"
+                        value={form.bookType}
+                        onChange={(e) => patchForm({ bookType: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Author2">
+                      <input
+                        type="text"
+                        value={form.author2}
+                        onChange={(e) => patchForm({ author2: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Volume">
+                      <input
+                        type="text"
+                        value={form.volume}
+                        onChange={(e) => patchForm({ volume: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Year">
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.year}
+                        onChange={(e) => patchForm({ year: e.target.value })}
+                        className={`${INPUT} max-w-[10rem]`}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Bill No">
+                      <input
+                        type="text"
+                        value={form.billNo}
+                        onChange={(e) => patchForm({ billNo: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="With CD">
+                      <select
+                        value={form.withCd}
+                        onChange={(e) => patchForm({ withCd: e.target.value as 'Yes' | 'No' })}
+                        className={`${INPUT} max-w-[8rem]`}
+                      >
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Acc Date">
+                      <input
+                        type="date"
+                        value={form.accessionDate}
+                        onChange={(e) => patchForm({ accessionDate: e.target.value })}
+                        className={`${INPUT} max-w-[12rem]`}
+                      />
+                    </FieldRow>
+                    <FieldRow label="ISBN">
+                      <input
+                        type="text"
+                        value={form.isbn}
+                        onChange={(e) => patchForm({ isbn: e.target.value })}
+                        className={INPUT}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Book Status">
+                      <select
+                        value={form.bookStatus}
+                        onChange={(e) => patchForm({ bookStatus: e.target.value })}
+                        className={INPUT}
+                      >
+                        {BOOK_STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="No Of Books">
+                      <input
+                        type="number"
+                        min={0}
+                        readOnly={!!editingBook}
+                        value={form.totalCopies}
+                        onChange={(e) => patchForm({ totalCopies: e.target.value })}
+                        className={`${INPUT} max-w-[10rem] ${editingBook ? 'bg-gray-50 text-gray-500' : ''}`}
+                      />
+                    </FieldRow>
                   </div>
                 </div>
               </div>

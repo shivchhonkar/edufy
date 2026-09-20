@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRequestDb } from '@/lib/request-db';
+import { getRequestDb, type RequestDb } from '@/lib/request-db';
+import {
+  JOIN_ATTENDANCE_ENROLLMENT,
+  JOIN_CURRENT_ENROLLMENT_ON_STUDENT,
+  ATTENDANCE_PLACEMENT_SELECT,
+} from '@/lib/enrollment-sql';
+import {
+  prepareEnrollmentSchema,
+  resolveEnrollmentWriteContext,
+} from '@/lib/enrollment-service';
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await prepareEnrollmentSchema(db);
 
     const tableCheck = await db.query(`
       SELECT EXISTS (
@@ -23,6 +33,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const studentId = searchParams.get('student_id');
+    const enrollmentId = searchParams.get('enrollment_id');
     const classId = searchParams.get('class_id');
     const sectionId = searchParams.get('section_id');
     const startDate = searchParams.get('start_date') || searchParams.get('date');
@@ -35,14 +46,15 @@ export async function GET(request: NextRequest) {
         s.first_name,
         s.last_name,
         s.admission_number,
-        s.class_id,
-        s.section_id,
+        ${ATTENDANCE_PLACEMENT_SELECT},
         c.name AS class_name,
         sec.name AS section_name
       FROM attendance a
       JOIN students s ON a.student_id = s.id
-      LEFT JOIN classes c ON s.class_id = c.id
-      LEFT JOIN sections sec ON s.section_id = sec.id
+      ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+      ${JOIN_ATTENDANCE_ENROLLMENT}
+      LEFT JOIN classes c ON COALESCE(ae.class_id, ce.class_id, s.class_id) = c.id
+      LEFT JOIN sections sec ON COALESCE(ae.section_id, ce.section_id, s.section_id) = sec.id
       WHERE 1=1
     `;
     const queryParams: (string | number)[] = [];
@@ -54,15 +66,21 @@ export async function GET(request: NextRequest) {
       queryParams.push(studentId);
     }
 
+    if (enrollmentId) {
+      paramCount += 1;
+      queryText += ` AND a.enrollment_id = $${paramCount}`;
+      queryParams.push(enrollmentId);
+    }
+
     if (classId) {
       paramCount += 1;
-      queryText += ` AND s.class_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ae.class_id, ce.class_id, s.class_id) = $${paramCount}`;
       queryParams.push(classId);
     }
 
     if (sectionId) {
       paramCount += 1;
-      queryText += ` AND s.section_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ae.section_id, ce.section_id, s.section_id) = $${paramCount}`;
       queryParams.push(sectionId);
     }
 
@@ -101,11 +119,106 @@ export async function GET(request: NextRequest) {
   }
 }
 
+import type { RequestDb } from '@/lib/request-db';
+
+async function upsertAttendanceRecord(
+  db: RequestDb,
+  params: {
+    student_id: number;
+    date: string;
+    status?: string;
+    remarks?: string | null;
+    marked_by?: number | null;
+    enrollment_id?: number | null;
+  }
+) {
+  const writeCtx =
+    params.enrollment_id != null
+      ? await resolveEnrollmentWriteContext(db, params.student_id, {
+          enrollmentId: params.enrollment_id,
+        })
+      : await resolveEnrollmentWriteContext(db, params.student_id, {
+          asOfDate: params.date,
+        });
+
+  const enrollmentId = writeCtx?.enrollmentId ?? null;
+
+  if (enrollmentId != null) {
+    const existingByEnrollment = await db.query(
+      'SELECT id FROM attendance WHERE enrollment_id = $1 AND date = $2',
+      [enrollmentId, params.date]
+    );
+
+    if (existingByEnrollment.rows.length > 0) {
+      const updateResult = await db.query(
+        `UPDATE attendance SET
+          status = $1,
+          remarks = $2,
+          marked_by = COALESCE($3, marked_by),
+          student_id = $4
+        WHERE enrollment_id = $5 AND date = $6
+        RETURNING *`,
+        [
+          params.status || 'present',
+          params.remarks || null,
+          params.marked_by || null,
+          params.student_id,
+          enrollmentId,
+          params.date,
+        ]
+      );
+      return updateResult.rows[0];
+    }
+  }
+
+  const existingRecord = await db.query(
+    'SELECT id FROM attendance WHERE student_id = $1 AND date = $2',
+    [params.student_id, params.date]
+  );
+
+  if (existingRecord.rows.length > 0) {
+    const updateResult = await db.query(
+      `UPDATE attendance SET
+        status = $1,
+        remarks = $2,
+        marked_by = COALESCE($3, marked_by),
+        enrollment_id = COALESCE($4, enrollment_id)
+      WHERE student_id = $5 AND date = $6
+      RETURNING *`,
+      [
+        params.status || 'present',
+        params.remarks || null,
+        params.marked_by || null,
+        enrollmentId,
+        params.student_id,
+        params.date,
+      ]
+    );
+    return updateResult.rows[0];
+  }
+
+  const insertResult = await db.query(
+    `INSERT INTO attendance (student_id, enrollment_id, date, status, remarks, marked_by)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [
+      params.student_id,
+      enrollmentId,
+      params.date,
+      params.status || 'present',
+      params.remarks || null,
+      params.marked_by || null,
+    ]
+  );
+  return insertResult.rows[0];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await prepareEnrollmentSchema(db);
     const body = await request.json();
-    const { student_id, date, status, remarks, marked_by } = body;
+    const { student_id, date, status, remarks, marked_by, enrollment_id } = body;
 
     if (!student_id || !date) {
       return NextResponse.json(
@@ -114,39 +227,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingRecord = await db.query(
-      'SELECT id FROM attendance WHERE student_id = $1 AND date = $2',
-      [student_id, date]
-    );
-
-    if (existingRecord.rows.length > 0) {
-      const updateResult = await db.query(
-        `UPDATE attendance SET
-          status = $1,
-          remarks = $2,
-          marked_by = COALESCE($3, marked_by)
-        WHERE student_id = $4 AND date = $5
-        RETURNING *`,
-        [status || 'present', remarks || null, marked_by || null, student_id, date]
-      );
-
-      return NextResponse.json({
-        success: true,
-        data: updateResult.rows[0],
-        message: 'Student attendance updated successfully',
-      });
-    }
-
-    const insertResult = await db.query(
-      `INSERT INTO attendance (student_id, date, status, remarks, marked_by)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [student_id, date, status || 'present', remarks || null, marked_by || null]
-    );
+    const row = await upsertAttendanceRecord(db, {
+      student_id,
+      date,
+      status,
+      remarks,
+      marked_by,
+      enrollment_id,
+    });
 
     return NextResponse.json({
       success: true,
-      data: insertResult.rows[0],
+      data: row,
       message: 'Student attendance recorded successfully',
     }, { status: 201 });
   } catch (error) {
@@ -161,6 +253,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
+    await prepareEnrollmentSchema(db);
     const body = await request.json();
     const { attendance_records } = body;
 
@@ -177,32 +270,18 @@ export async function PUT(request: NextRequest) {
       const results = [];
 
       for (const record of attendance_records) {
-        const { student_id, date, status, remarks } = record;
+        const { student_id, date, status, remarks, enrollment_id } = record;
 
         if (!student_id || !date) continue;
 
-        const existingRecord = await db.query(
-          'SELECT id FROM attendance WHERE student_id = $1 AND date = $2',
-          [student_id, date]
-        );
-
-        if (existingRecord.rows.length > 0) {
-          const updateResult = await db.query(
-            `UPDATE attendance SET status = $1, remarks = $2
-             WHERE student_id = $3 AND date = $4
-             RETURNING *`,
-            [status || 'present', remarks || null, student_id, date]
-          );
-          results.push(updateResult.rows[0]);
-        } else {
-          const insertResult = await db.query(
-            `INSERT INTO attendance (student_id, date, status, remarks)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [student_id, date, status || 'present', remarks || null]
-          );
-          results.push(insertResult.rows[0]);
-        }
+        const row = await upsertAttendanceRecord(db, {
+          student_id,
+          date,
+          status,
+          remarks,
+          enrollment_id,
+        });
+        results.push(row);
       }
 
       await db.query('COMMIT');

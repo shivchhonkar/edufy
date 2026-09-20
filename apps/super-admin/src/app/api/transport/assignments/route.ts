@@ -4,11 +4,17 @@ import { ensureTransportSchema } from '@/lib/ensure-transport-schema';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
 import { syncTransportFeesForStudent } from '@/lib/transport-fee-sync';
+import { prepareEnrollmentSchema, resolveEnrollmentWriteContext } from '@/lib/enrollment-service';
+import {
+  JOIN_CURRENT_ENROLLMENT_ON_STUDENT,
+  STUDENT_PLACEMENT_SELECT,
+} from '@/lib/enrollment-sql';
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureTransportSchema(db);
+    await prepareEnrollmentSchema(db);
     const searchParams = request.nextUrl.searchParams;
     const studentId = searchParams.get('student_id');
     const status = searchParams.get('status');
@@ -30,15 +36,17 @@ export async function GET(request: NextRequest) {
     }
 
     let queryText = `
-      SELECT st.id, st.student_id, st.route_id, st.stop_id, st.transport_fee,
+      SELECT st.id, st.student_id, st.enrollment_id, st.route_id, st.stop_id, st.transport_fee,
              st.start_date, st.end_date, st.status,
              s.admission_number, s.first_name, s.last_name, s.photo_url, s.parent_phone,
-             c.id as class_id, c.name as class_name, sec.name as section_name,
+             ${STUDENT_PLACEMENT_SELECT},
+             c.name as class_name, sec.name as section_name,
              r.route_name, r.route_number, rs.stop_name, rs.arrival_time
       FROM student_transport st
       JOIN students s ON st.student_id = s.id
-      LEFT JOIN classes c ON s.class_id = c.id
-      LEFT JOIN sections sec ON s.section_id = sec.id
+      ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+      LEFT JOIN classes c ON COALESCE(ce.class_id, s.class_id) = c.id
+      LEFT JOIN sections sec ON COALESCE(ce.section_id, s.section_id) = sec.id
       JOIN routes r ON st.route_id = r.id
       LEFT JOIN route_stops rs ON st.stop_id = rs.id
       WHERE 1=1
@@ -58,12 +66,12 @@ export async function GET(request: NextRequest) {
     }
     if (classId) {
       paramCount++;
-      queryText += ` AND s.class_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ce.class_id, s.class_id) = $${paramCount}`;
       queryParams.push(classId);
     }
     if (sectionId) {
       paramCount++;
-      queryText += ` AND s.section_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ce.section_id, s.section_id) = $${paramCount}`;
       queryParams.push(sectionId);
     }
     if (search) {
@@ -86,6 +94,7 @@ export async function POST(request: NextRequest) {
   try {
     const { db } = await getRequestDb(request);
     await ensureTransportSchema(db);
+    await prepareEnrollmentSchema(db);
     const body = await request.json();
 
     const studentIds: number[] = body.student_ids?.length
@@ -122,10 +131,22 @@ export async function POST(request: NextRequest) {
         skipped.push(String(studentId));
         continue;
       }
+      const writeCtx = await resolveEnrollmentWriteContext(db, studentId, {
+        asOfDate: start_date,
+      });
       const result = await db.query(
-        `INSERT INTO student_transport (student_id, route_id, stop_id, transport_fee, start_date, end_date, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-        [studentId, route_id, stop_id || null, fee, start_date, end_date || null, status]
+        `INSERT INTO student_transport (student_id, enrollment_id, route_id, stop_id, transport_fee, start_date, end_date, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+        [
+          studentId,
+          writeCtx?.enrollmentId ?? null,
+          route_id,
+          stop_id || null,
+          fee,
+          start_date,
+          end_date || null,
+          status,
+        ]
       );
       created.push(result.rows[0]);
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureSchoolEventsSchema } from '@/lib/ensure-school-events-schema';
 import { fetchAllCalendarEvents, fetchCalendarEventsInRange } from '@/lib/school-calendar';
+import { insertHoliday } from '@/lib/holiday-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,23 +63,24 @@ export async function POST(request: NextRequest) {
     const kind = body.kind as string;
 
     if (kind === 'holiday') {
-      const { date, name, type, description } = body;
-      if (!date || !name || !type) {
-        return NextResponse.json(
-          { success: false, error: 'Date, name, and type are required for holidays' },
-          { status: 400 },
-        );
+      const created = await insertHoliday(db, {
+        date: body.date || body.start_date,
+        start_date: body.start_date || body.date,
+        end_date: body.end_date || body.start_date || body.date,
+        name: body.name || body.title,
+        remark: body.description || body.remark || body.name || body.title,
+        description: body.description || body.remark,
+        type: body.type || 'school',
+        academic_year: body.academic_year,
+        scope: body.scope || 'school',
+        class_id: body.class_id,
+      });
+      if ('error' in created) {
+        return NextResponse.json({ success: false, error: created.error }, { status: 400 });
       }
 
-      const result = await db.query(
-        `INSERT INTO holidays (date, name, type, description)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`,
-        [date, name, type, description || null],
-      );
-
       return NextResponse.json(
-        { success: true, data: result.rows[0], message: 'Holiday created successfully' },
+        { success: true, data: created, message: 'Holiday created successfully' },
         { status: 201 },
       );
     }

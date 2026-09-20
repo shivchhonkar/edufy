@@ -115,7 +115,7 @@ export default function VirtualizedStaffTable({
         width: 'minmax(120px, 1fr)',
         render: (member) => (
           <span className="text-sm text-gray-600 truncate">
-            {member.designation_name || member.designation || '—'}
+            {member.designation_name || member.designation || member.staff_type || '—'}
           </span>
         ),
       },
@@ -125,7 +125,7 @@ export default function VirtualizedStaffTable({
         width: 'minmax(120px, 1fr)',
         render: (member) => (
           <span className="text-sm text-gray-600 truncate">
-            {member.department_name || member.department || '—'}
+            {member.department_name || member.department || (member.staff_type === 'TEACHER' ? 'Teaching' : '—')}
           </span>
         ),
       },

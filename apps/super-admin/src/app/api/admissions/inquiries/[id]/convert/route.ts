@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { inquiryExists } from '@/lib/admission-inquiry-api';
+import { ensureAdmissionInquirySchema } from '@/lib/ensure-admission-inquiry-schema';
 import {
   convertInquiryToStudent,
   InquiryConvertError,
@@ -17,6 +18,7 @@ export async function POST(
 ) {
   try {
     const { db } = await getRequestDb(request);
+    await ensureAdmissionInquirySchema(db);
     const inquiryId = parseId(params.id);
     if (!inquiryId) {
       return NextResponse.json({ success: false, error: 'Invalid id' }, { status: 400 });

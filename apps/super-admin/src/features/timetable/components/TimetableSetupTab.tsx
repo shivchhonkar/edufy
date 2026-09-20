@@ -57,6 +57,7 @@ export default function TimetableSetupTab() {
             <p className="font-medium">Step 1 — Define School Working Days</p>
             <p className="text-xs mt-0.5 text-blue-700">
               Configure which days the school operates and how many teaching periods run each day.
+              Class-wise overrides are under Settings → Working Days.
             </p>
           </div>
           <button

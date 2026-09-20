@@ -10,6 +10,12 @@ import {
 } from '@/lib/admission-number-settings';
 import { ensureDefaultStudentGuardians, ensureStudentMotherColumns, syncStudentMedicalBloodGroup } from '@/lib/student-profile-api';
 import { FeeGenerationService } from '@/lib/fees/FeeGenerationService';
+import {
+  JOIN_CURRENT_ENROLLMENT_ON_STUDENT,
+  STUDENT_PLACEMENT_SELECT,
+} from '@/lib/enrollment-sql';
+import { createCurrentEnrollment, prepareEnrollmentSchema } from '@/lib/enrollment-service';
+import { assertClassAgeRestriction } from '@/lib/class-age-restriction';
 
 async function assignDefaultFeesToStudent(studentId: number, classId: number | null, db: RequestDb) {
   try {
@@ -43,6 +49,7 @@ export async function GET(request: NextRequest) {
     const authResult = await getAuthenticatedDb(request);
     if (authResult instanceof NextResponse) return authResult;
     const { db } = authResult;
+    await prepareEnrollmentSchema(db);
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '550');
@@ -54,10 +61,13 @@ export async function GET(request: NextRequest) {
     const { offset, limit: pageLimit } = getPaginationParams(page, limit);
 
     let queryText = `
-      SELECT s.*, c.name as class_name, sec.name as section_name
+      SELECT s.*,
+        ${STUDENT_PLACEMENT_SELECT},
+        c.name as class_name, sec.name as section_name
       FROM students s
-      LEFT JOIN classes c ON s.class_id = c.id
-      LEFT JOIN sections sec ON s.section_id = sec.id
+      ${JOIN_CURRENT_ENROLLMENT_ON_STUDENT}
+      LEFT JOIN classes c ON COALESCE(ce.class_id, s.class_id) = c.id
+      LEFT JOIN sections sec ON COALESCE(ce.section_id, s.section_id) = sec.id
       WHERE s.status = $1
     `;
     let queryParams: any[] = [status];
@@ -70,18 +80,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (classId === 'unassigned') {
-      queryText += ' AND s.class_id IS NULL';
+      queryText += ' AND COALESCE(ce.class_id, s.class_id) IS NULL';
     } else if (classId === 'assigned') {
-      queryText += ' AND s.class_id IS NOT NULL';
+      queryText += ' AND COALESCE(ce.class_id, s.class_id) IS NOT NULL';
     } else if (classId) {
       paramCount++;
-      queryText += ` AND s.class_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ce.class_id, s.class_id) = $${paramCount}`;
       queryParams.push(classId);
     }
 
     if (sectionId) {
       paramCount++;
-      queryText += ` AND s.section_id = $${paramCount}`;
+      queryText += ` AND COALESCE(ce.section_id, s.section_id) = $${paramCount}`;
       queryParams.push(sectionId);
     }
 
@@ -187,6 +197,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ageCheck = await assertClassAgeRestriction(db, {
+      classId: class_id,
+      dateOfBirth: date_of_birth,
+      admissionDate: admission_date,
+    });
+    if (!ageCheck.ok) {
+      return NextResponse.json({ success: false, error: ageCheck.error }, { status: 400 });
+    }
+
     // Generate admission number from school setup settings
     const admissionSettings = await getAdmissionNumberSettings(db);
     const admission_number = generateAdmissionNumberForSchool(admissionSettings);
@@ -198,12 +217,11 @@ export async function POST(request: NextRequest) {
         admission_number, student_code, first_name, middle_name, last_name,
         date_of_birth, gender, blood_group, aadhaar_no, religion, caste, category,
         nationality, mother_tongue, remarks, address, city, state, pincode,
-        admission_date, class_id, section_id, roll_number,
-        parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email,
+        admission_date, parent_name, parent_phone, parent_email, mother_name, mother_phone, mother_email,
         emergency_contact, photo_url, status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
       )
       RETURNING *`,
       [
@@ -211,8 +229,7 @@ export async function POST(request: NextRequest) {
         date_of_birth, gender, blood_group || null, aadhaar_no || null,
         religion || null, caste || null, category || null, nationality || null,
         mother_tongue || null, remarks || null, address || null, city || null,
-        state || null, pincode || null, admission_date, class_id || null,
-        section_id || null, roll_number || null, parent_name || null,
+        state || null, pincode || null, admission_date, parent_name || null,
         parent_phone || null, parent_email || null, mother_name || null,
         mother_phone || null, mother_email || null, emergency_contact || null,
         photo_url || null, 'active',
@@ -223,28 +240,12 @@ export async function POST(request: NextRequest) {
 
     if (class_id) {
       try {
-        const ayResult = await db.query<{ id: number; name: string }>(
-          'SELECT id, name FROM academic_years WHERE is_active = true LIMIT 1'
-        );
-        const academicYear =
-          ayResult.rows[0]?.name ||
-          `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-        const academicYearId = ayResult.rows[0]?.id ?? null;
-
-        await db.query(
-          `INSERT INTO student_enrollments (
-            student_id, academic_year_id, academic_year, class_id, section_id,
-            roll_number, status, is_current
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'active', true)`,
-          [
-            newStudent.id,
-            academicYearId,
-            academicYear,
-            class_id,
-            section_id || null,
-            roll_number || null,
-          ]
-        );
+        await createCurrentEnrollment(db, {
+          studentId: newStudent.id,
+          classId: class_id,
+          sectionId: section_id || null,
+          rollNumber: roll_number || null,
+        });
       } catch (enrollmentError) {
         console.error('Error creating student enrollment:', enrollmentError);
       }

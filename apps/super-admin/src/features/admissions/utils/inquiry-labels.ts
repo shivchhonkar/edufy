@@ -189,12 +189,20 @@ export const TERMINAL_COLUMN_STYLES: Record<
 };
 
 export const SOURCE_LABELS: Record<InquirySource, string> = {
-  walk_in: 'Walk-in',
+  walk_in: 'Walk-In',
   phone: 'Phone',
   website: 'Website',
-  referral: 'Referral',
+  referral: 'Friends',
   social_media: 'Social Media',
-  other: 'Other',
+  android: 'Android Registered Guest',
+  advertisement: 'Advertisement',
+  other: 'Others',
+};
+
+export const STUDENT_TYPE_LABELS: Record<string, string> = {
+  regular: 'Regular',
+  day_boarding: 'Day Boarding',
+  hostler: 'Hostler',
 };
 
 export const PARENT_RELATION_LABELS: Record<'father' | 'mother', string> = {

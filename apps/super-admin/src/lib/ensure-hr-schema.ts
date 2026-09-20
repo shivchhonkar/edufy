@@ -32,6 +32,33 @@ CREATE TABLE IF NOT EXISTS designations (
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS designation_id INTEGER REFERENCES designations(id) ON DELETE SET NULL;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS reporting_manager_id INTEGER REFERENCES staff(id) ON DELETE SET NULL;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS staff_type VARCHAR(40);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS staff_category VARCHAR(100);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS father_husband_name VARCHAR(200);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS pan_number VARCHAR(20);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS aadhaar_number VARCHAR(20);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS pf_account_no VARCHAR(50);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS pf_max DECIMAL(12,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS pf_uan VARCHAR(50);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS esi_account_no VARCHAR(50);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS date_of_leaving DATE;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS transport_allowance DECIMAL(10,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS in_time TIME;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS out_time TIME;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS duty_hours DECIMAL(5,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS restrict_holidays INTEGER DEFAULT 0;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS overtime_allowed BOOLEAN DEFAULT false;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS overtime_hours DECIMAL(5,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS bank_account_name VARCHAR(200);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS bank_branch VARCHAR(150);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS work_location VARCHAR(150);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS class_teacher VARCHAR(100);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS basic_salary DECIMAL(12,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS travel_allowance DECIMAL(12,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS dearness_allowance DECIMAL(12,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS other_allowance DECIMAL(12,2);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS salary_effective_date DATE;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS subject_classes JSONB DEFAULT '[]'::jsonb;
 
 -- Staff documents
 CREATE TABLE IF NOT EXISTS staff_documents (
@@ -442,6 +469,37 @@ async function seedDefaultDepartments(db: RequestDb): Promise<void> {
     await db.query(
       `INSERT INTO departments (name, code) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
       [d.name, d.code]
+    );
+  }
+
+  const teaching = await db.query<{ id: number }>(
+    `SELECT id FROM departments WHERE name ILIKE 'Teaching' OR code = 'TCH' ORDER BY id LIMIT 1`
+  );
+  const teachingId = teaching.rows[0]?.id;
+  if (teachingId) {
+    await db.query(
+      `INSERT INTO designations (name, department_id)
+       SELECT 'Teacher', $1
+       WHERE NOT EXISTS (
+         SELECT 1 FROM designations WHERE name ILIKE 'Teacher' AND (department_id = $1 OR department_id IS NULL)
+       )`,
+      [teachingId]
+    );
+    await db.query(
+      `UPDATE staff s
+       SET department = COALESCE(NULLIF(s.department, ''), 'Teaching'),
+           department_id = COALESCE(s.department_id, $1),
+           designation = COALESCE(NULLIF(s.designation, ''), 'Teacher'),
+           designation_id = COALESCE(
+             s.designation_id,
+             (SELECT id FROM designations
+              WHERE name ILIKE 'Teacher' AND (department_id = $1 OR department_id IS NULL)
+              ORDER BY CASE WHEN department_id = $1 THEN 0 ELSE 1 END, id
+              LIMIT 1)
+           )
+       WHERE UPPER(TRIM(COALESCE(s.staff_type, ''))) = 'TEACHER'
+         AND (s.department_id IS NULL OR COALESCE(NULLIF(s.designation, ''), '') = '')`,
+      [teachingId]
     );
   }
 }

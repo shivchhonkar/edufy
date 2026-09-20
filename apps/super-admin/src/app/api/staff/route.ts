@@ -4,6 +4,8 @@ import { ensureHrSchema } from '@/lib/ensure-hr-schema';
 import { requireHrAdmin, requireHrRead } from '@/lib/hr-auth';
 import { Staff } from '@/shared/types';
 import { generateEmployeeId, getPaginationParams } from '@/lib/utils';
+import { STAFF_WRITE_COLUMNS, staffWriteParams, staffWriteValues } from '@/lib/staff-write-values';
+import { applyStaffTypeDefaults } from '@/lib/teachers-query';
 
 export async function GET(request: NextRequest) {
   try {
@@ -100,72 +102,35 @@ export async function POST(request: NextRequest) {
     const { db } = await getRequestDb(request);
     await ensureHrSchema(db);
     const body = await request.json();
-    const {
-      first_name,
-      last_name,
-      date_of_birth,
-      gender,
-      phone,
-      email,
-      address,
-      city,
-      state,
-      pincode,
-      designation,
-      last_designation,
-      department,
-      department_id,
-      designation_id,
-      qualification,
-      experience_years,
-      date_of_joining,
-      employment_type,
-      salary,
-      notes,
-      status_change_date,
-    } = body;
+    const fields = await applyStaffTypeDefaults(db, staffWriteValues(body));
 
-    // Validation
-    if (!first_name || !last_name || !phone || !date_of_joining || !employment_type) {
+    if (!fields.first_name || !fields.last_name || !fields.phone || !fields.date_of_joining || !fields.employment_type) {
       return NextResponse.json(
         { success: false, error: 'Required fields are missing' },
         { status: 400 }
       );
     }
 
-    // Generate employee ID
-    const employee_id = generateEmployeeId();
+    let employee_id = String(body.employee_id || '').trim();
+    if (employee_id) {
+      const existing = await db.query('SELECT id FROM staff WHERE employee_id = $1', [employee_id]);
+      if (existing.rows.length > 0) {
+        return NextResponse.json(
+          { success: false, error: 'Employee ID already exists' },
+          { status: 400 }
+        );
+      }
+    } else {
+      employee_id = generateEmployeeId();
+    }
 
-    // Convert empty strings to null for optional fields
-    const sanitizedData = {
-      date_of_birth: date_of_birth || null,
-      email: email || null,
-      address: address || null,
-      city: city || null,
-      state: state || null,
-      pincode: pincode || null,
-      designation: designation || null,
-      last_designation: last_designation || null,
-      department: department || null,
-      qualification: qualification || null,
-      notes: notes || null,
-      status_change_date: status_change_date || null,
-    };
-
+    const status = body.status === 'inactive' ? 'inactive' : 'active';
+    const placeholders = STAFF_WRITE_COLUMNS.map((_, i) => `$${i + 3}`).join(', ');
     const result = await db.query<Staff>(
-      `INSERT INTO staff (
-        employee_id, first_name, last_name, date_of_birth, gender, phone, email,
-        address, city, state, pincode, designation, last_designation, department, department_id, designation_id,
-        qualification, experience_years, date_of_joining, employment_type, salary, status, notes, status_change_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
-      RETURNING *`,
-      [
-        employee_id, first_name, last_name, sanitizedData.date_of_birth, gender, phone, sanitizedData.email,
-        sanitizedData.address, sanitizedData.city, sanitizedData.state, sanitizedData.pincode, sanitizedData.designation,
-        sanitizedData.last_designation, sanitizedData.department, department_id || null, designation_id || null,
-        sanitizedData.qualification, experience_years,
-        date_of_joining, employment_type, salary, 'active', sanitizedData.notes, sanitizedData.status_change_date
-      ]
+      `INSERT INTO staff (employee_id, status, ${STAFF_WRITE_COLUMNS.join(', ')})
+       VALUES ($1, $2, ${placeholders})
+       RETURNING *`,
+      [employee_id, status, ...staffWriteParams(fields)]
     );
 
     return NextResponse.json({

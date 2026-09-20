@@ -9,6 +9,7 @@ import {
   REGISTER_LEGEND,
   statusToRegisterCode,
 } from '@/features/attendance/utils/attendance-status';
+import { collectHolidayDates } from '@/lib/holiday-utils';
 
 interface AttendanceRecord {
   id: number;
@@ -62,7 +63,7 @@ export default function AttendanceTab({ studentId }: AttendanceTabProps) {
       const { start, end } = getMonthDateRange(month, year);
       const [attendanceRes, holidaysRes] = await Promise.all([
         fetch(`/api/attendance/students?student_id=${studentId}&start_date=${start}&end_date=${end}`),
-        fetch(`/api/holidays?start_date=${start}&end_date=${end}`),
+        fetch(`/api/holidays?start_date=${start}&end_date=${end}&student_id=${studentId}`),
       ]);
 
       const attendanceData = await attendanceRes.json();
@@ -79,11 +80,7 @@ export default function AttendanceTab({ studentId }: AttendanceTabProps) {
       }
 
       if (holidaysData.success) {
-        setHolidayDates(
-          new Set(
-            (holidaysData.data as { date: string }[]).map((h) => String(h.date).slice(0, 10)),
-          ),
-        );
+        setHolidayDates(new Set(collectHolidayDates(holidaysData.data || [])));
       } else {
         setHolidayDates(new Set());
       }

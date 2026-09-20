@@ -123,8 +123,9 @@ export async function applyOnlineFeePayment(
     await client.query(
       `INSERT INTO fee_payments (
          student_id, amount_paid, payment_date, payment_method, transaction_id,
-         receipt_number, status, remarks, created_by, academic_year
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         receipt_number, status, remarks, created_by, academic_year,
+         allocated_fee_ids, payment_source
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         params.studentId,
         totalAmount,
@@ -136,6 +137,8 @@ export async function applyOnlineFeePayment(
         params.remarks || 'Online fee payment via Razorpay',
         params.payerName || 'Parent Portal',
         params.academicYear,
+        payableFees.map((fee) => fee.id),
+        'mobile',
       ],
     );
 

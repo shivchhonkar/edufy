@@ -6,6 +6,7 @@ import { SettingsProvider } from '@/shared/SettingsContext';
 import { ThemeProvider } from '@/shared/ThemeContext';
 import { DialogProvider } from '@/shared/context/DialogContext';
 import { StaffAccessProvider } from '@/shared/context/StaffAccessContext';
+import { EnrollmentProvider } from '@/shared/context/EnrollmentContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,11 +22,13 @@ export default function RootLayout({
       <body className={inter.className}>
         <SettingsProvider>
           <ThemeProvider>
-            <StaffAccessProvider>
-              <DialogProvider>
-                {children}
-              </DialogProvider>
-            </StaffAccessProvider>
+            <EnrollmentProvider>
+              <StaffAccessProvider>
+                <DialogProvider>
+                  {children}
+                </DialogProvider>
+              </StaffAccessProvider>
+            </EnrollmentProvider>
           </ThemeProvider>
         </SettingsProvider>
       </body>

@@ -1,5 +1,6 @@
 import type { RequestDb } from '@/lib/request-db';
 import { ensureSchoolEventsSchema } from '@/lib/ensure-school-events-schema';
+import { ensureHolidaySchema } from '@/lib/ensure-holiday-schema';
 import { getCalendarDateString } from '@edulakhya/utils';
 
 export type CalendarEventKind = 'holiday' | 'school_event';
@@ -34,10 +35,14 @@ export async function fetchCalendarEventsInRange(
   options?: { parentVisibleOnly?: boolean },
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db);
+  await ensureHolidaySchema(db);
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false;
   const schoolEventFilter = parentVisibleOnly
     ? `AND status = 'published' AND audience IN ('all', 'parents')`
+    : '';
+  const holidayScopeFilter = parentVisibleOnly
+    ? `AND (scope = 'school' OR scope IS NULL OR class_id IS NULL)`
     : '';
 
   const [holidays, schoolEvents] = await Promise.all([
@@ -47,11 +52,19 @@ export async function fetchCalendarEventsInRange(
       name: string;
       type: string;
       description: string | null;
+      start_date: Date | null;
+      end_date: Date | null;
+      remark: string | null;
     }>(
-      `SELECT id, date, name, type, description
+      `SELECT id, date, name, type, description,
+              COALESCE(start_date, date) AS start_date,
+              COALESCE(end_date, start_date, date) AS end_date,
+              COALESCE(remark, description) AS remark
        FROM holidays
-       WHERE date BETWEEN $1 AND $2
-       ORDER BY date ASC`,
+       WHERE COALESCE(start_date, date) <= $2
+         AND COALESCE(end_date, start_date, date) >= $1
+         ${holidayScopeFilter}
+       ORDER BY COALESCE(start_date, date) ASC`,
       [startDate, endDate],
     ),
     db.query<{
@@ -80,15 +93,16 @@ export async function fetchCalendarEventsInRange(
   ]);
 
   const holidayEvents: CalendarEvent[] = holidays.rows.map((row) => {
-    const date = toDateString(row.date);
+    const start = toDateString(row.start_date || row.date);
+    const end = toDateString(row.end_date || start);
     return {
       id: row.id,
       kind: 'holiday',
-      title: row.name,
-      description: row.description,
+      title: row.remark || row.name,
+      description: row.description || row.remark,
       event_type: row.type,
-      start_date: date,
-      end_date: date,
+      start_date: start,
+      end_date: end,
       all_day: true,
       audience: 'all',
       status: 'published',
@@ -123,10 +137,14 @@ export async function fetchAllCalendarEvents(
   options?: { parentVisibleOnly?: boolean },
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db);
+  await ensureHolidaySchema(db);
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false;
   const schoolEventFilter = parentVisibleOnly
     ? `WHERE status = 'published' AND audience IN ('all', 'parents')`
+    : '';
+  const holidayScopeFilter = parentVisibleOnly
+    ? `WHERE (scope = 'school' OR scope IS NULL OR class_id IS NULL)`
     : '';
 
   const [holidays, schoolEvents] = await Promise.all([
@@ -136,7 +154,18 @@ export async function fetchAllCalendarEvents(
       name: string;
       type: string;
       description: string | null;
-    }>(`SELECT id, date, name, type, description FROM holidays ORDER BY date ASC`),
+      start_date: Date | null;
+      end_date: Date | null;
+      remark: string | null;
+    }>(
+      `SELECT id, date, name, type, description,
+              COALESCE(start_date, date) AS start_date,
+              COALESCE(end_date, start_date, date) AS end_date,
+              COALESCE(remark, description) AS remark
+       FROM holidays
+       ${holidayScopeFilter}
+       ORDER BY COALESCE(start_date, date) ASC`,
+    ),
     db.query<{
       id: number;
       title: string;
@@ -160,15 +189,16 @@ export async function fetchAllCalendarEvents(
   ]);
 
   const holidayEvents: CalendarEvent[] = holidays.rows.map((row) => {
-    const date = toDateString(row.date);
+    const start = toDateString(row.start_date || row.date);
+    const end = toDateString(row.end_date || start);
     return {
       id: row.id,
       kind: 'holiday',
-      title: row.name,
-      description: row.description,
+      title: row.remark || row.name,
+      description: row.description || row.remark,
       event_type: row.type,
-      start_date: date,
-      end_date: date,
+      start_date: start,
+      end_date: end,
       all_day: true,
       audience: 'all',
       status: 'published',

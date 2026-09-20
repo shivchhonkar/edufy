@@ -48,3 +48,25 @@ export function usePreselectGatePassStudentFromUrl(
     setActiveTab('issue');
   }, [searchParams, students, setSelectedStudentId, setStudentPickerExpanded, setActiveTab]);
 }
+
+export function usePreselectExitStudentFromUrl(
+  students: Student[],
+  setSelectedStudentId: React.Dispatch<React.SetStateAction<number | null>>,
+  setActiveTab: React.Dispatch<React.SetStateAction<'process' | 'history'>>,
+) {
+  const searchParams = useSearchParams();
+  const appliedIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const raw = searchParams.get('student_id');
+    if (!raw || students.length === 0) return;
+
+    const id = parseInt(raw, 10);
+    if (!Number.isFinite(id) || !students.some((s) => s.id === id)) return;
+    if (appliedIdRef.current === id) return;
+
+    appliedIdRef.current = id;
+    setSelectedStudentId(id);
+    setActiveTab('process');
+  }, [searchParams, students, setSelectedStudentId, setActiveTab]);
+}
