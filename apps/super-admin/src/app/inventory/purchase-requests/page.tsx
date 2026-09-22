@@ -10,6 +10,7 @@ export default function PurchaseRequestsPage() {
       description="Raise a request for items that need to be purchased."
       showVendor
       postRequiresApprove
+      useModalForm
     />
   );
 }

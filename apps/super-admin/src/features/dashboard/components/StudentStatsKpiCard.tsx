@@ -1,14 +1,8 @@
 'use client';
 
 import { FiUsers } from 'react-icons/fi';
-import { IoMale, IoFemale } from 'react-icons/io5';
 import type { DashboardStudentStats } from '@/shared/types';
-import {
-  dashboardStatCardClass,
-  dashboardStatDividerClass,
-  dashboardStatTitleClass,
-  dashboardStatValueClass,
-} from './dashboard-stat-card-styles';
+import KpiCard from './KpiCard';
 
 interface StudentStatsKpiCardProps {
   stats: DashboardStudentStats;
@@ -23,58 +17,40 @@ export default function StudentStatsKpiCard({
   leftCount = 0,
   onClick,
 }: StudentStatsKpiCardProps) {
+  const previous = stats.previous_students;
+  const changePct =
+    previous > 0 ? Math.round(((stats.total - previous) / previous) * 100) : null;
+
+  const trend =
+    growthText ||
+    (changePct !== null
+      ? `${Math.abs(changePct)}% vs. last session`
+      : `${stats.new_admissions.toLocaleString('en-IN')} new this session`);
+  const trendUp = changePct === null ? (stats.new_admissions > 0 ? true : null) : changePct >= 0;
+
   return (
-    <div
-      className={dashboardStatCardClass(!!onClick)}
+    <KpiCard
+      title="Total Students"
+      value={stats.total.toLocaleString('en-IN')}
+      icon={FiUsers}
+      tone="blue"
+      trend={trend}
+      trendUp={trendUp}
       onClick={onClick}
-      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className={dashboardStatTitleClass}>Total Students</p>
-          <p className={`text-xl font-medium ${dashboardStatValueClass} leading-none mt-1`}>
-            {stats.total.toLocaleString('en-IN')}
-          </p>
-          {growthText && (
-            <p className="mt-1 text-[11px] font-medium text-green-600">{growthText}</p>
-          )}
-        </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-100)] text-[var(--theme-primary-700)]">
-          <FiUsers className="h-4 w-4" aria-hidden />
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-1.5 flex-1">
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[var(--theme-muted-font)]">
-            <IoMale className="w-3.5 h-3.5 text-[var(--theme-primary-600)]" aria-hidden />
-            Boys
-          </span>
-          <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
-            {stats.boys.toLocaleString('en-IN')}
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-[var(--theme-muted-font)]">
-            <IoFemale className="w-3.5 h-3.5 text-pink-500" aria-hidden />
-            Girls
-          </span>
-          <span className="font-semibold text-[var(--theme-brand-dark)] tabular-nums">
-            {stats.girls.toLocaleString('en-IN')}
-          </span>
-        </div>
-      </div>
-
-      <div className={`mt-3 pt-3 ${dashboardStatDividerClass} flex flex-wrap gap-1.5`}>
-        <span className="inline-flex items-center rounded-full bg-[var(--theme-primary-100)] px-2 py-0.5 text-[10px] font-medium text-[var(--theme-primary-800)]">
-          New : {stats.new_admissions.toLocaleString('en-IN')}
+      <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-3 text-xs text-slate-500">
+        <span>
+          Boys <strong className="font-semibold text-slate-700">{stats.boys.toLocaleString('en-IN')}</strong>
         </span>
-        <span className="inline-flex items-center rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-medium text-pink-700">
-          Left : {leftCount.toLocaleString('en-IN')}
+        <span>
+          Girls <strong className="font-semibold text-slate-700">{stats.girls.toLocaleString('en-IN')}</strong>
         </span>
+        {leftCount > 0 && (
+          <span>
+            Left <strong className="font-semibold text-slate-700">{leftCount.toLocaleString('en-IN')}</strong>
+          </span>
+        )}
       </div>
-    </div>
+    </KpiCard>
   );
 }

@@ -236,7 +236,7 @@ export default function InventoryDashboardPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-lg font-medium text-gray-900">Inventory</h1>
-            <p className="mt-1 text-sm text-gray-500">Stock, purchases, issues to students/staff and school assets.</p>
+            {/* <p className="mt-1 text-sm text-gray-500">Stock, purchases, issues to students/staff and school assets.</p> */}
           </div>
           <button
             type="button"

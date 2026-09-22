@@ -1,12 +1,8 @@
 'use client';
 
+import { FiCalendar } from 'react-icons/fi';
 import type { DashboardAttendanceStats } from '@/shared/types';
-import {
-  dashboardStatCardClass,
-  dashboardStatDividerClass,
-  dashboardStatHeadingClass,
-  dashboardStatMutedClass,
-} from './dashboard-stat-card-styles';
+import KpiCard from './KpiCard';
 
 interface AttendanceStatsKpiCardProps {
   stats: DashboardAttendanceStats;
@@ -16,40 +12,33 @@ interface AttendanceStatsKpiCardProps {
 export default function AttendanceStatsKpiCard({ stats, onClick }: AttendanceStatsKpiCardProps) {
   const hasData = stats.marked > 0;
   const rateDisplay = hasData ? `${stats.rate}%` : '0%';
+  const change = stats.rate_change;
+  const trend = !hasData
+    ? 'No data for today'
+    : change === null
+      ? `${stats.present.toLocaleString('en-IN')} present`
+      : `${Math.abs(change)}% vs. yesterday`;
 
   return (
-    <div
-      className={dashboardStatCardClass(!!onClick)}
+    <KpiCard
+      title="Student Attendance"
+      value={rateDisplay}
+      icon={FiCalendar}
+      tone="purple"
+      trend={trend}
+      trendUp={!hasData || change === null ? null : change >= 0}
       onClick={onClick}
-      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
     >
-      <p className={dashboardStatHeadingClass}>Student Attendance</p>
-      <p className="text-xl font-medium text-[var(--theme-brand-dark)] leading-none mt-1 tabular-nums">
-        {rateDisplay}
-      </p>
-
-      <div className={`mt-3 pt-3 ${dashboardStatDividerClass} grid grid-cols-2 gap-3 flex-1 items-end`}>
-        <div>
-          <p className={`text-xl font-semibold leading-none tabular-nums ${hasData ? 'text-green-600' : 'text-gray-300'}`}>
-            {hasData ? stats.present.toLocaleString('en-IN') : '0'}
-          </p>
-          <p className={`text-[11px] ${dashboardStatMutedClass} mt-0.5`}>Present</p>
+      {hasData && (
+        <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-3 text-xs text-slate-500">
+          <span>
+            Present <strong className="font-semibold text-emerald-600">{stats.present.toLocaleString('en-IN')}</strong>
+          </span>
+          <span>
+            Absent <strong className="font-semibold text-rose-500">{stats.absent.toLocaleString('en-IN')}</strong>
+          </span>
         </div>
-        <div className="text-right">
-          <p className={`text-xl font-semibold leading-none tabular-nums ${hasData ? 'text-red-500' : 'text-gray-300'}`}>
-            {hasData ? stats.absent.toLocaleString('en-IN') : '0'}
-          </p>
-          <p className={`text-[11px] ${dashboardStatMutedClass} mt-0.5`}>Absent</p>
-        </div>
-      </div>
-
-      {!hasData && (
-        <p className="mt-2 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
-          Not marked today
-        </p>
       )}
-    </div>
+    </KpiCard>
   );
 }

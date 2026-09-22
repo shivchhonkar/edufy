@@ -27,8 +27,20 @@ export const FEE_COLLECTION_COLORS = {
   due: DASHBOARD_CHART_THEME.secondary,
 };
 
-export const FEE_REVENUE_BAR_COLORS = {
-  due: DASHBOARD_CHART_THEME.primaryDark,
-  received: DASHBOARD_CHART_THEME.primary,
-  discount: DASHBOARD_CHART_THEME.secondary,
+export const PIPELINE_STATUS_COLORS: Record<string, string> = {
+  enrolled: '#14b8a6',
+  admitted: '#14b8a6',
+  waitlisted: '#eab308',
+  waiting: '#eab308',
+  contacted: '#3b82f6',
+  'on hold': '#f97316',
+  hold: '#f97316',
+  new: '#6366f1',
+  follow: '#8b5cf6',
+  rejected: '#f43f5e',
 };
+
+export function pipelineColor(name: string, fallback: string) {
+  const key = name.trim().toLowerCase();
+  return PIPELINE_STATUS_COLORS[key] ?? fallback;
+}

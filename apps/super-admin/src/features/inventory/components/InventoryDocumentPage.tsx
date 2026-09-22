@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FiPrinter, FiShoppingCart } from 'react-icons/fi';
+import { FiFilePlus, FiPrinter, FiShoppingCart } from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
 import { useSettings } from '@/shared/SettingsContext';
 import InventoryModuleLinks from './InventoryModuleLinks';
+import InventoryPurchaseRequestModal from './InventoryPurchaseRequestModal';
 import InventorySellModal from './InventorySellModal';
 import { inventoryItemLabel } from '../item-label';
 import { printInventoryInvoice } from '../print-invoice';
@@ -75,6 +76,9 @@ export default function InventoryDocumentPage({
   const [partyQuery, setPartyQuery] = useState('');
   const [partyHits, setPartyHits] = useState<{ id: number; name: string; code?: string }[]>([]);
   const [sellOpen, setSellOpen] = useState(false);
+  const [prOpen, setPrOpen] = useState(false);
+  const isPurchaseRequestModal = useModalForm && kind === 'pr';
+  const isSellModal = useModalForm && (kind === 'sale' || kind === 'issue');
 
   const load = useCallback(async () => {
     const [iRes, lRes, vRes, dRes] = await Promise.all([
@@ -224,13 +228,22 @@ export default function InventoryDocumentPage({
             <h1 className="text-lg font-medium text-gray-900">{title}</h1>
             <p className="mt-1 text-sm text-gray-500">{description}</p>
           </div>
-          {useModalForm && (
+          {isSellModal && (
             <button
               type="button"
               onClick={() => setSellOpen(true)}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
             >
               <FiShoppingCart size={14} /> Sell
+            </button>
+          )}
+          {isPurchaseRequestModal && (
+            <button
+              type="button"
+              onClick={() => setPrOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
+            >
+              <FiFilePlus size={14} /> New request
             </button>
           )}
         </div>
@@ -458,7 +471,7 @@ export default function InventoryDocumentPage({
           </table>
         </div>
       </div>
-      {useModalForm && (
+      {isSellModal && (
         <InventorySellModal
           open={sellOpen}
           onClose={() => setSellOpen(false)}
@@ -473,6 +486,16 @@ export default function InventoryDocumentPage({
             logo_url: settings.logo_url,
             academic_year: settings.academic_year,
           }}
+        />
+      )}
+      {isPurchaseRequestModal && (
+        <InventoryPurchaseRequestModal
+          open={prOpen}
+          onClose={() => setPrOpen(false)}
+          onSaved={load}
+          items={items}
+          locations={locations}
+          vendors={vendors}
         />
       )}
     </DashboardLayout>

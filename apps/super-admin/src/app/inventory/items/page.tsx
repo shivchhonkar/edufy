@@ -25,6 +25,35 @@ type Item = {
 };
 type Option = { id: number; name: string };
 
+function Pulse({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded bg-gray-200/90 ${className}`} />;
+}
+
+function ItemsTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <tr key={index} className="border-t">
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-6" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-36 max-w-full" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-14" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-24" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-20" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-16" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-8" /></td>
+          <td className="px-3 py-3"><Pulse className="h-3.5 w-16" /></td>
+          <td className="px-3 py-3">
+            <div className="flex items-center justify-end gap-3">
+              <Pulse className="h-3.5 w-12" />
+              <Pulse className="h-4 w-4" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 export default function InventoryItemsPage() {
   const { alert, confirm } = useDialog();
   const [items, setItems] = useState<Item[]>([]);
@@ -125,11 +154,7 @@ export default function InventoryItemsPage() {
             </thead>
             <tbody>
               {loading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-t">
-                    <td colSpan={9} className="px-3 py-3"><div className="h-3 w-40 animate-pulse rounded bg-gray-200" /></td>
-                  </tr>
-                ))
+                <ItemsTableSkeleton />
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-8 text-center text-gray-500">

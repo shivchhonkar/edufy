@@ -11,27 +11,42 @@ import {
   AttendanceTrendChart,
   FeeCollectionBarChart,
   CompositionDonutChart,
-  TeacherComparisonBarChart,
   CategoryBarChart,
+  HorizontalMetricBars,
 } from '@/features/dashboard/components/DashboardCharts';
-import { DASHBOARD_CHART_PALETTE } from '@/features/dashboard/components/dashboard-chart-theme';
+import {
+  DASHBOARD_CHART_PALETTE,
+  DASHBOARD_CHART_THEME,
+  pipelineColor,
+} from '@/features/dashboard/components/dashboard-chart-theme';
 import { DashboardOverview } from '@/shared/types';
 import {
   FiAlertCircle,
   FiAward,
-  FiBook,
+  FiBarChart2,
+  FiBell,
   FiCalendar,
-  FiChevronDown,
+  FiCheckCircle,
+  FiChevronRight,
+  FiClipboard,
+  FiCreditCard,
+  FiFileText,
   FiGift,
   FiInfo,
+  FiMessageSquare,
+  FiSend,
   FiTruck,
   FiUserPlus,
+  FiUsers,
 } from 'react-icons/fi';
 import SchoolSetupWelcomeModal from '@/features/setup/components/SchoolSetupWelcomeModal';
 import { useSchoolSetupChecklist } from '@/features/setup/hooks/useSchoolSetupChecklist';
 import { SETUP_CHECKLIST_ITEMS } from '@/features/setup/constants/setup-checklist';
 import { useActiveSchoolId } from '@/hooks/use-active-school-id';
 import { useEnrollmentSession, withSessionQuery } from '@/shared/context/EnrollmentContext';
+import { getClientUser } from '@/lib/client-auth';
+import { getTimeOfDayGreeting } from '@edulakhya/utils';
+import { useSettings } from '@/shared/SettingsContext';
 
 const EMPTY_DASHBOARD: DashboardOverview = {
   total_students: 0,
@@ -99,38 +114,78 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function firstName(fullName: string) {
+  return fullName.trim().split(/\s+/)[0] || fullName;
+}
+
+function classSlotStatus(startTime?: string, endTime?: string) {
+  if (!startTime || !endTime) return 'Upcoming';
+  const toMinutes = (value: string) => {
+    const [hours, minutes] = value.split(':').map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+  };
+  const now = new Date();
+  const current = now.getHours() * 60 + now.getMinutes();
+  const start = toMinutes(startTime);
+  const end = toMinutes(endTime);
+  if (current > end) return 'Completed';
+  if (current >= start) return 'Ongoing';
+  return 'Upcoming';
+}
+
+function statusBadgeClass(status: string) {
+  if (status === 'Completed') return 'bg-emerald-50 text-emerald-700';
+  if (status === 'Ongoing') return 'bg-sky-50 text-sky-700';
+  return 'bg-amber-50 text-amber-700';
+}
+
 function PanelCard({
   title,
   subtitle,
   href,
   linkLabel = 'View Report',
+  icon: Icon,
+  scrollable = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   href?: string;
   linkLabel?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  scrollable?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   return (
-    <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-4 pb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {Icon && (
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            )}
+            <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
+          </div>
+          {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
         </div>
         {href && (
           <button
             type="button"
             onClick={() => router.push(href)}
-            className="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700"
+            className="shrink-0 text-xs font-medium text-sky-600 hover:text-sky-700"
           >
             {linkLabel}
           </button>
         )}
       </div>
-      <div className="flex-1 p-4">{children}</div>
+      <div
+        className={`min-h-0 flex-1 px-5 pb-5 pt-1 ${scrollable ? 'overflow-y-auto overscroll-contain' : ''}`}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -145,70 +200,42 @@ function StatPill({
   tone: 'green' | 'red' | 'amber' | 'gray';
 }) {
   const toneClasses = {
-    green: 'bg-green-50 text-green-700 border-green-100',
-    red: 'bg-red-50 text-red-700 border-red-100',
-    amber: 'bg-amber-50 text-amber-700 border-amber-100',
-    gray: 'bg-gray-50 text-gray-700 border-gray-100',
+    green: 'bg-emerald-50 text-emerald-700',
+    red: 'bg-rose-50 text-rose-700',
+    amber: 'bg-amber-50 text-amber-700',
+    gray: 'bg-slate-50 text-slate-600',
   }[tone];
 
   return (
-    <div className={`rounded-lg border px-3 py-2.5 ${toneClasses}`}>
-      <p className="text-[10px] font-medium uppercase tracking-wide opacity-80">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold tabular-nums">{value}</p>
+    <div className={`rounded-xl px-3 py-3 ${toneClasses}`}>
+      <p className="text-[11px] font-medium">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
 
-function ModuleShortcut({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color,
-  href,
-}: {
-  title: string;
-  value: string | number;
-  subtitle: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  href: string;
-}) {
-  const router = useRouter();
-  return (
-    <button
-      type="button"
-      onClick={() => router.push(href)}
-      className="flex w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
-    >
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
-        <p className="mt-0.5 text-xl font-semibold text-gray-900 tabular-nums">{value}</p>
-        <p className="mt-1 text-xs text-gray-500 truncate">{subtitle}</p>
-      </div>
-      <div className={`shrink-0 rounded-xl p-2.5 ${color}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-    </button>
-  );
+function alertIconClass(type: string, severity: string) {
+  if (severity === 'high' || type === 'fees') return 'text-rose-500';
+  if (type === 'attendance' || severity === 'medium') return 'text-amber-500';
+  if (type === 'exams') return 'text-sky-500';
+  return 'text-slate-400';
 }
 
-function alertIconClass(type: string, severity: string) {
-  if (severity === 'high') return 'text-red-500';
-  if (type === 'attendance') return 'text-amber-500';
-  if (type === 'fees') return 'text-red-500';
-  if (type === 'exams') return 'text-blue-500';
-  if (severity === 'medium') return 'text-amber-500';
-  return 'text-gray-400';
-}
+const QUICK_ACTIONS = [
+  { label: 'Add Student', href: '/students', icon: FiUserPlus, color: 'bg-emerald-50 text-emerald-600' },
+  { label: 'Mark Attendance', href: '/attendance/students', icon: FiCheckCircle, color: 'bg-sky-50 text-sky-600' },
+  { label: 'Add Fee Payment', href: '/fees/collect', icon: FiCreditCard, color: 'bg-orange-50 text-orange-600' },
+  { label: 'Create Exam', href: '/exams', icon: FiClipboard, color: 'bg-cyan-50 text-cyan-600' },
+  { label: 'Send Message', href: '/communications?tab=sms', icon: FiSend, color: 'bg-blue-50 text-blue-600' },
+  { label: 'Generate Report', href: '/dashboard/analytics', icon: FiBarChart2, color: 'bg-violet-50 text-violet-600' },
+];
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { settings } = useSettings();
   const activeSchoolId = useActiveSchoolId();
   const {
-    academicYears,
     selectedAcademicYearId,
-    setSelectedAcademicYearId,
     sessionQueryParams,
     loading: sessionLoading,
   } = useEnrollmentSession();
@@ -217,6 +244,15 @@ export default function DashboardScreen() {
   const [error, setError] = useState<string | null>(null);
   const [setupModalDismissed, setSetupModalDismissed] = useState(false);
   const { checklist, hasPending, loading: setupLoading } = useSchoolSetupChecklist();
+  const [greeting, setGreeting] = useState('Welcome');
+  const [displayName, setDisplayName] = useState('Admin');
+
+  useEffect(() => {
+    const user = getClientUser();
+    const fullName = String(user?.full_name || user?.name || 'Admin');
+    setDisplayName(firstName(fullName));
+    setGreeting(getTimeOfDayGreeting());
+  }, []);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -252,14 +288,28 @@ export default function DashboardScreen() {
     if (!stats) return undefined;
     const n = stats.admissions.new_this_week;
     if (n <= 0) return undefined;
-    return `+${n} this week`;
+    return `${n} new this week`;
   }, [stats]);
+
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+    [],
+  );
+
+  const schoolName = settings.school_name?.trim() || 'your school';
 
   if (loading || sessionLoading) {
     return <DashboardSkeleton />;
   }
 
   const s = stats ?? EMPTY_DASHBOARD;
+  const feePayments = s.recent_activities.filter((activity) => activity.type === 'payment');
 
   return (
     <>
@@ -269,36 +319,27 @@ export default function DashboardScreen() {
         onDismiss={() => setSetupModalDismissed(true)}
       />
 
-      <div className="space-y-4 pb-2">
-        {/* Session header */}
-        {/* <div className="flex flex-wrap items-center justify-end gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="font-medium text-gray-700">This Session:</span>
-            <div className="relative">
-              <select
-                value={selectedAcademicYearId ?? ''}
-                onChange={(e) => setSelectedAcademicYearId(Number(e.target.value) || null)}
-                className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-8 text-sm font-medium text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                {academicYears.map((year) => (
-                  <option key={year.id} value={year.id}>
-                    {year.name}
-                  </option>
-                ))}
-              </select>
-              <FiChevronDown
-                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                aria-hidden
-              />
-            </div>
-          </label>
+      <div className="space-y-5 pb-4">
+        {/* <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl tracking-tight text-slate-900">
+              {greeting}, {displayName}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Here&apos;s what&apos;s happening at {schoolName} today.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm">
+            <FiCalendar className="h-4 w-4 text-slate-400" aria-hidden />
+            {todayLabel}
+          </div>
         </div> */}
 
         {!setupLoading && hasPending && setupModalDismissed && (
           <button
             type="button"
             onClick={() => setSetupModalDismissed(false)}
-            className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900 hover:bg-amber-100/80"
+            className="w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900 hover:bg-amber-100/80"
           >
             <span className="font-medium">School setup incomplete</span>
             <span className="text-amber-800">
@@ -310,13 +351,12 @@ export default function DashboardScreen() {
         )}
 
         {error && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {error}. Showing empty dashboard — refresh or check your connection.
           </div>
         )}
 
-        {/* Row 1 — KPI cards */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StudentStatsKpiCard
             stats={s.student_stats}
             growthText={studentGrowthText}
@@ -336,51 +376,99 @@ export default function DashboardScreen() {
           />
         </div>
 
-        {/* Row 2 — Trend charts */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <PanelCard
-            title="Attendance Trend"
-            subtitle="Present % over the last 7 days"
-            href="/attendance/students"
-          >
-            <AttendanceTrendChart data={s.attendance_chart} />
-          </PanelCard>
-          <PanelCard
-            title="Fee Collection Overview"
-            subtitle="Expected, received & due — session months (Apr–Mar)"
-            href="/fees"
-          >
-            <FeeCollectionBarChart data={s.fee_collection_chart} formatValue={formatCurrencyFull} />
-          </PanelCard>
+        <div className="grid grid-cols-1 gap-4 xl:h-[360px] xl:grid-cols-12 xl:items-stretch">
+          <div className="h-full min-h-0 xl:col-span-5">
+            <PanelCard
+              title="Attendance Trend"
+              subtitle="Showing percentage for the last 7 days"
+              href="/attendance/students"
+              icon={FiCheckCircle}
+            >
+              <AttendanceTrendChart data={s.attendance_chart} />
+            </PanelCard>
+          </div>
+          <div className="h-full min-h-0 xl:col-span-4">
+            <PanelCard
+              title="Fee Collection Overview"
+              subtitle="Expected, Received & Due (Apr – Mar)"
+              href="/fees"
+              icon={FiCreditCard}
+            >
+              <FeeCollectionBarChart data={s.fee_collection_chart} formatValue={formatCurrencyFull} />
+            </PanelCard>
+          </div>
+          <div className="h-full min-h-0 xl:col-span-3">
+            <PanelCard title="Quick Actions" icon={FiAward} scrollable>
+              <div className="space-y-1">
+                {s.pending_tasks.map((task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() => router.push(task.href)}
+                    className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50"
+                  >
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        task.severity === 'high'
+                          ? 'bg-rose-50 text-rose-600'
+                          : 'bg-amber-50 text-amber-600'
+                      }`}
+                    >
+                      <FiBell className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-slate-800">{task.title}</span>
+                      <span className="block truncate text-xs text-slate-500">{task.subtitle}</span>
+                    </span>
+                    <FiChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                  </button>
+                ))}
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => router.push(action.href)}
+                    className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50"
+                  >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${action.color}`}>
+                      <action.icon className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 text-sm font-medium text-slate-700">{action.label}</span>
+                    <FiChevronRight className="h-4 w-4 text-slate-300" />
+                  </button>
+                ))}
+              </div>
+            </PanelCard>
+          </div>
         </div>
 
-        {/* Row 3 — Birthdays + staff attendance */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <PanelCard
             title="Upcoming Birthdays"
             subtitle="Next 7 days — students & staff"
             href="/students"
             linkLabel="View All"
+            icon={FiGift}
           >
             {s.upcoming_birthdays.length === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-500">
-                <FiGift className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+              <div className="py-10 text-center text-sm text-slate-500">
+                <FiGift className="mx-auto mb-2 h-8 w-8 text-slate-300" />
                 No birthdays in the next 7 days
               </div>
             ) : (
-              <div className="max-h-52 space-y-2 overflow-y-auto">
+              <div className="max-h-56 space-y-1 overflow-y-auto">
                 {s.upcoming_birthdays.map((person) => (
                   <div
                     key={`${person.person_type}-${person.id}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-2.5"
+                    className="flex items-center justify-between gap-3 rounded-xl px-1 py-2"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-100)] text-xs font-semibold text-[var(--theme-primary-800)]">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
                         {getInitials(person.name)}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-gray-900">{person.name}</p>
-                        <p className="truncate text-xs text-gray-500">
+                        <p className="truncate text-sm font-medium text-slate-900">{person.name}</p>
+                        <p className="truncate text-xs text-slate-500">
                           {person.person_type === 'student'
                             ? [person.class_name, person.section_name].filter(Boolean).join(' · ') ||
                               'Student'
@@ -388,13 +476,7 @@ export default function DashboardScreen() {
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        person.days_until === 0
-                          ? 'bg-pink-100 text-pink-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
+                    <span className="shrink-0 text-xs font-medium text-slate-500">
                       {person.birthday_label}
                     </span>
                   </div>
@@ -407,114 +489,155 @@ export default function DashboardScreen() {
             title="Staff Attendance Today"
             subtitle={`${s.staff_attendance_today.marked} of ${s.staff_attendance_today.total_staff} marked`}
             href="/attendance/staff"
+            icon={FiUsers}
           >
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <StatPill label="Present" value={s.staff_attendance_today.present} tone="green" />
               <StatPill label="Absent" value={s.staff_attendance_today.absent} tone="red" />
               <StatPill label="On Leave" value={s.staff_attendance_today.on_leave} tone="amber" />
-              <StatPill
-                label="Not Marked"
-                value={s.staff_attendance_today.not_marked}
-                tone="gray"
-              />
+              <StatPill label="Not Marked" value={s.staff_attendance_today.not_marked} tone="gray" />
             </div>
             {s.staff_attendance_today.marked === 0 && s.staff_attendance_today.total_staff > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
+              <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
                 <FiInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 Staff attendance has not been marked for today.
               </p>
             )}
           </PanelCard>
+
+          <PanelCard title="Recent Activities" subtitle="Latest updates across the system" icon={FiFileText}>
+            {s.recent_activities.length === 0 ? (
+              <div className="py-8 text-center text-sm text-slate-500">No recent activity recorded</div>
+            ) : (
+              <div className="max-h-56 space-y-3 overflow-y-auto">
+                {s.recent_activities.map((activity, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <div
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                        activity.type === 'payment'
+                          ? 'bg-emerald-500'
+                          : activity.type === 'admission'
+                            ? 'bg-sky-500'
+                            : 'bg-slate-400'
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">{activity.title}</p>
+                      <p className="text-xs text-slate-500">{activity.subtitle}</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-400">{activity.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PanelCard>
         </div>
 
-        {/* Row 4 — Distribution charts */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <PanelCard title="Students by Class" href="/students">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <PanelCard title="Students by Class" href="/students" icon={FiBarChart2}>
             <CategoryBarChart
               data={s.students_by_class.slice(0, 10).map((row, i) => ({
                 name: row.name,
                 value: row.count,
-                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
+                color:
+                  i % 2 === 0 ? DASHBOARD_CHART_THEME.primary : DASHBOARD_CHART_THEME.secondary,
               }))}
               emptyMessage="No students enrolled"
             />
           </PanelCard>
-          <PanelCard title="Admission Pipeline" href="/admissions">
+          <PanelCard title="Admission Pipeline" href="/admissions" icon={FiUserPlus}>
             <CompositionDonutChart
               data={s.admissions_by_status.map((row, i) => ({
                 name: row.name,
                 value: row.count,
-                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
+                color: pipelineColor(row.name, DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length]),
               }))}
-              centerLabel={
-                pipelineTotal > 0 ? `${pipelineTotal}\nIn Pipeline` : undefined
-              }
+              centerLabel={pipelineTotal > 0 ? `${pipelineTotal}\nIn Pipeline` : undefined}
             />
           </PanelCard>
-          <PanelCard title="Staff by Department" href="/hr/dashboard">
-            <CategoryBarChart
-              data={s.staff_by_department.slice(0, 8).map((row, i) => ({
+          <PanelCard title="Staff by Department" href="/hr/dashboard" icon={FiUsers}>
+            <HorizontalMetricBars
+              data={s.staff_by_department.slice(0, 8).map((row) => ({
                 name: row.name,
                 value: row.count,
-                color: DASHBOARD_CHART_PALETTE[i % DASHBOARD_CHART_PALETTE.length],
               }))}
               emptyMessage="No staff records"
             />
           </PanelCard>
         </div>
 
-        {/* Row 5 — Classes + teacher performance */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <PanelCard
             title="Today's Classes"
             subtitle={`${s.classes_conducted_today} periods scheduled`}
             href="/academics/timetable"
+            icon={FiCalendar}
           >
             {s.todays_classes.length === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-500">
-                <FiCalendar className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+              <div className="py-10 text-center text-sm text-slate-500">
+                <FiCalendar className="mx-auto mb-2 h-8 w-8 text-slate-300" />
                 No classes scheduled for today
               </div>
             ) : (
-              <div className="max-h-56 space-y-2 overflow-y-auto">
-                {s.todays_classes.map((slot, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-gray-900">{slot.subject_name}</p>
-                      <p className="truncate text-xs text-gray-500">
-                        {slot.class_name}
-                        {slot.section_name ? ` · ${slot.section_name}` : ''} · {slot.teacher_name}
-                      </p>
+              <div className="max-h-64 space-y-2 overflow-y-auto">
+                {s.todays_classes.map((slot, idx) => {
+                  const status = classSlotStatus(slot.start_time, slot.end_time);
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-slate-500">
+                          {slot.start_time?.slice(0, 5)} – {slot.end_time?.slice(0, 5)}
+                        </p>
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {slot.class_name}
+                          {slot.section_name ? ` · ${slot.section_name}` : ''} — {slot.subject_name}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${statusBadgeClass(status)}`}>
+                        {status}
+                      </span>
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-xs font-medium text-gray-700">{slot.period_name}</p>
-                      <p className="text-[10px] text-gray-500">
-                        {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </PanelCard>
 
-          <PanelCard
-            title="Teacher Performance"
-            subtitle="Top teachers by score — last 30 days"
-            href="/teachers/performance"
-          >
-            <TeacherComparisonBarChart data={s.teacher_performance} />
+          <PanelCard title="Recent Fee Payments" href="/fees/receipts" linkLabel="View All" icon={FiCreditCard}>
+            {feePayments.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-500">No fee payments recorded yet</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-xs font-medium text-slate-400">
+                      <th className="pb-2 font-medium">Student Name</th>
+                      <th className="pb-2 font-medium">Amount</th>
+                      <th className="pb-2 text-right font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feePayments.map((payment, idx) => (
+                      <tr key={idx} className="border-t border-slate-100">
+                        <td className="py-2.5 pr-2 font-medium text-slate-800">
+                          {payment.title.replace(/^Fee payment — /, '')}
+                        </td>
+                        <td className="py-2.5 pr-2 tabular-nums text-slate-700">{payment.subtitle}</td>
+                        <td className="py-2.5 text-right text-xs text-slate-500">{payment.time}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </PanelCard>
-        </div>
 
-        {/* Row 6 — Alerts + recent activities */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <PanelCard title="Alerts" subtitle="Items needing attention">
+          <PanelCard title="Alerts" subtitle="Items needing attention" icon={FiAlertCircle}>
             {s.alerts.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">All clear — no urgent alerts</div>
+              <div className="py-8 text-center text-sm text-slate-500">All clear — no urgent alerts</div>
             ) : (
               <div className="max-h-64 space-y-1 overflow-y-auto">
                 {s.alerts.map((alert, idx) => (
@@ -522,7 +645,7 @@ export default function DashboardScreen() {
                     key={idx}
                     type="button"
                     onClick={() => alert.href && router.push(alert.href)}
-                    className="flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                   >
                     <FiAlertCircle
                       className={`mt-0.5 h-4 w-4 shrink-0 ${alertIconClass(alert.type, alert.severity)}`}
@@ -533,71 +656,64 @@ export default function DashboardScreen() {
               </div>
             )}
           </PanelCard>
-
-          <PanelCard title="Recent Activities" subtitle="Latest updates across the system">
-            {s.recent_activities.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">No recent activity recorded</div>
-            ) : (
-              <div className="max-h-64 space-y-3 overflow-y-auto">
-                {s.recent_activities.map((activity, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-sm">
-                    <div
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                        activity.type === 'payment'
-                          ? 'bg-green-500'
-                          : activity.type === 'admission'
-                            ? 'bg-blue-500'
-                            : 'bg-gray-400'
-                      }`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-gray-900">{activity.title}</p>
-                      <p className="text-xs text-gray-500">{activity.subtitle}</p>
-                    </div>
-                    <span className="shrink-0 text-xs text-gray-400">{activity.time}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </PanelCard>
         </div>
 
-        {/* Row 7 — Module shortcuts */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <ModuleShortcut
-            title="Admissions"
-            value={s.admissions.active}
-            subtitle={`${s.admissions.follow_up_today} follow-up · ${s.admissions.new_this_week} new`}
-            icon={FiUserPlus}
-            color="bg-blue-50 text-blue-600"
+          <FooterStat
+            icon={FiMessageSquare}
+            label="Follow-up · 0 new"
+            value={s.admissions.follow_up_today}
             href="/admissions"
           />
-          <ModuleShortcut
-            title="Exams"
+          <FooterStat
+            icon={FiClipboard}
+            label="Total scheduled"
             value={s.exams.upcoming}
-            subtitle={`${s.exams.total} total scheduled`}
-            icon={FiAward}
-            color="bg-purple-50 text-purple-600"
             href="/exams"
           />
-          <ModuleShortcut
-            title="Transport"
-            value={s.transport.student_assignments}
-            subtitle={`${s.transport.active_routes} routes · ${s.transport.active_vehicles} vehicles`}
+          <FooterStat
             icon={FiTruck}
-            color="bg-indigo-50 text-indigo-600"
+            label={`Transport · ${s.transport.active_vehicles} vehicles`}
+            value={s.transport.student_assignments}
             href="/transport"
           />
-          <ModuleShortcut
-            title="Library"
-            value={s.library.total_items}
-            subtitle={`${s.library.low_stock} low stock`}
-            icon={FiBook}
-            color="bg-amber-50 text-amber-600"
+          <FooterStat
+            icon={FiBell}
+            label="Low stock"
+            value={s.library.low_stock || s.low_stock_items}
             href="/inventory"
           />
         </div>
       </div>
     </>
+  );
+}
+
+function FooterStat({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  href: string;
+}) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      onClick={() => router.push(href)}
+      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left shadow-sm hover:border-slate-200 hover:shadow-md"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span>
+        <span className="block text-lg font-semibold tabular-nums text-slate-900">{value}</span>
+        <span className="block text-xs text-slate-500">{label}</span>
+      </span>
+    </button>
   );
 }

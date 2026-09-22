@@ -14,6 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  LabelList,
 } from 'recharts';
 
 import {
@@ -60,10 +61,16 @@ export function AttendanceTrendChart({
 }) {
   if (data.length === 0) return <EmptyChart />;
 
+  const chartData = data.map((row) => ({
+    ...row,
+    presentPct: row.rate,
+    absentPct: row.total > 0 ? Math.round(((row.total - row.present) / row.total) * 100) : 0,
+  }));
+
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={chartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
         <YAxis
           domain={[0, 100]}
@@ -72,19 +79,31 @@ export function AttendanceTrendChart({
           tickLine={false}
           tickFormatter={(v) => `${v}%`}
         />
-        <Tooltip
-          content={(props) => (
-            <ChartTooltip {...props} valueFormatter={(v) => `${v}%`} />
-          )}
+        <Tooltip content={(props) => <ChartTooltip {...props} valueFormatter={(v) => `${v}%`} />} />
+        <Legend
+          verticalAlign="top"
+          align="right"
+          iconType="plainline"
+          height={28}
+          formatter={(value) => <span className="text-xs text-slate-500">{value}</span>}
         />
         <Line
           type="monotone"
-          dataKey="rate"
-          name="Attendance"
+          dataKey="presentPct"
+          name="Present"
           stroke={DASHBOARD_CHART_THEME.primary}
           strokeWidth={2.5}
-          dot={{ r: 4, fill: DASHBOARD_CHART_THEME.primary, strokeWidth: 0 }}
-          activeDot={{ r: 6, fill: DASHBOARD_CHART_THEME.primaryDark }}
+          dot={{ r: 3.5, fill: DASHBOARD_CHART_THEME.primary, strokeWidth: 0 }}
+          activeDot={{ r: 6 }}
+        />
+        <Line
+          type="monotone"
+          dataKey="absentPct"
+          name="Absent"
+          stroke="#94a3b8"
+          strokeWidth={2}
+          strokeDasharray="5 4"
+          dot={{ r: 3, fill: '#94a3b8', strokeWidth: 0 }}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -117,7 +136,7 @@ export function FeeCollectionBarChart({
   if (!hasValues) return <EmptyChart message="No fee data for this session yet" />;
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={240}>
       <BarChart
         data={chartData}
         margin={{ top: 12, right: 8, left: -4, bottom: 0 }}
@@ -295,10 +314,10 @@ export function CategoryBarChart({
   if (filtered.length === 0) return <EmptyChart message={emptyMessage} />;
 
   return (
-    <ResponsiveContainer width="100%" height={160}>
-      <BarChart data={filtered} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={filtered} margin={{ top: 18, right: 8, left: -16, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
         <YAxis
           allowDecimals={false}
           tick={{ fontSize: 11, fill: '#64748b' }}
@@ -306,12 +325,45 @@ export function CategoryBarChart({
           tickLine={false}
         />
         <Tooltip content={(props) => <ChartTooltip {...props} />} />
-        <Bar dataKey="value" name="Count" radius={[4, 4, 0, 0]} maxBarSize={40}>
+        <Bar dataKey="value" name="Students" radius={[6, 6, 0, 0]} maxBarSize={28} fill={DASHBOARD_CHART_THEME.primary}>
           {filtered.map((entry) => (
             <Cell key={entry.name} fill={entry.color} />
           ))}
+          <LabelList dataKey="value" position="top" style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+  );
+}
+
+export function HorizontalMetricBars({
+  data,
+  emptyMessage = 'No data available yet',
+}: {
+  data: Array<{ name: string; value: number }>;
+  emptyMessage?: string;
+}) {
+  const filtered = data.filter((d) => d.value > 0);
+  if (filtered.length === 0) return <EmptyChart message={emptyMessage} />;
+
+  const max = Math.max(...filtered.map((d) => d.value), 1);
+
+  return (
+    <div className="flex flex-col justify-center gap-3 py-1">
+      {filtered.map((row) => (
+        <div key={row.name} className="flex items-center gap-3">
+          <span className="w-28 shrink-0 truncate text-sm text-slate-600">{row.name}</span>
+          <div className="h-2.5 min-w-0 flex-1 rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-sky-500"
+              style={{ width: `${Math.max(8, (row.value / max) * 100)}%` }}
+            />
+          </div>
+          <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-800">
+            {row.value}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }

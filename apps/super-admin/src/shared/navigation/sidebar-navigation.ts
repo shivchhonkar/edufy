@@ -109,10 +109,11 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Enquiry', path: '/students/enquiry', icon: FiMessageSquare },
       { name: 'Registration', path: '/registration', icon: FiUserPlus },
       { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
-      { name: 'Physical Report', path: '/students/physical-report', icon: FiHeart },
+      { name: 'List', path: '/students', icon: FiUsers },
+      
       { name: 'PTM', path: '/students/ptm', icon: FiCalendar },
       { name: 'Certificates', path: '/students/certificates', icon: FiFileText },
-      { name: 'List', path: '/students', icon: FiUsers },
+     
       { name: 'Promote', path: '/promotions', icon: FiArrowUpCircle },
       {
         name: 'TC',
@@ -128,6 +129,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Student Summary', path: '/students/student-summary', icon: FiList },
       { name: 'Left & TC', path: '/students/exit-students', icon: FiUserMinus },
       { name: 'Alumni', path: '/students/alumni-management', icon: FiUserCheck },
+      { name: 'Physical Report', path: '/students/physical-report', icon: FiHeart },
       { name: 'Reports', path: '/students/reports', icon: FiBarChart2 },
     ],
   },
@@ -384,7 +386,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
         ],
       },
       {
-        name: 'Procurement',
+        name: 'Purchase',
         path: '/inventory/purchase-requests',
         icon: FiClipboard,
         items: [

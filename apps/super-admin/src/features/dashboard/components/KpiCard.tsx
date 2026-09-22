@@ -2,74 +2,86 @@
 
 import { IconType } from 'react-icons';
 
-const styles = {
+export const KPI_TONES = {
   blue: {
-    icon: 'bg-blue-50 text-blue-600',
-    value: 'text-gray-900',
+    card: 'bg-sky-50/90 border-sky-100',
+    icon: '',
+    value: 'text-slate-900',
   },
   green: {
-    icon: 'bg-green-50 text-green-600',
-    value: 'text-gray-900',
-  },
-  red: {
-    icon: 'bg-red-50 text-red-600',
-    value: 'text-gray-900',
-  },
-  yellow: {
-    icon: 'bg-amber-50 text-amber-600',
-    value: 'text-gray-900',
+    card: 'bg-emerald-50/90 border-emerald-100',
+    icon: '',
+    value: 'text-emerald-700',
   },
   purple: {
-    icon: 'bg-purple-50 text-purple-600',
-    value: 'text-gray-900',
+    card: 'bg-violet-50/90 border-violet-100',
+    icon: '',
+    value: 'text-slate-900',
   },
-  indigo: {
-    icon: 'bg-indigo-50 text-indigo-600',
-    value: 'text-gray-900',
+  orange: {
+    card: 'bg-orange-50/90 border-orange-100',
+    icon: '',
+    value: 'text-orange-700',
   },
 } as const;
 
-type KpiColor = keyof typeof styles;
+export type KpiTone = keyof typeof KPI_TONES;
 
 interface KpiCardProps {
   title: string;
   value: string | number;
-  subtitle?: string;
   icon: IconType;
-  color?: KpiColor;
+  tone?: KpiTone;
+  trend?: string;
+  trendUp?: boolean | null;
   onClick?: () => void;
+  children?: React.ReactNode;
 }
 
 export default function KpiCard({
   title,
   value,
-  subtitle,
   icon: Icon,
-  color = 'blue',
+  tone = 'blue',
+  trend,
+  trendUp,
   onClick,
+  children,
 }: KpiCardProps) {
-  const theme = styles[color];
+  const theme = KPI_TONES[tone];
 
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 ${
-        onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-200 transition-all' : ''
+      className={`flex h-full min-h-[148px] flex-col rounded-2xl border p-5 shadow-sm transition-all ${theme.card} ${
+        onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md' : ''
       }`}
       onClick={onClick}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
-          <p className={`text-2xl mt-1 ${theme.value}`}>{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1.5 leading-snug">{subtitle}</p>}
-        </div>
-        <div className={`p-2.5 rounded-xl shrink-0 ${theme.icon}`}>
-          <Icon className="w-5 h-5" />
-        </div>
+      <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${theme.icon}`}>
+        <Icon className="h-5 w-5" aria-hidden />
       </div>
+      <p className="mt-1 text-sm font-medium text-slate-500">{title}</p>
+      <p className={`mt-1 text-2xl font-semibold tracking-tight tabular-nums ${theme.value}`}>
+        {value}
+      </p>
+      {trend && (
+        <p
+          className={`mt-2 text-xs font-medium ${
+            trendUp === true
+              ? 'text-emerald-600'
+              : trendUp === false
+                ? 'text-rose-500'
+                : 'text-slate-500'
+          }`}
+        >
+          {trendUp === true ? '↑ ' : trendUp === false ? '↓ ' : ''}
+          {trend}
+        </p>
+      )}
+      {children}
     </div>
   );
 }
