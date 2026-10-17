@@ -26,6 +26,8 @@ export interface FeeStudentRow {
   photo_url?: string | null;
   paymentStatus?: string;
   pendingAmount?: number;
+  pendingMonths?: number[];
+  hasOtherPending?: boolean;
 }
 
 interface VirtualizedFeesStudentsTableProps {

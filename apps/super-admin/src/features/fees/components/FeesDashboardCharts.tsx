@@ -112,7 +112,7 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
   );
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
       <ChartCard title="Monthly Collection Trend" className="xl:col-span-2">
         {monthlyTrend.length === 0 ? (
           <EmptyChart />
@@ -120,8 +120,8 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v: number) => formatFeeCurrency(v)} />
               <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
@@ -133,8 +133,8 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
         {pendingVsCollected.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="space-y-4">
-            <ResponsiveContainer width="100%" height={220}>
+          <div className="space-y-3">
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
                   data={pendingVsCollected}
@@ -158,17 +158,17 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
               {pendingVsCollected.map((row, index) => {
                 const percentage = pendingVsCollectedTotal > 0 ? (row.value / pendingVsCollectedTotal) * 100 : 0;
                 return (
-                  <div key={row.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
+                  <div key={row.name} className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span
-                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
                       />
-                      <span className="text-gray-600">{row.name}</span>
+                      <span className="truncate text-gray-600">{row.name}</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">{formatFeeCurrency(row.value)}</p>
-                      <p className="text-xs text-gray-500">{percentage.toFixed(1)}%</p>
+                      <p className="font-semibold tabular-nums text-gray-900">{formatFeeCurrency(row.value)}</p>
+                      <p className="text-[11px] text-gray-500">{percentage.toFixed(1)}%</p>
                     </div>
                   </div>
                 );
@@ -186,7 +186,7 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
             <select
               value={categoryRange}
               onChange={(e) => setCategoryRange(e.target.value as CategoryRangeFilter)}
-              className="text-xs border border-gray-200 rounded-md px-2.5 py-1.5 bg-white text-gray-700"
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             >
               <option value="this_week">This Week</option>
               <option value="this_month">This Month</option>
@@ -198,13 +198,13 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="text-xs border border-gray-200 rounded-md px-2 py-1.5"
+                  className="rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="text-xs border border-gray-200 rounded-md px-2 py-1.5"
+                  className="rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </>
             )}
@@ -214,37 +214,37 @@ export default function FeesDashboardCharts({ stats }: FeesDashboardChartsProps)
         {categoryData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
             <div className="lg:col-span-3">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={categoryData} layout="vertical" margin={{ left: 20 }}>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={categoryData} layout="vertical" margin={{ left: 8, right: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v: number) => formatFeeCurrency(v)} />
                   <Bar dataKey="total" fill="#2563eb" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-3">
-              <div className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500">Top Category</p>
-                <p className="text-sm font-semibold text-gray-900 mt-1">{topCategory?.name || 'N/A'}</p>
-                <p className="text-xl font-medium text-blue-700 mt-2">
+            <div className="space-y-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Top category</p>
+                <p className="mt-1 truncate text-xs font-medium text-gray-900">{topCategory?.name || '—'}</p>
+                <p className="mt-1 text-base font-semibold tabular-nums text-primary-700">
                   {formatFeeCurrency(topCategory?.total || 0)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-0.5 text-[11px] text-gray-500">
                   {categoryTotalCollection > 0 && topCategory
-                    ? `${((topCategory.total / categoryTotalCollection) * 100).toFixed(1)}% of total collection`
-                    : '0% of total collection'}
+                    ? `${((topCategory.total / categoryTotalCollection) * 100).toFixed(1)}% of this range`
+                    : '0% of this range'}
                 </p>
               </div>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500">Total Collection</p>
-                <p className="text-xl font-medium text-green-700 mt-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Total collection</p>
+                <p className="mt-1 text-base font-semibold tabular-nums text-green-700">
                   {formatFeeCurrency(categoryTotalCollection)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-0.5 text-[11px] text-gray-500">
                   {categoryRange === 'this_week'
                     ? 'This Week'
                     : categoryRange === 'this_month'
@@ -272,20 +272,20 @@ function ChartCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-4 ${className}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div className={`overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${className}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         {action}
       </div>
-      {children}
+      <div className="p-3">{children}</div>
     </div>
   );
 }
 
 function EmptyChart() {
   return (
-    <div className="h-[260px] flex items-center justify-center text-sm text-gray-500">
-      No data available for this period
+    <div className="flex h-[200px] items-center justify-center text-xs text-gray-400">
+      No data for this period
     </div>
   );
 }

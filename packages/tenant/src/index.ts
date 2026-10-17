@@ -421,6 +421,35 @@ export async function listTenants(): Promise<Tenant[]> {
   return result.rows;
 }
 
+export type PublicSchoolMatch = {
+  id: number;
+  name: string;
+  slug: string;
+  city: string | null;
+  school_code: string;
+};
+
+/** Public city/name search for the parent app school picker. */
+export async function searchPublicSchools(city: string, name: string): Promise<PublicSchoolMatch[]> {
+  const cityQuery = city.trim();
+  const nameQuery = name.trim();
+  if (cityQuery.length < 2 && nameQuery.length < 2) return [];
+
+  const result = await controlQuery<PublicSchoolMatch>(
+    `SELECT t.id, t.name, t.slug, t.city,
+            UPPER(COALESCE(NULLIF(o.school_code, ''), NULLIF(t.code, ''), t.slug)) AS school_code
+     FROM tenants t
+     LEFT JOIN organizations o ON o.id = t.organization_id
+     WHERE t.is_active = true
+       AND ($1 = '' OR COALESCE(t.city, '') ILIKE '%' || $1 || '%')
+       AND ($2 = '' OR t.name ILIKE '%' || $2 || '%')
+     ORDER BY t.name
+     LIMIT 30`,
+    [cityQuery, nameQuery],
+  );
+  return result.rows;
+}
+
 /**
  * Resolve tenant + branding + DB config from a request (e.g. Next.js API route).
  * Uses host (subdomain or custom domain) and optionally tenant_id from cookie/header/JWT.

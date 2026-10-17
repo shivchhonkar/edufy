@@ -34,8 +34,15 @@ export function useFeesStudents(academicYear?: string) {
         return;
       }
 
-      const statusByStudent: Record<number, { pendingAmount: number; paymentStatus: string }> =
-        statusData.success ? statusData.data : {};
+      const statusByStudent: Record<
+        number,
+        {
+          pendingAmount: number;
+          paymentStatus: string;
+          pendingMonths?: number[];
+          hasOtherPending?: boolean;
+        }
+      > = statusData.success ? statusData.data : {};
 
       const studentsWithStatus: FeeStudentRow[] = data.data.map((student: FeeStudentRow) => {
         const feeStatus = statusByStudent[student.id];
@@ -44,6 +51,8 @@ export function useFeesStudents(academicYear?: string) {
             ...student,
             pendingAmount: feeStatus.pendingAmount,
             paymentStatus: feeStatus.paymentStatus,
+            pendingMonths: feeStatus.pendingMonths || [],
+            hasOtherPending: Boolean(feeStatus.hasOtherPending),
           };
         }
         return {

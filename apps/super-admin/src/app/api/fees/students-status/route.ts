@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestDb } from '@/lib/request-db';
 import { ensureFeeSchema } from '@/lib/ensure-fee-schema';
 import { resolveAcademicYear } from '@/lib/ensure-system-settings';
-import { academicYearFilterValues } from '@/lib/fees/AcademicYear';
+import { ACADEMIC_MONTH_SEQUENCE, academicYearFilterValues } from '@/lib/fees/AcademicYear';
 import { EXCLUDE_INACTIVE_OUTSTANDING_FEES } from '@/lib/fees/active-student-fee-filter';
 
 /** Bulk pending fee summary per student — used by /fees list page */
@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
       pending_amount: string;
       fee_count: string;
       pending_count: string;
+      pending_months: number[] | null;
+      has_other_pending: boolean;
     }>(
       `SELECT
         sf.student_id,
@@ -30,7 +32,17 @@ export async function GET(request: NextRequest) {
         COUNT(*) FILTER (
           WHERE sf.status IN ('pending', 'partial', 'overdue')
           AND (sf.amount_due - sf.amount_paid) > 0
-        )::text AS pending_count
+        )::text AS pending_count,
+        ARRAY_REMOVE(ARRAY_AGG(DISTINCT sf.month) FILTER (
+          WHERE sf.status IN ('pending', 'partial', 'overdue')
+            AND (sf.amount_due - COALESCE(sf.amount_paid, 0)) > 0
+            AND sf.month IS NOT NULL
+        ), NULL) AS pending_months,
+        BOOL_OR(
+          sf.month IS NULL
+          AND sf.status IN ('pending', 'partial', 'overdue')
+          AND (sf.amount_due - COALESCE(sf.amount_paid, 0)) > 0
+        ) AS has_other_pending
       FROM student_fees sf
       LEFT JOIN fee_structures fs ON sf.fee_structure_id = fs.id
       WHERE sf.academic_year = ANY($1::text[])
@@ -41,18 +53,33 @@ export async function GET(request: NextRequest) {
 
     const byStudent: Record<
       number,
-      { pendingAmount: number; feeCount: number; pendingCount: number; paymentStatus: string }
+      {
+        pendingAmount: number;
+        feeCount: number;
+        pendingCount: number;
+        paymentStatus: string;
+        pendingMonths: number[];
+        hasOtherPending: boolean;
+      }
     > = {};
 
     for (const row of result.rows) {
       const pendingAmount = parseFloat(row.pending_amount || '0');
       const feeCount = parseInt(row.fee_count || '0', 10);
       const pendingCount = parseInt(row.pending_count || '0', 10);
+      const pendingMonths = (row.pending_months || [])
+        .map((month) => Number(month))
+        .filter((month) => month >= 1 && month <= 12)
+        .sort(
+          (a, b) => ACADEMIC_MONTH_SEQUENCE.indexOf(a) - ACADEMIC_MONTH_SEQUENCE.indexOf(b),
+        );
 
       byStudent[row.student_id] = {
         pendingAmount,
         feeCount,
         pendingCount,
+        pendingMonths,
+        hasOtherPending: Boolean(row.has_other_pending),
         paymentStatus:
           pendingAmount > 0 || pendingCount > 0
             ? 'pending'

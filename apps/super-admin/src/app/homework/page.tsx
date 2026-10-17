@@ -1,7 +1,6 @@
 'use client';
 
 import AppModal, {
-  APP_MODAL_PANEL,
   APP_MODAL_PANEL_STRUCTURED,
   APP_MODAL_HEADER,
   APP_MODAL_BODY,
@@ -10,19 +9,42 @@ import AppModal, {
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import { useDialog } from '@/shared/context/DialogContext';
-import { 
-  FiBook, 
-  FiPlus, 
-  FiEdit, 
-  FiTrash2, 
-  FiEye, 
+import {
+  FiBook,
+  FiPlus,
+  FiEdit,
+  FiTrash2,
+  FiEye,
   FiClock,
-  FiCheckCircle,
-  FiXCircle,
   FiSearch,
-  FiFilter,
-  FiX
+  FiX,
 } from 'react-icons/fi';
+
+const fieldClass =
+  'w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-gray-50 disabled:text-gray-400';
+
+const labelClass = 'mb-1 block text-[11px] font-medium text-gray-600';
+
+function dateKey(value?: string | null) {
+  const match = String(value || '').match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : '';
+}
+
+function todayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function formatDue(value?: string | null) {
+  const key = dateKey(value);
+  if (!key) return '—';
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 interface Homework {
   id: number;
@@ -206,46 +228,64 @@ export default function HomeworkPage() {
   };
 
   const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date();
+    const key = dateKey(dueDate);
+    return Boolean(key) && key < todayKey();
   };
+
+  const activeCount = homework.filter((item) => item.status === 'active').length;
+  const overdueCount = homework.filter((item) => item.status === 'active' && isOverdue(item.due_date)).length;
+  const completedCount = homework.filter((item) => item.status === 'completed').length;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900">Homework & Assignments</h1>
-            {/* <p className="text-gray-600 mt-1">Manage homework and track submissions</p> */}
+            <h1 className="text-lg font-medium text-gray-900">Homework</h1>
+            <p className="mt-0.5 text-xs text-gray-500">Assign work and track who has submitted.</p>
           </div>
-          <button 
+          <button
+            type="button"
             onClick={() => {
               setSelectedHomework(null);
               setShowModal(true);
             }}
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
           >
-            <FiPlus />
-            <span>Assign Homework</span>
+            <FiPlus size={14} />
+            Assign homework
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: 'Listed', value: homework.length, tone: 'text-gray-900' },
+            { label: 'Active', value: activeCount, tone: 'text-green-700' },
+            { label: 'Overdue', value: overdueCount, tone: 'text-red-700' },
+            { label: 'Completed', value: completedCount, tone: 'text-blue-700' },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{item.label}</p>
+              <p className={`text-lg font-semibold tabular-nums ${item.tone}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-5">
             <div className="relative">
-              <FiSearch className="absolute left-3 top-3 text-gray-400" />
+              <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
               <input
                 type="text"
-                placeholder="Search homework..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                placeholder="Search homework"
+                className={`${fieldClass} pl-8`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            
+
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+              className={fieldClass}
               value={filterClass}
               onChange={(e) => {
                 setFilterClass(e.target.value);
@@ -261,7 +301,7 @@ export default function HomeworkPage() {
             </select>
 
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+              className={fieldClass}
               value={filterSection}
               onChange={(e) => setFilterSection(e.target.value)}
               disabled={!filterClass}
@@ -275,7 +315,7 @@ export default function HomeworkPage() {
             </select>
 
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+              className={fieldClass}
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
             >
@@ -288,7 +328,7 @@ export default function HomeworkPage() {
             </select>
 
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+              className={fieldClass}
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -300,31 +340,31 @@ export default function HomeworkPage() {
           </div>
 
           {(search || filterClass || filterSection || filterSubject || filterStatus) && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Active filters:</span>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-gray-500">Filters</span>
                 {search && (
-                  <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                  <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-medium text-primary-700">
                     Search: "{search}"
                   </span>
                 )}
                 {filterClass && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                     Class: {classes.find(c => c.id.toString() === filterClass)?.name}
                   </span>
                 )}
                 {filterSection && (
-                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
                     Section: {sections.find(s => s.id.toString() === filterSection)?.name}
                   </span>
                 )}
                 {filterSubject && (
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">
                     Subject: {subjects.find(s => s.id.toString() === filterSubject)?.name}
                   </span>
                 )}
                 {filterStatus && (
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
                     Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
                   </span>
                 )}
@@ -337,7 +377,7 @@ export default function HomeworkPage() {
                   setFilterSubject('');
                   setFilterStatus('');
                 }}
-                className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
               >
                 <FiX size={16} />
                 <span>Clear All</span>
@@ -348,109 +388,98 @@ export default function HomeworkPage() {
 
         {/* Homework List */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-500">Loading homework...</p>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-10 text-center text-xs text-gray-500 shadow-sm">
+            Loading homework…
           </div>
         ) : homework.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-center flex-col py-12">
-              <FiBook className="w-16 h-16 text-gray-400 mb-4" />
-              <p className="text-gray-500">No homework found</p>
-              <p className="text-sm text-gray-400 mt-2">
-                {search || filterClass || filterSection || filterSubject ? 
-                  'Try adjusting your filters' : 
-                  'Click "Assign Homework" to get started'
-                }
-              </p>
-            </div>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-10 text-center shadow-sm">
+            <FiBook className="mx-auto mb-2 text-gray-300" size={28} />
+            <p className="text-sm text-gray-600">No homework found</p>
+            <p className="mt-1 text-xs text-gray-400">
+              {search || filterClass || filterSection || filterSubject
+                ? 'Try adjusting your filters'
+                : 'Use Assign homework to add the first one'}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {homework.map((hw) => (
-              <div key={hw.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-md font-medium text-gray-900 mb-1">{hw.title}</h3>
-                      <p className="text-sm text-gray-600">
+              <div key={hw.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="p-3">
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-medium text-gray-900">{hw.title}</h3>
+                      <p className="truncate text-[11px] text-gray-500">
                         {hw.class_name}
                         {hw.section_name ? ` · ${hw.section_name}` : ''}
                         {' · '}
                         {hw.subject_name}
                       </p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(hw.status)}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${getStatusColor(hw.status)}`}>
                       {hw.status}
                     </span>
                   </div>
 
-                  {/* Description */}
-                  <p className="text-sm text-gray-700 mb-4 line-clamp-2">{hw.description}</p>
+                  <p className="mb-2 line-clamp-2 text-xs text-gray-600">{hw.description}</p>
 
-                  {/* Due Date */}
-                  <div className={`flex items-center text-sm mb-4 ${
+                  <div className={`mb-2 flex items-center text-xs ${
                     isOverdue(hw.due_date) && hw.status === 'active' ? 'text-red-600' : 'text-gray-600'
                   }`}>
-                    <FiClock className="mr-2" />
-                    <span>
-                      Due: {new Date(hw.due_date).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </span>
+                    <FiClock className="mr-1.5" size={13} />
+                    <span>Due {formatDue(hw.due_date)}</span>
                     {isOverdue(hw.due_date) && hw.status === 'active' && (
                       <span className="ml-2 text-xs font-medium">(Overdue)</span>
                     )}
                   </div>
 
                   {/* Submission Stats */}
-                  <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Total</p>
-                      <p className="text-lg text-gray-900">{hw.total_submissions}</p>
+                  <div className="mb-2 grid grid-cols-3 gap-1.5 rounded-md bg-gray-50 p-2 text-center">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                      <p className="text-sm font-semibold tabular-nums text-gray-900">{hw.total_submissions}</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Submitted</p>
-                      <p className="text-lg text-blue-600">{hw.submitted_count}</p>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Submitted</p>
+                      <p className="text-sm font-semibold tabular-nums text-blue-700">{hw.submitted_count}</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Graded</p>
-                      <p className="text-lg text-green-600">{hw.graded_count}</p>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Graded</p>
+                      <p className="text-sm font-semibold tabular-nums text-green-700">{hw.graded_count}</p>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between border-t border-gray-100 pt-2">
                     <button
                       type="button"
                       onClick={() => handleViewSubmissions(hw)}
                       disabled={loadingSubmissionsId === hw.id}
-                      className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50"
                     >
                       <FiEye size={16} />
                       <span>
                         {loadingSubmissionsId === hw.id ? 'Loading…' : 'View Submissions'}
                       </span>
                     </button>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-0.5">
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedHomework(hw);
                           setShowModal(true);
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-primary-600"
                         title="Edit"
                       >
-                        <FiEdit size={16} />
+                        <FiEdit size={14} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(hw.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
                         title="Delete"
                       >
-                        <FiTrash2 size={16} />
+                        <FiTrash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -607,9 +636,9 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
   return (
     <AppModal open onClose={onClose}>
       <div className={APP_MODAL_PANEL_STRUCTURED}>
-        <div className={`${APP_MODAL_HEADER} px-6 py-4`}>
-          <h2 className="text-xl text-gray-900">
-            {homework ? 'Edit Homework' : 'Assign New Homework'}
+        <div className={APP_MODAL_HEADER}>
+          <h2 className="text-sm font-semibold text-gray-900">
+            {homework ? 'Edit homework' : 'Assign homework'}
           </h2>
           <button
             type="button"
@@ -617,19 +646,19 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             className="text-gray-400 hover:text-gray-600"
             aria-label="Close"
           >
-            <FiX size={24} />
+            <FiX size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className={`${APP_MODAL_BODY} p-6 space-y-4`}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`${APP_MODAL_BODY} space-y-3 p-4`}>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClass}>
                 Class <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                className={fieldClass}
                 value={formData.class_id}
                 onChange={(e) =>
                   setFormData({ ...formData, class_id: e.target.value, section_id: '' })
@@ -646,11 +675,11 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClass}>
                 Section
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+                className={fieldClass}
                 value={formData.section_id}
                 onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
                 disabled={!formData.class_id}
@@ -665,11 +694,11 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClass}>
                 Subject <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                className={fieldClass}
                 value={formData.subject_id}
                 onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                 required
@@ -685,12 +714,12 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className={fieldClass}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g., Math Assignment - Chapter 5"
@@ -699,11 +728,11 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className={fieldClass}
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -714,22 +743,17 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
 
           {/* File Upload Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Attachments (PDF, Images, Videos)
             </label>
-            <div className="mt-2">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-gray-50 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="mb-2 text-sm text-gray-600">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+            <div className="mt-1">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-gray-300 px-3 py-4 hover:border-primary-500 hover:bg-gray-50">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium text-primary-700">Choose files</span> or drop them here
                   </p>
-                  <p className="text-xs text-gray-500">
-                    PDF, Images (JPEG, PNG, GIF), Videos (MP4, MOV) up to 50MB
-                  </p>
-                  {uploading && <p className="text-sm text-primary-600 mt-2">Uploading...</p>}
+                  <p className="mt-0.5 text-[11px] text-gray-400">PDF, images, or video, up to 50MB</p>
+                  {uploading && <p className="mt-1 text-[11px] text-primary-600">Uploading…</p>}
                 </div>
                 <input
                   type="file"
@@ -744,10 +768,10 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
 
             {/* Attachments List */}
             {attachments.length > 0 && (
-              <div className="mt-4 space-y-2">
+              <div className="mt-2 space-y-1.5">
                 {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
+                  <div key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-2 py-1.5">
+                    <div className="flex min-w-0 items-center gap-2">
                       {file.type?.includes('image') && (
                         <img src={file.url} alt={file.filename} className="w-10 h-10 object-cover rounded" />
                       )}
@@ -765,9 +789,9 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
                           </svg>
                         </div>
                       )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{file.filename}</p>
-                        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-gray-900">{file.filename}</p>
+                        <p className="text-[11px] text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                       </div>
                     </div>
                     <button
@@ -783,28 +807,28 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClass}>
                 Due Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className={fieldClass}
                 value={formData.due_date}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                min={new Date().toISOString().split('T')[0]}
+                min={todayKey()}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClass}>
                 Total Marks <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className={fieldClass}
                 value={formData.total_marks}
                 onChange={(e) => setFormData({ ...formData, total_marks: parseInt(e.target.value) })}
                 min="1"
@@ -814,9 +838,9 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className={labelClass}>Status</label>
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className={fieldClass}
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
             >
@@ -832,14 +856,14 @@ function HomeworkModal({ homework, classes, subjects, onClose, onSuccess }: any)
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              className="rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
             >
               {saving ? 'Saving...' : homework ? 'Update Homework' : 'Assign Homework'}
             </button>
@@ -916,19 +940,6 @@ function SubmissionsModal({
     }
   };
 
-  const getSubmissionStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <FiClock className="text-yellow-600" />;
-      case 'submitted':
-        return <FiCheckCircle className="text-blue-600" />;
-      case 'graded':
-        return <FiCheckCircle className="text-green-600" />;
-      default:
-        return <FiXCircle className="text-gray-600" />;
-    }
-  };
-
   const classLine = [
     homework.class_name,
     homework.section_name,
@@ -940,18 +951,13 @@ function SubmissionsModal({
   return (
     <AppModal open onClose={onClose}>
       <div className={APP_MODAL_PANEL_STRUCTURED}>
-        <div className={`${APP_MODAL_HEADER} items-start px-6 py-4`}>
-          <div className="min-w-0 pr-4">
-            <h2 className="text-xl text-gray-900 truncate">{homework.title}</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {classLine} · Due:{' '}
-              {new Date(homework.due_date).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
+        <div className={`${APP_MODAL_HEADER} items-start`}>
+          <div className="min-w-0 pr-3">
+            <h2 className="truncate text-sm font-semibold text-gray-900">{homework.title}</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {classLine} · Due {formatDue(homework.due_date)}
             </p>
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600">
               <span>
                 Total Marks: <span className="font-semibold text-gray-900">{homework.total_marks}</span>
               </span>
@@ -975,17 +981,17 @@ function SubmissionsModal({
             className="shrink-0 text-gray-400 hover:text-gray-600"
             aria-label="Close"
           >
-            <FiX size={24} />
+            <FiX size={18} />
           </button>
         </div>
 
-        <div className={`${APP_MODAL_BODY} p-6`}>
+        <div className={`${APP_MODAL_BODY} p-4`}>
           {submissions.length === 0 ? (
-            <div className="text-center py-12">
-              <FiBook className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No students assigned for this homework</p>
-              <p className="text-sm text-gray-400 mt-2">
-                Submissions are created when homework is assigned to a class or section.
+            <div className="py-10 text-center">
+              <FiBook className="mx-auto mb-2 text-gray-300" size={28} />
+              <p className="text-sm text-gray-600">No students assigned for this homework</p>
+              <p className="mt-1 text-xs text-gray-400">
+                Submissions appear after homework is assigned to a class or section.
               </p>
             </div>
           ) : (
@@ -993,19 +999,19 @@ function SubmissionsModal({
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Student
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Submitted At
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Marks
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Actions
                     </th>
                   </tr>
@@ -1013,12 +1019,12 @@ function SubmissionsModal({
                 <tbody className="bg-white divide-y divide-gray-200">
                   {submissions.map((submission) => (
                     <tr key={submission.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-3 py-2">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-xs font-medium text-gray-900">
                             {submission.first_name} {submission.last_name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-[11px] text-gray-500">
                             {submission.admission_number}
                             {submission.roll_number != null && submission.roll_number !== ''
                               ? ` · Roll: ${submission.roll_number}`
@@ -1041,31 +1047,28 @@ function SubmissionsModal({
                           ) : null}
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          {getSubmissionStatusIcon(submission.status)}
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getSubmissionStatusColor(submission.status)}`}
-                          >
-                            {submission.status}
-                          </span>
-                        </div>
+                      <td className="whitespace-nowrap px-3 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${getSubmissionStatusColor(submission.status)}`}
+                        >
+                          {submission.status}
+                        </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-3 py-2 text-xs text-gray-500">
                         {submission.submitted_at
                           ? new Date(submission.submitted_at).toLocaleString('en-IN')
                           : '—'}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-3 py-2">
                         {submission.marks_obtained != null ? (
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-xs font-semibold tabular-nums text-gray-900">
                             {submission.marks_obtained}/{homework.total_marks}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">Not graded</span>
+                          <span className="text-xs text-gray-400">Not graded</span>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="whitespace-nowrap px-3 py-2 text-right text-xs font-medium">
                         {submission.status === 'submitted' || submission.status === 'graded' ? (
                           <button
                             type="button"
@@ -1090,41 +1093,41 @@ function SubmissionsModal({
           )}
 
           {gradingSubmission && (
-            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
+            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <h3 className="mb-2 text-xs font-semibold text-gray-900">
                 Grade — {gradingSubmission.first_name} {gradingSubmission.last_name}
               </h3>
 
               {gradingSubmission.submission_text ? (
-                <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Submission</p>
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                <div className="mb-3 rounded-md border border-gray-200 bg-white p-2.5">
+                  <p className="mb-1 text-[11px] font-medium text-gray-500">Submission</p>
+                  <p className="whitespace-pre-wrap text-xs text-gray-900">
                     {gradingSubmission.submission_text}
                   </p>
                 </div>
               ) : null}
 
               {gradingSubmission.submission_file ? (
-                <div className="mb-4">
+                <div className="mb-3">
                   <a
                     href={gradingSubmission.submission_file}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-primary-600 hover:text-primary-800"
+                    className="text-xs text-primary-600 hover:text-primary-800"
                   >
                     Open submitted attachment
                   </a>
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={labelClass}>
                     Marks <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                    className={fieldClass}
                     value={marks}
                     onChange={(e) => setMarks(e.target.value)}
                     min="0"
@@ -1134,9 +1137,9 @@ function SubmissionsModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Feedback</label>
+                  <label className={labelClass}>Feedback</label>
                   <textarea
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                    className={fieldClass}
                     rows={3}
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
@@ -1153,7 +1156,7 @@ function SubmissionsModal({
                     setMarks('');
                     setFeedback('');
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -1161,7 +1164,7 @@ function SubmissionsModal({
                   type="button"
                   onClick={() => handleGrade(gradingSubmission)}
                   disabled={!marks.trim() || grading}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                  className="rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
                 >
                   {grading ? 'Grading…' : 'Submit Grade'}
                 </button>
@@ -1174,7 +1177,7 @@ function SubmissionsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
           >
             Close
           </button>
