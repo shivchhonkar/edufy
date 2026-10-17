@@ -148,7 +148,7 @@ export default function StaffReportsPage() {
             <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
               {/* <FiBarChart2 className="text-primary-600" /> */}
               Staff Reports <Link
-              href="/attendance/staff/register"
+              href="/attendance/register/staff"
               className="text-xs text-primary-600 hover:text-primary-800"
             >
               Staff Register →

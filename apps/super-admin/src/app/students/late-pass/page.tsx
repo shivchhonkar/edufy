@@ -69,8 +69,8 @@ export default function LatePassPage() {
 
   const printRegister = () => {
     printHtmlDocument(
-      'Late Pass Register',
-      `<h1>Late Pass Register</h1>
+      'Late Arrivals Register',
+      `<h1>Late Arrivals Register</h1>
        <table><thead><tr><th>No.</th><th>Date</th><th>Student</th><th>Time</th><th>Reason</th></tr></thead>
        <tbody>${rows
          .map(
@@ -87,8 +87,8 @@ export default function LatePassPage() {
     <DashboardLayout>
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
-          <h1 className="text-lg font-medium text-gray-900">Late Pass</h1>
-          <p className="mt-1 text-sm text-gray-500">Feed late arrivals and print the late pass register.</p>
+          <h1 className="text-lg font-medium text-gray-900">Late Arrivals</h1>
+          <p className="mt-1 text-sm text-gray-500">Feed late arrivals and print the late arrival register.</p>
         </div>
         <div className="mb-4 flex gap-2">
           <button
@@ -96,14 +96,14 @@ export default function LatePassPage() {
             onClick={() => setTab('feed')}
             className={`rounded-lg px-3 py-2 text-sm ${tab === 'feed' ? 'bg-primary-600 text-white' : 'border bg-white'}`}
           >
-            Feed Late Pass
+            Record Arrival
           </button>
           <button
             type="button"
             onClick={() => setTab('register')}
             className={`rounded-lg px-3 py-2 text-sm ${tab === 'register' ? 'bg-primary-600 text-white' : 'border bg-white'}`}
           >
-            Late Pass Register
+            Register
           </button>
         </div>
 

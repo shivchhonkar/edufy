@@ -4,6 +4,11 @@ import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiUser, FiCalendar } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
+import {
+  clockInputValue,
+  DEFAULT_ATTENDANCE_WINDOW,
+  deriveAttendanceFromTimes,
+} from '@/features/attendance/utils/attendance-time';
 
 interface Student {
   id: number;
@@ -19,6 +24,8 @@ interface StudentAttendanceRecord {
   date: string;
   status: string;
   remarks?: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
   first_name?: string;
   last_name?: string;
   admission_number?: string;
@@ -45,6 +52,8 @@ export default function RecordStudentAttendanceModal({
     date: new Date().toISOString().split('T')[0],
     status: 'present',
     remarks: '',
+    check_in_time: '',
+    check_out_time: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +79,8 @@ export default function RecordStudentAttendanceModal({
         date: editingRecord.date,
         status: editingRecord.status,
         remarks: editingRecord.remarks || '',
+        check_in_time: clockInputValue(editingRecord.check_in_time),
+        check_out_time: clockInputValue(editingRecord.check_out_time),
       });
       const name = editingRecord.first_name
         ? `${editingRecord.first_name} ${editingRecord.last_name}`
@@ -82,6 +93,8 @@ export default function RecordStudentAttendanceModal({
         date: new Date().toISOString().split('T')[0],
         status: 'present',
         remarks: '',
+        check_in_time: '',
+        check_out_time: '',
       });
       setSearchTerm('');
       setHasUnsavedChanges(false);
@@ -90,7 +103,18 @@ export default function RecordStudentAttendanceModal({
   }, [editingRecord, isOpen]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'check_in_time' || field === 'check_out_time') {
+        const derived = deriveAttendanceFromTimes({
+          checkIn: field === 'check_in_time' ? value : prev.check_in_time,
+          checkOut: field === 'check_out_time' ? value : prev.check_out_time,
+          ...DEFAULT_ATTENDANCE_WINDOW,
+        });
+        if (derived) next.status = derived.status;
+      }
+      return next;
+    });
     setHasUnsavedChanges(true);
   };
 
@@ -129,6 +153,8 @@ export default function RecordStudentAttendanceModal({
           date: formData.date,
           status: formData.status,
           remarks: formData.remarks || null,
+          check_in_time: formData.check_in_time || null,
+          check_out_time: formData.check_out_time || null,
         }),
       });
 
@@ -232,6 +258,27 @@ export default function RecordStudentAttendanceModal({
               onChange={(e) => handleInputChange('date', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">In time</label>
+              <input
+                type="time"
+                value={formData.check_in_time}
+                onChange={(e) => handleInputChange('check_in_time', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Out time</label>
+              <input
+                type="time"
+                value={formData.check_out_time}
+                onChange={(e) => handleInputChange('check_out_time', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
           </div>
 
           <div>

@@ -9,10 +9,11 @@ import StaffIdCardModal from '@/features/staff/components/StaffIdCardModal';
 import VirtualizedStaffTable, {
   type StaffListItem,
 } from '@/features/staff/components/VirtualizedStaffTable';
-import StaffTableSkeleton, { StaffTotalSkeleton } from '@/features/staff/components/StaffTableSkeleton';
+import StaffTableSkeleton from '@/features/staff/components/StaffTableSkeleton';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import BulkImportModal from '@/shared/components/common/BulkImportModal';
 import { useDialog } from '@/shared/context/DialogContext';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 import { useSettings } from '@/shared/SettingsContext';
 import { Staff } from '@/shared/types';
 import {
@@ -30,6 +31,30 @@ type StaffViewTab =
   | 'messages';
 
 const STAFF_FETCH_LIMIT = 5000;
+
+function todayInputDate() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function formatClock(value?: string | null) {
+  if (!value) return '—';
+  return String(value).slice(0, 5);
+}
+
+interface PresentStaffRow {
+  id: number;
+  staff_id: number;
+  first_name: string;
+  last_name?: string | null;
+  employee_id?: string | null;
+  department?: string | null;
+  designation?: string | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+}
 
 export default function StaffPage() {
   const { alert } = useDialog();
@@ -56,6 +81,9 @@ export default function StaffPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [pageTab, setPageTab] = useState<'directory' | 'present'>('directory');
+  const [presentStaff, setPresentStaff] = useState<PresentStaffRow[]>([]);
+  const [presentLoading, setPresentLoading] = useState(false);
 
   useEffect(() => {
     // Check if user is super admin
@@ -69,6 +97,34 @@ export default function StaffPage() {
   useEffect(() => {
     fetchStaff();
   }, [search, statusFilter, isSuperAdmin]);
+
+  useEffect(() => {
+    if (pageTab !== 'present') return;
+    let ignore = false;
+    const loadPresent = async () => {
+      setPresentLoading(true);
+      try {
+        const today = todayInputDate();
+        const params = new URLSearchParams({
+          start_date: today,
+          end_date: today,
+          status: 'present',
+        });
+        const response = await fetch(`/api/attendance?${params}`);
+        const data = await response.json();
+        if (!ignore && data.success) setPresentStaff(data.data || []);
+      } catch (error) {
+        console.error('Error fetching staff present today:', error);
+        if (!ignore) setPresentStaff([]);
+      } finally {
+        if (!ignore) setPresentLoading(false);
+      }
+    };
+    void loadPresent();
+    return () => {
+      ignore = true;
+    };
+  }, [pageTab]);
 
   useEffect(() => {
     fetch('/api/settings/reports')
@@ -204,6 +260,20 @@ export default function StaffPage() {
   const statusFilterLabel =
     statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
 
+  const visiblePresent = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return presentStaff;
+    return presentStaff.filter((row) => {
+      const name = `${row.first_name || ''} ${row.last_name || ''}`.toLowerCase();
+      return (
+        name.includes(query) ||
+        (row.employee_id || '').toLowerCase().includes(query) ||
+        (row.department || '').toLowerCase().includes(query) ||
+        (row.designation || '').toLowerCase().includes(query)
+      );
+    });
+  }, [presentStaff, search]);
+
   const clearFilters = () => {
     setSearch('');
     setStatusFilter('active');
@@ -214,16 +284,27 @@ export default function StaffPage() {
       <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-3">
         <div className="shrink-0 space-y-2">
           <div className="flex flex-wrap justify-between items-center gap-2">
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-lg font-medium text-gray-900">Staff Management</h1>
-              {loading ? (
-                <StaffTotalSkeleton />
-              ) : (
-                <span className="text-xs text-gray-500">
-                  {totalStaff} total
-                  {staff.length < totalStaff ? ` · ${staff.length} loaded` : ''}
-                </span>
-              )}
+            <div className="flex flex-wrap items-center gap-3">
+              <div>
+                <h1 className="text-lg font-medium text-gray-900">Staff Management</h1>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {pageTab === 'present'
+                    ? presentLoading
+                      ? 'Loading today’s attendance…'
+                      : `${visiblePresent.length} present today`
+                    : loading
+                      ? 'Loading staff…'
+                      : `${totalStaff} total${staff.length < totalStaff ? ` · ${staff.length} loaded` : ''}`}
+                </p>
+              </div>
+              <div className={moduleTabBarClass}>
+                <button type="button" onClick={() => setPageTab('directory')} className={moduleTabClass(pageTab === 'directory')}>
+                  Directory
+                </button>
+                <button type="button" onClick={() => setPageTab('present')} className={moduleTabClass(pageTab === 'present')}>
+                  Present today
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <button
@@ -341,6 +422,62 @@ export default function StaffPage() {
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+          {pageTab === 'present' ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="shrink-0 border-b border-gray-100 px-4 py-2.5">
+                <div className="relative max-w-sm">
+                  <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
+                  <input
+                    type="search"
+                    placeholder="Search present staff"
+                    className="w-full rounded-md border border-gray-200 py-1.5 pl-8 pr-3 text-xs text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              {presentLoading ? (
+                <StaffTableSkeleton fillHeight />
+              ) : visiblePresent.length === 0 ? (
+                <div className="px-4 py-12 text-center">
+                  <p className="text-sm font-medium text-gray-700">No staff marked present today</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Attendance marked as present for today will appear here.
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    <tr>
+                      <th className="px-4 py-2.5">Staff</th>
+                      <th className="px-4 py-2.5">Department</th>
+                      <th className="px-4 py-2.5">Designation</th>
+                      <th className="px-4 py-2.5">Check in</th>
+                      <th className="px-4 py-2.5">Check out</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visiblePresent.map((row) => (
+                      <tr key={row.id} className="border-t border-gray-100">
+                        <td className="px-4 py-2.5">
+                          <p className="font-medium text-gray-900">
+                            {row.first_name} {row.last_name || ''}
+                          </p>
+                          <p className="text-xs text-gray-500">{row.employee_id || '—'}</p>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-600">{row.department || '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-600">{row.designation || '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-600">{formatClock(row.check_in_time)}</td>
+                        <td className="px-4 py-2.5 text-gray-600">{formatClock(row.check_out_time)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            </div>
+          ) : (
           <div className="min-h-0 flex-1">
             {loading ? (
               <StaffTableSkeleton fillHeight />
@@ -357,8 +494,9 @@ export default function StaffPage() {
               />
             )}
           </div>
+          )}
 
-          {!loading && staff.length > 0 && (
+          {pageTab === 'directory' && !loading && staff.length > 0 && (
             <div className="shrink-0 px-4 py-2.5 border-t border-gray-100 bg-gray-50/60 text-sm text-gray-600 flex justify-between items-center">
               <span>
                 Showing {staff.length} staff member{staff.length !== 1 ? 's' : ''}

@@ -1,6 +1,7 @@
 import type { RequestDb } from '@/lib/request-db';
 import { ensureSchoolEventsSchema } from '@/lib/ensure-school-events-schema';
 import { ensureHolidaySchema } from '@/lib/ensure-holiday-schema';
+import { syncUnlinkedPtmSchedules } from '@/lib/ptm-calendar-sync';
 import { getCalendarDateString } from '@edulakhya/utils';
 
 export type CalendarEventKind = 'holiday' | 'school_event';
@@ -24,7 +25,11 @@ export interface CalendarEvent {
 function toDateString(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'string') return value.slice(0, 10);
-  if (value instanceof Date) return getCalendarDateString(value);
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    if (iso.endsWith('T00:00:00.000Z')) return iso.slice(0, 10);
+    return getCalendarDateString(value);
+  }
   return String(value).slice(0, 10);
 }
 
@@ -36,6 +41,7 @@ export async function fetchCalendarEventsInRange(
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db);
   await ensureHolidaySchema(db);
+  await syncUnlinkedPtmSchedules(db);
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false;
   const schoolEventFilter = parentVisibleOnly
@@ -81,7 +87,9 @@ export async function fetchCalendarEventsInRange(
       audience: string;
       status: string;
     }>(
-      `SELECT id, title, description, event_type, start_date, end_date,
+      `SELECT id, title, description, event_type,
+              to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(COALESCE(end_date, start_date), 'YYYY-MM-DD') AS end_date,
               all_day, start_time, end_time, location, audience, status
        FROM school_events
        WHERE start_date <= $2
@@ -138,6 +146,7 @@ export async function fetchAllCalendarEvents(
 ): Promise<CalendarEvent[]> {
   await ensureSchoolEventsSchema(db);
   await ensureHolidaySchema(db);
+  await syncUnlinkedPtmSchedules(db);
 
   const parentVisibleOnly = options?.parentVisibleOnly ?? false;
   const schoolEventFilter = parentVisibleOnly
@@ -180,7 +189,9 @@ export async function fetchAllCalendarEvents(
       audience: string;
       status: string;
     }>(
-      `SELECT id, title, description, event_type, start_date, end_date,
+      `SELECT id, title, description, event_type,
+              to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(COALESCE(end_date, start_date), 'YYYY-MM-DD') AS end_date,
               all_day, start_time, end_time, location, audience, status
        FROM school_events
        ${schoolEventFilter}

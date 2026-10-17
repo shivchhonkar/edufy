@@ -25,6 +25,8 @@ export interface GatePassDocumentData {
     admission_number?: string;
     class_name?: string;
     section_name?: string;
+    parent_name?: string | null;
+    parent_phone?: string | null;
     photo_url?: string | null;
     guardian_photos?: GatePassGuardianPhoto[];
   };
@@ -86,9 +88,9 @@ function PhotoFrame({
       {sublabel && (
         <p className="text-[10px] text-slate-400 mb-2 text-center w-full truncate">{sublabel}</p>
       )}
-      <div className="w-full aspect-[3/4] max-h-[140px] rounded-lg border-2 border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
+      <div className="h-52 w-40 rounded-lg border-2 border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
         {url ? (
-          <img src={url} alt={label} className="w-full h-full object-cover" />
+          <img src={url} alt={label} className="h-full w-full object-contain object-center" />
         ) : (
           <span className="text-[10px] text-slate-400 text-center px-2">{emptyText}</span>
         )}
@@ -97,8 +99,22 @@ function PhotoFrame({
   );
 }
 
+export function parentDetails(record: GatePassDocumentData) {
+  const snapshot = record.student_snapshot;
+  const guardians = snapshot?.guardian_photos || [];
+  const named =
+    guardians.find((guardian) => guardian.relation_type === 'father') ||
+    guardians.find((guardian) => guardian.relation_type === 'mother') ||
+    guardians[0];
+
+  return {
+    name: snapshot?.parent_name?.trim() || named?.name || '—',
+    phone: snapshot?.parent_phone?.trim() || '—',
+  };
+}
+
 function buildPhotoSlots(record: GatePassDocumentData) {
-  const slots: Array<{ key: string; label: string; sublabel?: string; url?: string | null; alwaysShow?: boolean }> = [];
+  const slots: Array<{ key: string; label: string; sublabel?: string; url?: string | null }> = [];
 
   if (record.student_snapshot?.photo_url?.trim()) {
     slots.push({
@@ -118,14 +134,6 @@ function buildPhotoSlots(record: GatePassDocumentData) {
       url: guardian.photo_url,
     });
   }
-
-  slots.push({
-    key: 'collector',
-    label: 'Collector',
-    sublabel: record.collector_name,
-    url: record.collector_photo_url,
-    alwaysShow: true,
-  });
 
   return slots;
 }
@@ -147,6 +155,7 @@ export default function GatePassDocument({
     .filter(Boolean)
     .join(' · ');
   const photoSlots = buildPhotoSlots(record);
+  const parent = parentDetails(record);
 
   return (
     <article
@@ -281,22 +290,16 @@ export default function GatePassDocument({
 
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wide text-primary-700 border-b border-primary-100 pb-1 mb-3">
-              Person Collecting Student
+              Parent Details
             </h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div>
                 <dt className="text-slate-500 text-xs">Name</dt>
-                <dd className="font-semibold text-slate-900">{record.collector_name}</dd>
+                <dd className="font-semibold text-slate-900">{parent.name}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 text-xs">Relationship</dt>
-                <dd className="font-medium text-slate-900">
-                  {relationshipLabel(record.collector_relationship)}
-                </dd>
-              </div>
-              <div className="col-span-2">
                 <dt className="text-slate-500 text-xs">Mobile</dt>
-                <dd className="font-medium text-slate-900 font-mono">{record.collector_mobile}</dd>
+                <dd className="font-medium text-slate-900 font-mono">{parent.phone}</dd>
               </div>
             </dl>
           </div>
@@ -312,24 +315,54 @@ export default function GatePassDocument({
         </div>
 
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wide text-primary-700 border-b border-primary-100 pb-2 mb-3">
-            Photographs
+          <h3 className="mb-3 border-b border-primary-100 pb-1 text-xs font-bold uppercase tracking-wide text-primary-700">
+            Collector photograph and details
           </h3>
-          <div
-            className="grid gap-4"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(photoSlots.length, 4)}, minmax(0, 1fr))`,
-            }}
-          >
-            {photoSlots.map((slot) => (
-              <PhotoFrame
-                key={slot.key}
-                label={slot.label}
-                sublabel={slot.sublabel}
-                url={slot.url}
-                emptyText={slot.alwaysShow ? 'Capture at gate' : 'Not available'}
-              />
-            ))}
+          {photoSlots.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-4">
+              {photoSlots.map((slot) => (
+                <PhotoFrame
+                  key={slot.key}
+                  label={slot.label}
+                  sublabel={slot.sublabel}
+                  url={slot.url}
+                />
+              ))}
+            </div>
+          )}
+          <div className="inline-flex max-w-full flex-wrap items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div className="flex w-160 shrink-0 items-center justify-center bg-slate-50 sm:h-96 sm:w-172">
+              {record.collector_photo_url ? (
+                <img
+                  src={record.collector_photo_url}
+                  alt="Collector"
+                  className="h-full w-full object-contain object-center"
+                />
+              ) : (
+                <span className="px-3 text-center text-xs text-slate-400">Capture at gate</span>
+              )}
+            </div>
+            <div className="flex w-full min-w-[16rem] flex-col justify-center gap-4 border-t border-slate-200 px-5 py-4 sm:w-64 sm:border-l sm:border-t-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-primary-700">
+                Collector details
+              </p>
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-xs text-slate-500">Name</dt>
+                  <dd className="mt-0.5 font-semibold text-slate-900">{record.collector_name}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500">Relationship</dt>
+                  <dd className="mt-0.5 font-medium text-slate-900">
+                    {relationshipLabel(record.collector_relationship)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500">Mobile</dt>
+                  <dd className="mt-0.5 font-mono font-medium text-slate-900">{record.collector_mobile}</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
       </div>

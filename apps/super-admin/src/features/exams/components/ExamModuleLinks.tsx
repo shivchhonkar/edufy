@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 
 const LINKS = [
   { href: '/exams', label: 'Exams', exact: true },
@@ -17,16 +18,14 @@ const LINKS = [
 export default function ExamModuleLinks() {
   const pathname = usePathname();
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={moduleTabBarClass}>
       {LINKS.map((link) => {
         const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`rounded-lg px-3 py-1.5 text-sm ${
-              active ? 'bg-primary-600 text-white' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+            className={moduleTabClass(active)}
           >
             {link.label}
           </Link>

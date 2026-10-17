@@ -20,7 +20,7 @@ interface ViewStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   student: (Student & { class_name?: string; section_name?: string }) | null;
-  onEdit?: () => void;
+  onEdit?: (student: Student & { class_name?: string; section_name?: string }) => void;
   onViewSibling?: (student: Student & { class_name?: string; section_name?: string }) => void;
 }
 
@@ -109,7 +109,7 @@ export default function ViewStudentModal({
             {onEdit && (
               <button
                 type="button"
-                onClick={onEdit}
+                onClick={() => onEdit?.(studentData)}
                 className="px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100"
               >
                 Edit Profile

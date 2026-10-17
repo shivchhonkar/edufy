@@ -1,8 +1,8 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
-import { useState, useEffect, useRef } from 'react';
-import { FiX, FiUploadCloud } from 'react-icons/fi';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
+import { useState, useEffect, useRef, type ReactNode, type ComponentType } from 'react';
+import { FiBook, FiCamera, FiMapPin, FiUser, FiUsers, FiX } from 'react-icons/fi';
 import { Student } from '@/shared/types';
 import ConfirmDialog from '@/shared/components/common/ConfirmDialog';
 import { INDIAN_STATES, isIndianState } from '@/shared/constants/indian-states';
@@ -41,6 +41,61 @@ function sanitizePhoneInput(value: string): string {
   return value.replace(/\D/g, '').slice(0, 10);
 }
 
+const inputClass =
+  'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500';
+
+function Field({
+  label,
+  required,
+  error,
+  className = '',
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className={`block text-sm ${className}`}>
+      <span className="mb-1 block font-medium text-gray-600">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+      </span>
+      {children}
+      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
+    </label>
+  );
+}
+
+function FormSection({
+  title,
+  icon: Icon,
+  hint,
+  children,
+}: {
+  title: string;
+  icon?: ComponentType<{ className?: string }>;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+        <h3 className="flex items-center text-sm font-semibold text-gray-700">
+          {Icon ? <Icon className="mr-2 h-4 w-4" /> : null}
+          {title}
+        </h3>
+      </div>
+      <div className="space-y-4 p-4">
+        {hint ? <p className="text-xs text-gray-500">{hint}</p> : null}
+        {children}
+      </div>
+    </section>
+  );
+}
+
 function validateIndianMobile(phone: string, required = false): string | undefined {
   const digits = sanitizePhoneInput(phone);
   if (!digits) {
@@ -60,7 +115,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   const { lookups } = useStudentLookups(isOpen);
 
   // Refs for form fields
-  const modalContentRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
   const dateOfBirthRef = useRef<HTMLInputElement>(null);
@@ -265,6 +319,63 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   }, [editingStudent, isOpen]);
 
   useEffect(() => {
+    if (!isOpen || !editingStudent?.id) return;
+    let cancelled = false;
+    fetch(`/api/students/${editingStudent.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data.success || !data.data) return;
+        const student = data.data as Student;
+        const next = {
+          first_name: student.first_name || '',
+          middle_name: student.middle_name || '',
+          last_name: student.last_name || '',
+          student_code: student.student_code || '',
+          date_of_birth: formatDateForInput(student.date_of_birth),
+          gender: student.gender || ('Male' as 'Male' | 'Female' | 'Other'),
+          blood_group: student.blood_group || '',
+          aadhaar_no: student.aadhaar_no || '',
+          religion: student.religion || lookups.religions.default_value,
+          caste: student.caste || '',
+          category: student.category || lookups.caste_types.default_value,
+          nationality: student.nationality || lookups.nationalities.default_value,
+          mother_tongue: student.mother_tongue || '',
+          remarks: student.remarks || '',
+          address: student.address || '',
+          city: student.city || '',
+          state: student.state || '',
+          pincode: student.pincode || '',
+          admission_date: formatDateForInput(student.admission_date),
+          class_id: student.class_id ? String(student.class_id) : '',
+          section_id: student.section_id ? String(student.section_id) : '',
+          roll_number: student.roll_number || '',
+          parent_name: student.parent_name || '',
+          parent_phone: sanitizePhoneInput(student.parent_phone || ''),
+          parent_email: student.parent_email || '',
+          mother_name: student.mother_name || '',
+          mother_phone: sanitizePhoneInput(student.mother_phone || ''),
+          mother_email: student.mother_email || '',
+          emergency_contact: sanitizePhoneInput(student.emergency_contact || ''),
+          photo_url: student.photo_url || '',
+          status: student.status || ('active' as 'active' | 'inactive' | 'graduated' | 'transferred'),
+        };
+        setFormData(next);
+        setInitialFormData(next);
+        setPhotoPreview(student.photo_url || null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isOpen,
+    editingStudent?.id,
+    lookups.religions.default_value,
+    lookups.caste_types.default_value,
+    lookups.nationalities.default_value,
+  ]);
+
+  useEffect(() => {
     if (!isOpen || editingStudent) return;
 
     const applyDefaults = <T extends { religion: string; category: string; nationality: string }>(prev: T): T => {
@@ -362,23 +473,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
   };
 
   const scrollToField = (element: HTMLInputElement) => {
-    if (!modalContentRef.current) return;
-
-    const modalContent = modalContentRef.current;
-    const elementTop = element.offsetTop;
-    const modalHeight = modalContent.clientHeight;
-    const elementHeight = element.offsetHeight;
-
-    const targetScroll = elementTop - (modalHeight / 2) + (elementHeight / 2);
-
-    modalContent.scrollTo({
-      top: Math.max(0, targetScroll),
-      behavior: 'smooth'
-    });
-
-    setTimeout(() => {
-      element.focus();
-    }, 300);
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => element.focus(), 300);
   };
 
   const focusFirstError = () => {
@@ -439,79 +535,97 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
     }
   };
 
+  const fieldClass = (error?: string) =>
+    `${inputClass} ${error ? 'border-red-500' : ''}`;
+
   return (
     <>
-    <AppModal open={isOpen} onClose={onClose}>
-      <div ref={modalContentRef} className={APP_MODAL_PANEL}>
-        {/* Fixed Header */}
-        <div className="px-4 py-2 sm:px-6 sm:py-3 border-b flex justify-between items-center bg-white z-10 flex-shrink-0 sticky top-0 z-10 shrink-0">
-          <h2 className="text-xl text-gray-900">
-            {editingStudent ? 'Edit Student' : 'Add Student'}
-          </h2>
-          <button
-            onClick={handleCancel}
-            className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <FiX size={28} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <form id="student-form" onSubmit={handleSubmit} className="p-4 sm:p-4 space-y-6">
+    <AppModal open={isOpen} onClose={handleCancel}>
+      <AppModalShell
+        header={
+          <>
+            <div>
+              <h2 className="text-lg font-medium text-gray-900">
+                {editingStudent ? 'Edit Student' : 'Add Student'}
+              </h2>
+              <p className="mt-0.5 text-sm text-gray-500">
+                Update personal, address, academic and guardian details.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close"
+            >
+              <FiX size={22} />
+            </button>
+          </>
+        }
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="w-full rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="student-form"
+              disabled={submitting}
+              className="w-full rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {submitting
+                ? editingStudent
+                  ? 'Updating…'
+                  : 'Adding…'
+                : editingStudent
+                  ? 'Update student'
+                  : 'Add student'}
+            </button>
+          </>
+        }
+      >
+          <form id="student-form" onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 sm:p-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          {/* Personal Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Personal Information</h3>
-            
-            {/* Profile Photo Upload */}
-            <div className="mb-4 flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="flex-shrink-0">
+          <FormSection title="Personal Information" icon={FiUser}>
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
                 {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="Preview"
-                    className="h-28 w-28 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
+                  <img src={photoPreview} alt="" className="h-16 w-16 rounded-full border-2 border-gray-200 object-cover" />
                 ) : (
-                  <div className="h-28 w-28 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center border-4 border-white shadow-lg">
-                      <svg className="h-14 w-14 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-600 text-lg font-semibold text-white">
+                    {(formData.first_name?.[0] || '') + (formData.last_name?.[0] || '') || '?'}
+                  </div>
                 )}
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Student Photo
+              <div>
+                <p className="text-sm font-medium text-gray-700">Student photo</p>
+                <label className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-primary-700 hover:bg-primary-50">
+                  <FiCamera size={14} />
+                  Upload photo
+                  <input type="file" accept="image/*" onChange={handlePhotoChange} className="sr-only" />
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="block w-full text-sm text-gray-900 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-                />
-                <p className="mt-2 text-xs text-gray-500">
-                  PNG, JPG, GIF up to 2MB. Recommended size: 400x400px
-                </p>
+                <p className="mt-1 text-xs text-gray-500">PNG, JPG or GIF up to 2MB</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={firstNameRef}
                   type="text"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.first_name ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
+                  className={fieldClass(fieldErrors.first_name)}
                   value={formData.first_name}
                   onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 />
@@ -520,26 +634,24 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Middle Name
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.middle_name}
                   onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={lastNameRef}
                   type="text"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.last_name ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
+                  className={fieldClass(fieldErrors.last_name)}
                   value={formData.last_name}
                   onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                 />
@@ -548,26 +660,24 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Student Code
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.student_code}
                   onChange={(e) => setFormData({ ...formData, student_code: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Date of Birth <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={dateOfBirthRef}
                   type="date"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.date_of_birth ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
+                  className={fieldClass(fieldErrors.date_of_birth)}
                   value={formData.date_of_birth}
                   onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                 />
@@ -576,11 +686,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Gender
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
                 >
@@ -590,11 +700,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Blood Group
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.blood_group}
                   onChange={(e) => setFormData({ ...formData, blood_group: e.target.value })}
                 >
@@ -605,22 +715,27 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Aadhaar No.
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
+                  inputMode="numeric"
+                  maxLength={12}
+                  placeholder="12-digit Aadhaar"
                   value={formData.aadhaar_no}
-                  onChange={(e) => setFormData({ ...formData, aadhaar_no: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, aadhaar_no: e.target.value.replace(/\D/g, '').slice(0, 12) })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Religion
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.religion}
                   onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
                 >
@@ -631,22 +746,22 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Caste
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.caste}
                   onChange={(e) => setFormData({ ...formData, caste: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Caste Type
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
@@ -657,11 +772,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Nationality
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.nationality}
                   onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
                 >
@@ -672,63 +787,61 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Mother Tongue
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.mother_tongue}
                   onChange={(e) => setFormData({ ...formData, mother_tongue: e.target.value })}
                 />
               </div>
               <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Remarks
                 </label>
                 <textarea
                   rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.remarks}
                   onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
                 />
               </div>
             </div>
-          </div>
+          </FormSection>
 
-          {/* Address Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Address Information</h3>
+          <FormSection title="Address Information" icon={FiMapPin}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Street Address
                 </label>
                 <textarea
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Enter complete address"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   City
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   State
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 >
@@ -744,46 +857,42 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Pincode
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.pincode}
                   onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                 />
               </div>
             </div>
-          </div>
+          </FormSection>
 
-          {/* Academic Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Academic Information</h3>
+          <FormSection title="Current Academic" icon={FiBook}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {editingStudent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-600">
                     Admission Number
                   </label>
                   <input
                     type="text"
                     readOnly
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+                    className={`${inputClass} bg-gray-50 text-gray-600`}
                     value={formatAdmissionNumber(editingStudent.admission_number)}
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Admission Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={admissionDateRef}
                   type="date"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                    fieldErrors.admission_date ? 'border-red-500 shake' : 'border-gray-300'
-                  }`}
+                  className={fieldClass(fieldErrors.admission_date)}
                   value={formData.admission_date}
                   onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
                 />
@@ -792,11 +901,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Class
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.class_id}
                   onChange={(e) =>
                     setFormData({ ...formData, class_id: e.target.value, section_id: '' })
@@ -820,11 +929,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Section
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white disabled:bg-gray-50"
+                  className={`${inputClass} disabled:bg-gray-50`}
                   value={formData.section_id}
                   onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
                   disabled={!formData.class_id || loadingSections}
@@ -846,12 +955,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
                   Roll Number
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                  className={inputClass}
                   value={formData.roll_number}
                   onChange={(e) => setFormData({ ...formData, roll_number: e.target.value })}
                   placeholder="e.g. 12"
@@ -859,11 +968,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
               </div>
               {editingStudent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-600">
                     Status
                   </label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                    className={inputClass}
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
                   >
@@ -875,31 +984,30 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </div>
               )}
             </div>
-          </div>
+          </FormSection>
 
-          {/* Guardian Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Guardian Information</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Father and mother details are shown by default in the Guardians tab.
-            </p>
+          <FormSection
+            title="Father & Mother Contact"
+            icon={FiUsers}
+            hint="Father and mother details are also shown in the Guardians tab."
+          >
             <div className="space-y-4">
               <div>
                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Father</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Father&apos;s Name
                     </label>
                     <input
                       type="text"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      className={inputClass}
                       value={formData.parent_name}
                       onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Father&apos;s Phone <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -908,9 +1016,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                       inputMode="numeric"
                       maxLength={10}
                       placeholder="10-digit mobile number"
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                        fieldErrors.parent_phone ? 'border-red-500 shake' : 'border-gray-300'
-                      }`}
+                      className={fieldClass(fieldErrors.parent_phone)}
                       value={formData.parent_phone}
                       onChange={(e) =>
                         setFormData({ ...formData, parent_phone: sanitizePhoneInput(e.target.value) })
@@ -921,14 +1027,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Father&apos;s Email
                     </label>
                     <input
                       type="email"
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                        fieldErrors.parent_email ? 'border-red-500 shake' : 'border-gray-300'
-                      }`}
+                      className={fieldClass(fieldErrors.parent_email)}
                       value={formData.parent_email}
                       onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })}
                     />
@@ -943,18 +1047,18 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Mother</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Mother&apos;s Name
                     </label>
                     <input
                       type="text"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      className={inputClass}
                       value={formData.mother_name}
                       onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Mother&apos;s Phone
                     </label>
                     <input
@@ -962,9 +1066,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                       inputMode="numeric"
                       maxLength={10}
                       placeholder="10-digit mobile number"
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                        fieldErrors.mother_phone ? 'border-red-500 shake' : 'border-gray-300'
-                      }`}
+                      className={fieldClass(fieldErrors.mother_phone)}
                       value={formData.mother_phone}
                       onChange={(e) =>
                         setFormData({ ...formData, mother_phone: sanitizePhoneInput(e.target.value) })
@@ -975,12 +1077,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-600">
                       Mother&apos;s Email
                     </label>
                     <input
                       type="email"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white"
+                      className={inputClass}
                       value={formData.mother_email}
                       onChange={(e) => setFormData({ ...formData, mother_email: e.target.value })}
                     />
@@ -990,7 +1092,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-600">
                     Emergency Contact
                   </label>
                   <input
@@ -998,9 +1100,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                     inputMode="numeric"
                     maxLength={10}
                     placeholder="10-digit mobile number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900 bg-white ${
-                      fieldErrors.emergency_contact ? 'border-red-500 shake' : 'border-gray-300'
-                    }`}
+                    className={fieldClass(fieldErrors.emergency_contact)}
                     value={formData.emergency_contact}
                     onChange={(e) =>
                       setFormData({
@@ -1015,41 +1115,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, editingStu
                 </div>
               </div>
             </div>
-          </div>
+          </FormSection>
 
           </form>
-
-          {/* Action Buttons - Scrollable */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 px-6 py-4 border-t border-gray-200 bg-white">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="w-full sm:w-auto px-6 py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="student-form"
-            disabled={submitting}
-            className="w-full sm:w-auto px-6 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg hover:shadow-xl"
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {editingStudent ? 'Updating Student...' : 'Adding Student...'}
-              </span>
-            ) : (
-              editingStudent ? 'Update Student' : 'Add Student'
-            )}
-          </button>
-          </div>
-        </div>
-      </div>
-        </AppModal>
+      </AppModalShell>
+    </AppModal>
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

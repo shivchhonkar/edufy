@@ -21,6 +21,7 @@ export const REGISTER_LEGEND = [
   { code: 'P', label: 'Present', style: REGISTER_CODE_STYLES.P },
   { code: 'A', label: 'Absent', style: REGISTER_CODE_STYLES.A },
   { code: 'L', label: 'Late', style: REGISTER_CODE_STYLES.L },
+  { code: 'HD', label: 'Half Day', style: REGISTER_CODE_STYLES.HD },
   { code: 'LV', label: 'Leave', style: REGISTER_CODE_STYLES.LV },
   { code: 'H', label: 'Holiday', style: REGISTER_CODE_STYLES.H },
   { code: '-', label: 'Not Marked', style: REGISTER_CODE_STYLES['-'] },

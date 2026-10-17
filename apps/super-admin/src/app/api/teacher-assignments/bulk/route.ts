@@ -40,11 +40,28 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        if (item.is_class_teacher && item.section_id) {
+        const sectionId = item.section_id || null;
+        const subjectId = item.subject_id || null;
+        const existing = await db.query(
+          `SELECT id FROM teacher_assignments
+           WHERE staff_id = $1
+             AND class_id = $2
+             AND academic_year = $3
+             AND section_id IS NOT DISTINCT FROM $4
+             AND subject_id IS NOT DISTINCT FROM $5
+           LIMIT 1`,
+          [item.staff_id, item.class_id, item.academic_year, sectionId, subjectId],
+        );
+        if (existing.rows.length > 0) {
+          errors.push('Duplicate assignment skipped');
+          continue;
+        }
+
+        if (item.is_class_teacher && sectionId) {
           await db
             .query(`UPDATE sections SET class_teacher_id = $1 WHERE id = $2`, [
               item.staff_id,
-              item.section_id,
+              sectionId,
             ])
             .catch(() => {});
         }
@@ -52,14 +69,12 @@ export async function POST(request: NextRequest) {
         const result = await db.query(
           `INSERT INTO teacher_assignments (staff_id, class_id, section_id, subject_id, academic_year, is_class_teacher)
            VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (staff_id, class_id, section_id, subject_id, academic_year)
-           DO UPDATE SET is_class_teacher = $6
            RETURNING *`,
           [
             item.staff_id,
             item.class_id,
-            item.section_id || null,
-            item.subject_id || null,
+            sectionId,
+            subjectId,
             item.academic_year,
             item.is_class_teacher ?? false,
           ],

@@ -36,12 +36,13 @@ interface TransferCertificateProps {
   options: TransferCertificateOptions;
 }
 
-function InfoLine({ label, value }: { label: string; value?: string | null }) {
+function ParticularsRow({ index, label, value }: { index: number; label: string; value?: string | null }) {
   return (
-    <p className="text-sm leading-relaxed text-gray-900">
-      <span className="font-semibold">{label}:</span>{' '}
-      <span>{value?.trim() || ''}</span>
-    </p>
+    <tr className="border-b border-slate-200 last:border-b-0">
+      <td className="w-8 px-3 py-2 text-center text-xs text-slate-500">{index}</td>
+      <td className="w-[46%] px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600">{label}</td>
+      <td className="px-3 py-2 text-sm text-slate-900">{value?.trim() || '—'}</td>
+    </tr>
   );
 }
 
@@ -89,162 +90,129 @@ export default function TransferCertificate({
     [school.address],
   );
 
+  const place = student.city?.trim() || school.address?.split(',').pop()?.trim() || '';
+  const contact = [school.phone, school.email].filter(Boolean).join('  ·  ');
+  const particulars = [
+    ['Date of birth', formatStudentDate(student.date_of_birth)],
+    ['Gender', student.gender],
+    ['Admission number', student.admission_number],
+    ['Date of admission', formatStudentDate(student.admission_date)],
+    ['Class last attended', classPhrase],
+    ['Date of leaving', formatStudentDate(options.dateOfLeaving)],
+    ['Qualified for promotion', options.qualifiedForPromotion],
+    ['Conduct and character', options.conduct],
+    ['Reason for leaving', options.reasonForLeaving],
+  ] as const;
+
   return (
-    <div className="tc-sheet break-after-page bg-white text-gray-900">
-      <div className="tc-page relative mx-auto min-h-[277mm] max-w-[210mm] border border-gray-300 px-10 py-12 print:border-0 print:px-[15mm] print:py-[12mm]">
-        <DocumentWatermark
-          show={school.showWatermark !== false}
-          imageUrl={school.watermarkUrl}
-          text={school.watermarkText}
-          schoolName={school.name}
-          color={school.watermarkColor}
-        />
+    <div className="tc-sheet break-after-page bg-white font-serif text-slate-900">
+      <div className="relative mx-auto max-w-[210mm] bg-white p-2">
+        <div className="relative border-[2.5px] border-slate-900 px-8 py-7 print:min-h-[270mm] print:px-[12mm] print:py-[10mm]">
+          <div className="pointer-events-none absolute inset-[5px] border border-slate-400" />
+          <DocumentWatermark
+            show={school.showWatermark !== false}
+            imageUrl={school.watermarkUrl}
+            text={school.watermarkText}
+            schoolName={school.name}
+            color={school.watermarkColor}
+          />
 
-        <div className="relative z-10">
-        {/* Header */}
-        <div className="flex items-start gap-5 border-b-2 border-primary-700 pb-5">
-          {school.logoUrl ? (
-            <img
-              src={school.logoUrl}
-              alt=""
-              className="h-[72px] w-[72px] shrink-0 rounded-lg border border-gray-200 object-contain p-1.5"
-            />
-          ) : (
-            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xs font-bold text-primary-700">
-              LOGO
-            </div>
-          )}
-          <div className="min-w-0 flex-1 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wide text-primary-800 leading-tight">
-              {school.name}
-            </h1>
-            {school.academicYear ? (
-              <p className="mt-2 text-sm font-medium text-gray-600">{school.academicYear}</p>
-            ) : null}
-            {addressLine1 || addressLine2 ? (
-              <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-gray-600">
-                {addressLine1}
-                {addressLine2 ? (
-                  <>
-                    <br />
-                    {addressLine2}
-                  </>
+          <div className="relative z-10">
+            <header className="flex items-start justify-center gap-4 text-center">
+              {school.logoUrl ? (
+                <img src={school.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />
+              ) : null}
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-slate-500">
+                  {school.academicYear || 'School record'}
+                </p>
+                <p className="mt-1 text-[22px] font-bold uppercase leading-tight tracking-[0.08em] text-slate-900">
+                  {school.name}
+                </p>
+                {addressLine1 || addressLine2 ? (
+                  <p className="mx-auto mt-1 max-w-md text-[11px] leading-relaxed text-slate-600">
+                    {addressLine1}
+                    {addressLine2 ? <><br />{addressLine2}</> : null}
+                  </p>
                 ) : null}
+                {contact ? <p className="mt-0.5 text-[11px] text-slate-500">{contact}</p> : null}
+              </div>
+              {student.photo_url ? (
+                <img
+                  src={student.photo_url}
+                  alt=""
+                  className="h-[72px] w-[58px] shrink-0 border border-slate-300 object-cover"
+                />
+              ) : (
+                <div className="h-16 w-16 shrink-0" />
+              )}
+            </header>
+
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-800" />
+              <h2 className="shrink-0 text-sm font-bold uppercase tracking-[0.28em] text-slate-900">
+                Transfer Certificate
+              </h2>
+              <div className="h-px flex-1 bg-slate-800" />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-y border-slate-200 py-2 text-xs">
+              <p>
+                <span className="font-semibold uppercase tracking-wide text-slate-500">TC No.</span>{' '}
+                <span className="font-mono text-[13px] font-semibold tracking-tight">{options.tcNumber}</span>
               </p>
-            ) : null}
-          </div>
-        </div>
-        <p className="mt-4 flex justify-end whitespace-nowrap text-sm text-gray-900">
-          <span className="font-semibold">TC No.</span>
-          <span className="ml-2 font-mono text-[13px] font-semibold tracking-tight text-primary-800">
-            {options.tcNumber}
-          </span>
-        </p>
-
-        <h2 className="mt-8 text-center text-lg font-bold uppercase tracking-[0.2em] text-gray-900 underline decoration-primary-600 decoration-2 underline-offset-[6px]">
-          Transfer Certificate
-        </h2>
-
-        <div className="mt-10 space-y-5 text-sm leading-8 text-gray-800">
-          <p>
-            This is to certify that{' '}
-            {relation ? (
-              <>
-                <strong>{relation}</strong> of
-              </>
-            ) : (
-              'ward of'
-            )}{' '}
-            <strong>{student.parent_name?.trim() || ''}</strong>, named{' '}
-            <strong>{fullName || ''}</strong>, bearing Admission No.{' '}
-            <strong>{student.admission_number?.trim() || ''}</strong>
-            {student.roll_number ? (
-              <>
-                {' '}
-                and Roll No. <strong>{student.roll_number}</strong>
-              </>
-            ) : null}
-            , was a bonafide student of this institution
-            {classPhrase ? (
-              <>
-                {' '}
-                in <strong>{classPhrase}</strong>
-              </>
-            ) : null}
-            .
-          </p>
-
-          <div className="grid grid-cols-1 gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-5 py-4">
-            <InfoLine label="Date of Birth" value={formatStudentDate(student.date_of_birth)} />
-            <InfoLine label="Gender" value={student.gender} />
-            <InfoLine
-              label="Date of Admission"
-              value={formatStudentDate(student.admission_date)}
-            />
-            <InfoLine label="Date of Leaving" value={formatStudentDate(options.dateOfLeaving)} />
-            <InfoLine
-              label="Qualified for promotion to higher class"
-              value={options.qualifiedForPromotion}
-            />
-            <InfoLine label="Conduct and Character" value={options.conduct} />
-            <InfoLine label="Reason for leaving" value={options.reasonForLeaving} />
-          </div>
-
-          <p>
-            {fullName ? fullName : 'The student'} has no dues pending against him/her in this
-            school. His/Her character and conduct during the stay were{' '}
-            <strong>{options.conduct || 'satisfactory'}</strong>.
-          </p>
-
-          <p>
-            This certificate is issued at the request of the parent/guardian for the purpose of
-            admission to another school.
-          </p>
-        </div>
-
-        <div className="mt-16 flex items-end justify-between gap-8">
-          <div className="text-sm text-gray-700">
-            <p>
-              <span className="font-semibold">Date of Issue:</span>{' '}
-              {formatStudentDate(options.issueDate)}
-            </p>
-            <p className="mt-1">
-              <span className="font-semibold">Place:</span>{' '}
-              {student.city?.trim() || school.address?.split(',').pop()?.trim() || ''}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center text-center">
-            {school.signatureUrl ? (
-              <img
-                src={school.signatureUrl}
-                alt="Principal signature"
-                className="mb-1 max-h-12 max-w-[140px] object-contain"
-              />
-            ) : school.principalName ? (
-              <p
-                className="mb-1 text-lg text-primary-700"
-                style={{ fontFamily: '"Segoe Script", "Brush Script MT", cursive' }}
-              >
-                {school.principalName}
+              <p>
+                <span className="font-semibold uppercase tracking-wide text-slate-500">Date of issue</span>{' '}
+                <span className="font-semibold">{formatStudentDate(options.issueDate)}</span>
               </p>
-            ) : null}
-            <div className="w-40 border-t border-gray-400" />
-            <p className="mt-1 text-sm font-semibold text-gray-900">Principal</p>
-            <p className="text-xs text-gray-500">{school.name}</p>
-          </div>
-        </div>
-        </div>
+            </div>
 
-        {student.photo_url ? (
-          <div className="absolute right-10 top-36 hidden print:block">
-            <img
-              src={student.photo_url}
-              alt=""
-              className="h-24 w-20 rounded border object-cover"
-            />
+            <p className="mt-5 text-justify text-[13.5px] leading-7 text-slate-800">
+              This is to certify that{' '}
+              {relation ? <><strong>{relation}</strong> of</> : 'ward of'}{' '}
+              <strong>{student.parent_name?.trim() || '—'}</strong>, named{' '}
+              <strong>{fullName || '—'}</strong>
+              {student.roll_number ? <> (Roll No. <strong>{student.roll_number}</strong>)</> : null}
+              , was a bonafide student of this institution.
+            </p>
+
+            <table className="mt-4 w-full border-collapse border border-slate-300 text-left">
+              <tbody>
+                {particulars.map(([label, value], index) => (
+                  <ParticularsRow key={label} index={index + 1} label={label} value={value} />
+                ))}
+              </tbody>
+            </table>
+
+            <p className="mt-5 text-justify text-[13.5px] leading-7 text-slate-800">
+              {fullName || 'The student'} has no dues pending against him/her in this school.
+              His/Her character and conduct during the stay were{' '}
+              <strong>{options.conduct || 'satisfactory'}</strong>. This certificate is issued at
+              the request of the parent or guardian for admission to another school.
+            </p>
+
+            <div className="mt-12 flex items-end justify-between gap-8">
+              <div className="text-xs leading-6 text-slate-700">
+                <p><span className="font-semibold uppercase tracking-wide text-slate-500">Place</span> {place || '—'}</p>
+                <p><span className="font-semibold uppercase tracking-wide text-slate-500">Date</span> {formatStudentDate(options.issueDate)}</p>
+              </div>
+              <div className="flex w-44 flex-col items-center text-center">
+                {school.signatureUrl ? (
+                  <img src={school.signatureUrl} alt="Principal signature" className="mb-1 max-h-12 max-w-[140px] object-contain" />
+                ) : school.principalName ? (
+                  <p className="mb-1 text-lg text-slate-800" style={{ fontFamily: '"Segoe Script", "Brush Script MT", cursive' }}>
+                    {school.principalName}
+                  </p>
+                ) : (
+                  <div className="h-10" />
+                )}
+                <div className="w-full border-t border-slate-800" />
+                <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em]">Principal</p>
+                <p className="text-[11px] text-slate-500">{school.name}</p>
+              </div>
+            </div>
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );

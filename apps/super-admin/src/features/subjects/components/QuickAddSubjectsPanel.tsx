@@ -93,6 +93,10 @@ export default function QuickAddSubjectsPanel({
       await onNotify('Subject code is required', 'warning');
       return;
     }
+    if (existingNames.has(quickName.trim().toLowerCase())) {
+      await onNotify('This subject already exists.', 'warning');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -164,11 +168,11 @@ export default function QuickAddSubjectsPanel({
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div>
         <p className="text-sm font-medium text-gray-900">Quick add subjects</p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Code is suggested from the subject name. Edit the code if you see a duplicate error.
+        <p className="mt-0.5 text-xs text-gray-500">
+          Code is suggested from the subject name. A name that already exists is skipped.
         </p>
       </div>
 
@@ -183,7 +187,7 @@ export default function QuickAddSubjectsPanel({
               addQuickSubject();
             }
           }}
-          className="flex-[2] px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-primary-500"
+          className="w-full flex-[2] rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
           placeholder="Subject name e.g. Science Booster"
           disabled={saving}
         />
@@ -192,7 +196,7 @@ export default function QuickAddSubjectsPanel({
           value={quickCode}
           onChange={(e) => handleQuickCodeChange(e.target.value)}
           maxLength={6}
-          className="sm:w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono uppercase focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-gray-200 px-3 py-1.5 font-mono text-xs uppercase text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 sm:w-32"
           placeholder="Code"
           disabled={saving}
         />
@@ -200,7 +204,7 @@ export default function QuickAddSubjectsPanel({
           type="button"
           onClick={addQuickSubject}
           disabled={saving || !quickName.trim() || !quickCode.trim()}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           <FiPlus size={15} />
           Add
@@ -232,7 +236,7 @@ export default function QuickAddSubjectsPanel({
               ? 'All preset subjects are already added. Type new subject names here.'
               : undefined
           }
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 resize-y"
+          className="w-full resize-y rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
         {pendingBulkLines.length > 0 && (
           <p className="text-[11px] text-gray-500 mt-1">
@@ -245,7 +249,7 @@ export default function QuickAddSubjectsPanel({
         type="button"
         onClick={addBulkSubjects}
         disabled={saving || pendingBulkLines.length === 0}
-        className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
       >
         <FiPlus size={15} />
         {saving ? 'Adding...' : `Add ${pendingBulkLines.length || 'all'} subject(s)`}

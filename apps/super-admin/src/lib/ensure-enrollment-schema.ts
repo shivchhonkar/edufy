@@ -76,6 +76,19 @@ export async function ensureEnrollmentSchema(db: RequestDb): Promise<void> {
       WHERE enrollment_id IS NOT NULL;
   `);
 
+  const attendanceTable = await db.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'attendance'
+    ) AS exists
+  `);
+  if (attendanceTable.rows[0]?.exists) {
+    await db.query(`
+      ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_in_time TIME;
+      ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_out_time TIME;
+    `);
+  }
+
   await backfillEnrollmentAcademicYearIds(db);
   await backfillEnrollmentIdsOnChildTables(db);
 }

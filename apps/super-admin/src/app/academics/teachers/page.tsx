@@ -106,44 +106,36 @@ export default function TeachersPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-4">
-        <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              {/* <FiUsers className="text-primary-600" /> */}
-              Teachers
-            </h1>
-            {/* <p className="text-sm text-gray-600 mt-1">
-              Teaching staff only (Teaching department). Records stay in sync with{' '}
-              <Link href="/staff" className="text-primary-600 hover:underline inline-flex items-center gap-1">
-                Staff Management
-                <FiExternalLink className="w-3.5 h-3.5" />
-              </Link>
-              .
-            </p> */}
+            <h1 className="text-lg font-medium text-gray-900">Teachers</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Staff with a teacher designation, or already assigned to a class or subject.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/academics/teacher-assignments"
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
-              <FiUserCheck className="w-4 h-4" />
-              Teacher assignments
+              <FiUserCheck size={14} />
+              Assignments
             </Link>
             <button
               type="button"
               onClick={fetchTeachers}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
-              <FiRefreshCw className="w-4 h-4" />
+              <FiRefreshCw size={14} />
               Refresh
             </button>
             <button
               type="button"
               onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
             >
-              <FiPlus className="w-4 h-4" />
+              <FiPlus size={14} />
               Add teacher
             </button>
           </div>
@@ -159,38 +151,38 @@ export default function TeachersPage() {
         {loading ? (
           <TeachersStatsSkeleton />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
-            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Teachers</p>
-              <p className="text-xl text-gray-900 mt-1">{teachers.length}</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Teachers</p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900">{teachers.length}</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Active assignments</p>
-              <p className="text-xl text-gray-900 mt-1">{totalAssignments}</p>
+            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Assignments</p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900">{totalAssignments}</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Status filter</p>
-              <p className="text-sm text-gray-900 mt-2 capitalize">{statusFilter}</p>
+            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Showing</p>
+              <p className="mt-0.5 text-sm font-medium capitalize text-gray-900">{statusFilter}</p>
             </div>
           </div>
         )}
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="shrink-0 border-b border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3">
+          <div className="flex shrink-0 flex-col gap-2 border-b border-gray-100 px-3 py-2.5 sm:flex-row">
             <div className="relative flex-1">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, employee ID, phone, or email..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                placeholder="Search name, employee ID, phone, or email"
+                className="w-full rounded-md border border-gray-200 py-1.5 pl-8 pr-3 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-44 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 sm:w-40"
             >
               <option value="all">All status</option>
               <option value="active">Active</option>
@@ -204,70 +196,53 @@ export default function TeachersPage() {
             {loading ? (
               <TeachersTableSkeleton fillHeight />
             ) : teachers.length === 0 ? (
-              <div className="py-16 text-center text-sm text-gray-500">
-                No teachers found. Add a teacher or assign staff to the Teaching department in Staff
-                Management.
+              <div className="py-16 text-center text-xs text-gray-500">
+                No teachers found. Add a teacher, set a Teacher designation, or assign staff to a class or subject.
               </div>
             ) : (
               <div className="h-full min-h-0 overflow-x-auto overflow-y-auto">
-                <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <table className="min-w-full text-xs">
+                <thead className="sticky top-0 border-b border-gray-100 bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      S.N.
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Teacher
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Employee ID
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Contact
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Qualification
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Assignments
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">
-                      Actions
-                    </th>
+                    {['S.N.', 'Teacher', 'Employee ID', 'Contact', 'Qualification', 'Assignments', 'Status', ''].map((label) => (
+                      <th
+                        key={label || 'actions'}
+                        className={`px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 ${label ? 'text-left' : 'text-right'}`}
+                      >
+                        {label || 'Actions'}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {teachers.map((teacher, index) => (
-                    <tr key={teacher.id} className="hover:bg-gray-50/80">
-                      <td className="px-4 py-3 text-gray-500 tabular-nums">{index + 1}</td>
-                      <td className="px-4 py-3">
+                    <tr key={teacher.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 tabular-nums text-gray-500">{index + 1}</td>
+                      <td className="px-4 py-2">
                         <p className="font-medium text-gray-900">
                           {teacher.first_name} {teacher.last_name}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-[11px] text-gray-500">
                           {teacher.designation || teacher.designation_name || 'Teacher'}
                         </p>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{teacher.employee_id}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2 text-gray-700">{teacher.employee_id}</td>
+                      <td className="px-4 py-2">
                         <p className="text-gray-900">{teacher.phone}</p>
-                        {teacher.email && <p className="text-xs text-gray-500">{teacher.email}</p>}
+                        {teacher.email && <p className="text-[11px] text-gray-500">{teacher.email}</p>}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{teacher.qualification || '—'}</td>
-                      <td className="px-4 py-3 tabular-nums">{teacher.assignment_count ?? 0}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2 text-gray-700">{teacher.qualification || '—'}</td>
+                      <td className="px-4 py-2 tabular-nums">{teacher.assignment_count ?? 0}</td>
+                      <td className="px-4 py-2">
                         <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${
                             STATUS_BADGE[teacher.status] || STATUS_BADGE.inactive
                           }`}
                         >
                           {teacher.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2">
                         <div className="flex justify-end gap-1">
                           <Link
                             href={`/staff/${teacher.id}`}

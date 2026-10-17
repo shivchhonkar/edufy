@@ -142,27 +142,7 @@ CREATE TABLE class_sections (
 CREATE INDEX idx_class_sections_class ON class_sections (class_id);
 CREATE INDEX idx_class_sections_section ON class_sections (section_id);
 
-CREATE TABLE class_categories (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    report_card_format INTEGER NOT NULL DEFAULT 0,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE UNIQUE INDEX idx_class_categories_name_lower ON class_categories (LOWER(name));
-
-CREATE TABLE class_category_classes (
-    category_id INTEGER NOT NULL REFERENCES class_categories(id) ON DELETE CASCADE,
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (category_id, class_id)
-);
-
-CREATE UNIQUE INDEX idx_class_category_classes_class ON class_category_classes (class_id);
-
--- Student enrollments (session-wise class history)
+-- Student enrollments (session-wise class history — source of truth for placement)
 CREATE TABLE student_enrollments (
     id SERIAL PRIMARY KEY,
     student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -214,6 +194,7 @@ CREATE TABLE fee_payments (
 CREATE TABLE attendance (
     id SERIAL PRIMARY KEY,
     student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+    enrollment_id INTEGER REFERENCES student_enrollments(id) ON DELETE SET NULL,
     date DATE NOT NULL,
     status VARCHAR(20) CHECK (status IN ('present', 'absent', 'late', 'half_day', 'on_leave')),
     remarks TEXT,
@@ -339,33 +320,6 @@ CREATE TABLE staff (
     bank_account_number VARCHAR(50),
     bank_name VARCHAR(100),
     bank_ifsc VARCHAR(20),
-    staff_type VARCHAR(40),
-    staff_category VARCHAR(100),
-    father_husband_name VARCHAR(200),
-    pan_number VARCHAR(20),
-    aadhaar_number VARCHAR(20),
-    pf_account_no VARCHAR(50),
-    pf_max DECIMAL(12,2),
-    pf_uan VARCHAR(50),
-    esi_account_no VARCHAR(50),
-    date_of_leaving DATE,
-    transport_allowance DECIMAL(10,2),
-    in_time TIME,
-    out_time TIME,
-    duty_hours DECIMAL(5,2),
-    restrict_holidays INTEGER DEFAULT 0,
-    overtime_allowed BOOLEAN DEFAULT false,
-    overtime_hours DECIMAL(5,2),
-    bank_account_name VARCHAR(200),
-    bank_branch VARCHAR(150),
-    work_location VARCHAR(150),
-    class_teacher VARCHAR(100),
-    basic_salary DECIMAL(12,2),
-    travel_allowance DECIMAL(12,2),
-    dearness_allowance DECIMAL(12,2),
-    other_allowance DECIMAL(12,2),
-    salary_effective_date DATE,
-    subject_classes JSONB DEFAULT '[]'::jsonb,
     photo_url TEXT,
     documents JSONB,
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'resigned', 'terminated')),

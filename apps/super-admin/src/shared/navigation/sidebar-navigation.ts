@@ -68,6 +68,8 @@ export interface NavLink {
   comingSoon?: boolean;
   /** Nested links shown under this item (one extra indent in the sidebar). */
   items?: NavLink[];
+  /** Category header: expands children without navigating. */
+  groupOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -106,31 +108,64 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Students',
     icon: FiUsers,
     items: [
-      { name: 'Enquiry', path: '/students/enquiry', icon: FiMessageSquare },
-      { name: 'Registration', path: '/registration', icon: FiUserPlus },
-      { name: 'Admissions', path: '/admissions', icon: FiUserPlus },
-      { name: 'List', path: '/students', icon: FiUsers },
-      
-      { name: 'PTM', path: '/students/ptm', icon: FiCalendar },
-      { name: 'Certificates', path: '/students/certificates', icon: FiFileText },
-     
-      { name: 'Promote', path: '/promotions', icon: FiArrowUpCircle },
       {
-        name: 'TC',
-        path: '/students/transfer-certificates',
-        icon: FiFilePlus,
+        name: 'Admissions & Enrollment',
+        path: '/students/groups/admissions-enrollment',
+        icon: FiUserPlus,
+        groupOnly: true,
+        items: [
+          { name: 'Enquiries', path: '/students/enquiry', icon: FiMessageSquare },
+          { name: 'Registrations', path: '/registration', icon: FiUserPlus },
+          { name: 'Admissions', path: '/admissions', icon: FiUserCheck },
+          { name: 'Student Directory', path: '/students', icon: FiUsers },
+        ],
       },
-      { name: 'ID Cards', path: '/students/id-cards', icon: FiCreditCard },
-      { name: 'Gate Pass', path: '/students/gate-pass', icon: FiShield },
-      { name: 'Late Pass', path: '/students/late-pass', icon: FiClock },
-      { name: 'Queries / Calls / PM', path: '/students/queries', icon: FiPhone },
-      { name: 'Query Reports', path: '/students/query-reports', icon: FiClipboard },
-      { name: 'Class-wise Summary', path: '/students/class-summary', icon: FiLayers },
-      { name: 'Student Summary', path: '/students/student-summary', icon: FiList },
-      { name: 'Left & TC', path: '/students/exit-students', icon: FiUserMinus },
-      { name: 'Alumni', path: '/students/alumni-management', icon: FiUserCheck },
-      { name: 'Physical Report', path: '/students/physical-report', icon: FiHeart },
-      { name: 'Reports', path: '/students/reports', icon: FiBarChart2 },
+      {
+        name: 'Student Management',
+        path: '/students/groups/student-management',
+        icon: FiUsers,
+        groupOnly: true,
+        items: [
+          { name: 'Parent–Teacher Meetings', path: '/students/ptm', icon: FiCalendar },
+          { name: 'Promotion & Transfer', path: '/promotions', icon: FiArrowUpCircle },
+          { name: 'Interactions & Counselling', path: '/students/queries', icon: FiPhone },
+          { name: 'Gate Passes', path: '/students/gate-pass', icon: FiShield },
+          // { name: 'Late Arrivals', path: '/students/late-pass', icon: FiClock },
+        ],
+      },
+      {
+        name: 'Documents & Certificates',
+        path: '/students/groups/documents-certificates',
+        icon: FiFileText,
+        groupOnly: true,
+        items: [
+          { name: 'Certificates', path: '/students/certificates', icon: FiFileText },
+          { name: 'Transfer Certificates', path: '/students/transfer-certificates', icon: FiFilePlus },
+          { name: 'Student ID Cards', path: '/students/id-cards', icon: FiCreditCard },
+        ],
+      },
+      {
+        name: 'Student Lifecycle',
+        path: '/students/groups/student-lifecycle',
+        icon: FiRefreshCw,
+        groupOnly: true,
+        items: [
+          { name: 'Student Exit', path: '/students/exit-students', icon: FiUserMinus },
+          { name: 'Alumni', path: '/students/alumni-management', icon: FiUserCheck },
+        ],
+      },
+      {
+        name: 'Reports & Records',
+        path: '/students/groups/reports-records',
+        icon: FiBarChart2,
+        groupOnly: true,
+        items: [
+          { name: 'Class Summary', path: '/students/class-summary', icon: FiLayers },
+          { name: 'Student Register', path: '/students/student-summary', icon: FiList },
+          { name: 'Health & Physical Records', path: '/students/physical-report', icon: FiHeart },
+          { name: 'Document Completeness', path: '/students/reports', icon: FiClipboard },
+        ],
+      },
     ],
   },
   {
@@ -151,8 +186,8 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Attendance',
     icon: FiUserCheck,
     items: [
-      { name: 'Student Register', path: '/attendance', icon: FiCalendar },
-      { name: 'Staff Register', path: '/attendance/staff/register', icon: FiUsers },
+      { name: 'Student Register', path: '/attendance/register/student', icon: FiCalendar },
+      { name: 'Staff Register', path: '/attendance/register/staff', icon: FiUsers },
       { name: 'Mark Student Attendance', path: '/attendance/students', icon: FiCheckCircle },
       { name: 'Mark Employee Attendance', path: '/attendance/staff', icon: FiUserCheck },
       { name: 'Attendance Reports', path: '/attendance/reports', icon: FiBarChart2 },
@@ -169,6 +204,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
     title: 'Academics',
     icon: FiBook,
     items: [
+      { name: 'Dashboard', path: '/academics/dashboard', icon: FiGrid },
       { name: 'Classes & Sections', path: '/academics/classes', icon: FiLayers },
       { name: 'Class Categories', path: '/academics/class-categories', icon: FiFolder },
       // { name: 'Sections', path: '/academics/classes?tab=sections', icon: FiGrid },
@@ -179,7 +215,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroup[] = [
       { name: 'Teacher Assignments', path: '/academics/teacher-assignments', icon: FiUserCheck },
       
       { name: 'Timetable(routine)', path: '/academics/timetable', icon: FiCalendar },
-      { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
+      // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       // { name: 'Lesson Plans', path: '/academics/classes?tab=lesson-plans', icon: FiList },
       { name: 'Syllabus Tracking', path: '/academics/syllabus', icon: FiCheckSquare },
       { name: 'Calendar', path: '/academics/academic-calendar', icon: FiCalendar },
@@ -592,8 +628,12 @@ export function isNavLinkActive(pathname: string, linkPath: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
+export function isGroupOnlyNavItem(item: NavLink): boolean {
+  return Boolean(item.groupOnly && item.items?.length);
+}
+
 export function isNavItemTreeActive(pathname: string, item: NavLink): boolean {
-  if (isNavLinkActive(pathname, item.path)) return true;
+  if (!item.groupOnly && isNavLinkActive(pathname, item.path)) return true;
   return item.items?.some((child) => isNavItemTreeActive(pathname, child)) ?? false;
 }
 

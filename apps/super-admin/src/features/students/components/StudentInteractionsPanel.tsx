@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 import StudentPickSelect, { STUDENT_OPS_INPUT } from '@/features/students/components/StudentPickSelect';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
 import { useDialog } from '@/shared/context/DialogContext';
 import { useEnrollmentSession } from '@/shared/context/EnrollmentContext';
 import {
@@ -23,6 +24,18 @@ export interface InteractionRow {
   created_by_name?: string | null;
 }
 
+function todayInputDate() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700 disabled:opacity-50';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50';
+
 interface StudentInteractionsPanelProps {
   lockedType?: InteractionType | '';
   showTypeFilter?: boolean;
@@ -42,18 +55,24 @@ export default function StudentInteractionsPanel({
   const [search, setSearch] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [form, setForm] = useState({
-    interaction_type: (lockedType || 'query') as InteractionType,
-    student_id: '',
-    subject: '',
-    description: '',
-    interaction_date: new Date().toISOString().split('T')[0],
-    follow_up_date: '',
-  });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const blankForm = useCallback(
+    () => ({
+      interaction_type: (lockedType || 'query') as InteractionType,
+      student_id: '',
+      subject: '',
+      description: '',
+      interaction_date: todayInputDate(),
+      follow_up_date: '',
+    }),
+    [lockedType],
+  );
+  const [form, setForm] = useState(blankForm);
 
   useEffect(() => {
+    setType(lockedType || '');
     if (lockedType) {
-      setType(lockedType);
       setForm((prev) => ({ ...prev, interaction_type: lockedType }));
     }
   }, [lockedType]);
@@ -75,20 +94,36 @@ export default function StudentInteractionsPanel({
     return () => clearTimeout(timer);
   }, [load]);
 
+  const openCreate = () => {
+    setForm(blankForm());
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (saving) return;
+    setModalOpen(false);
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/students/interactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, academic_year: selectedAcademicYear?.name }),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      await alert(data.error || 'Failed to save');
-      return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/students/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, academic_year: selectedAcademicYear?.name }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        await alert(data.error || 'Failed to save');
+        return;
+      }
+      setForm(blankForm());
+      setModalOpen(false);
+      load();
+    } finally {
+      setSaving(false);
     }
-    setForm({ ...form, subject: '', description: '', student_id: '' });
-    load();
   };
 
   const closeRow = async (row: InteractionRow) => {
@@ -151,49 +186,13 @@ export default function StudentInteractionsPanel({
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
         />
-      </div>
-
-      {!reportMode && (
-        <form onSubmit={save} className="grid grid-cols-1 gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
-          {!lockedType && (
-            <select
-              className={STUDENT_OPS_INPUT}
-              value={form.interaction_type}
-              onChange={(e) => setForm({ ...form, interaction_type: e.target.value as InteractionType })}
-            >
-              {INTERACTION_TYPES.map((value) => (
-                <option key={value} value={value}>
-                  {INTERACTION_TYPE_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          )}
-          <StudentPickSelect value={form.student_id} onChange={(student_id) => setForm({ ...form, student_id })} />
-          <input
-            required
-            placeholder="Subject"
-            className={STUDENT_OPS_INPUT}
-            value={form.subject}
-            onChange={(e) => setForm({ ...form, subject: e.target.value })}
-          />
-          <input
-            type="date"
-            className={STUDENT_OPS_INPUT}
-            value={form.interaction_date}
-            onChange={(e) => setForm({ ...form, interaction_date: e.target.value })}
-          />
-          <textarea
-            placeholder="Notes"
-            className={`${STUDENT_OPS_INPUT} md:col-span-2`}
-            rows={2}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm text-white">
-            <FiPlus /> Save
+        {!reportMode && (
+          <button type="button" onClick={openCreate} className={`${primaryButtonClass} shrink-0`}>
+            <FiPlus size={14} />
+            {lockedType ? `New ${INTERACTION_TYPE_LABELS[lockedType]}` : 'New record'}
           </button>
-        </form>
-      )}
+        )}
+      </div>
 
       <div className="overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-sm">
@@ -240,6 +239,96 @@ export default function StudentInteractionsPanel({
           </tbody>
         </table>
       </div>
+
+      <AppModal open={modalOpen} onClose={closeModal}>
+        <AppModalShell
+          header={
+            <>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">
+                  {lockedType ? `New ${INTERACTION_TYPE_LABELS[lockedType]}` : 'New record'}
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Save a query, call, meeting, or counselling note for a student.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+            </>
+          }
+          footer={
+            <>
+              <button type="button" onClick={closeModal} className={quietButtonClass}>
+                Cancel
+              </button>
+              <button type="submit" form="interaction-form" disabled={saving} className={primaryButtonClass}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </>
+          }
+        >
+          <form id="interaction-form" onSubmit={save} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+            {!lockedType && (
+              <label className="text-xs font-medium text-gray-700 md:col-span-2">
+                Type
+                <select
+                  className={`${STUDENT_OPS_INPUT} mt-1`}
+                  value={form.interaction_type}
+                  onChange={(e) => setForm({ ...form, interaction_type: e.target.value as InteractionType })}
+                >
+                  {INTERACTION_TYPES.map((value) => (
+                    <option key={value} value={value}>
+                      {INTERACTION_TYPE_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="text-xs font-medium text-gray-700 md:col-span-2">
+              Student
+              <div className="mt-1">
+                <StudentPickSelect value={form.student_id} onChange={(student_id) => setForm({ ...form, student_id })} />
+              </div>
+            </label>
+            <label className="text-xs font-medium text-gray-700">
+              Subject
+              <input
+                required
+                placeholder="Subject"
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={form.subject}
+                onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-700">
+              Date
+              <input
+                type="date"
+                required
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={form.interaction_date}
+                onChange={(e) => setForm({ ...form, interaction_date: e.target.value })}
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-700 md:col-span-2">
+              Notes
+              <textarea
+                placeholder="Optional details"
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                rows={4}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </label>
+          </form>
+        </AppModalShell>
+      </AppModal>
     </div>
   );
 }

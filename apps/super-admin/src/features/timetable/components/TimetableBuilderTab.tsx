@@ -80,7 +80,11 @@ export default function TimetableBuilderTab() {
       fetch('/api/classes?active_only=true').then((r) => r.json()),
       fetch('/api/timetable/setup').then((r) => r.json()),
     ]).then(([classRes, setupRes]) => {
-      if (classRes.success) setClasses(sortClassesByName(classRes.data));
+      if (classRes.success) {
+        const sorted = sortClassesByName(classRes.data);
+        setClasses(sorted);
+        setClassId((current) => current || (sorted[0] ? String(sorted[0].id) : ''));
+      }
       if (setupRes.success) {
         setPeriods(setupRes.data.periods.filter((p: TimetablePeriod) => p.is_active !== false));
         setWorkingDays(setupRes.data.working_days);
@@ -354,7 +358,7 @@ export default function TimetableBuilderTab() {
             type="button"
             onClick={applyTemplateToSections}
             disabled={applyingTemplate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
             <FiCopy className="w-4 h-4" />
             {applyingTemplate ? 'Applying...' : `Apply to ${sections.length} section(s)`}
@@ -366,7 +370,7 @@ export default function TimetableBuilderTab() {
               type="button"
               onClick={handlePrintTimetable}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               <FiPrinter className="w-4 h-4" />
               Print timetable
@@ -376,7 +380,7 @@ export default function TimetableBuilderTab() {
                 type="button"
                 onClick={handlePrintClassTemplate}
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 <FiPrinter className="w-4 h-4" />
                 Print class template

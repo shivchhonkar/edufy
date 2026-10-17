@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const createdByStaffId = await getStaffIdForUser(db, auth.user.id);
+    const includeTimes = 'check_in_time' in body || 'check_out_time' in body;
     const normalized = {
       check_in_time: optionalTime(check_in_time),
       check_out_time: optionalTime(check_out_time),
@@ -158,8 +159,8 @@ export async function POST(request: NextRequest) {
       // Update existing record
       const updateResult = await db.query(
         `UPDATE staff_attendance SET 
-          check_in_time = $1,
-          check_out_time = $2,
+          check_in_time = CASE WHEN $12 THEN $1::time ELSE check_in_time END,
+          check_out_time = CASE WHEN $12 THEN $2::time ELSE check_out_time END,
           break_start_time = $3,
           break_end_time = $4,
           status = $5,
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
           normalized.remarks,
           staff_id,
           attendance_date,
+          includeTimes,
         ]
       );
 
@@ -273,11 +275,12 @@ export async function PUT(request: NextRequest) {
         );
 
         if (existingRecord.rows.length > 0) {
+          const includeTimes = 'check_in_time' in record || 'check_out_time' in record;
           // Update existing
           const updateResult = await db.query(
             `UPDATE staff_attendance SET 
-              check_in_time = COALESCE($1, check_in_time),
-              check_out_time = COALESCE($2, check_out_time),
+              check_in_time = CASE WHEN $10 THEN NULLIF($1, '')::time ELSE check_in_time END,
+              check_out_time = CASE WHEN $10 THEN NULLIF($2, '')::time ELSE check_out_time END,
               break_start_time = COALESCE($3, break_start_time),
               break_end_time = COALESCE($4, break_end_time),
               status = COALESCE($5, status),
@@ -296,6 +299,7 @@ export async function PUT(request: NextRequest) {
               staff_id,
               attendance_date,
               attendance_type || 'manual',
+              includeTimes,
             ]
           );
           results.push(updateResult.rows[0]);

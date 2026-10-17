@@ -15,6 +15,7 @@ function eventColor(event: CalendarEvent): string {
     case 'exam':
       return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'meeting':
+    case 'ptm':
       return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'sports':
       return 'bg-green-100 text-green-800 border-green-200';
@@ -108,6 +109,9 @@ export default function EventCalendarView() {
       const date = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       cells.push({ date, day });
     }
+    while (cells.length % 7 !== 0) {
+      cells.push({ date: null, day: null });
+    }
     return cells;
   }, [viewYear, viewMonth]);
 
@@ -179,6 +183,20 @@ export default function EventCalendarView() {
     setSelectedDate(null);
   };
 
+  const goToToday = () => {
+    const now = new Date();
+    setViewYear(now.getFullYear());
+    setViewMonth(now.getMonth() + 1);
+    setSelectedDate(todayKey);
+  };
+
+  const isViewingCurrentMonth =
+    viewYear === today.getFullYear() && viewMonth === today.getMonth() + 1;
+
+  const listedEvents = selectedDate
+    ? sortedAllEvents.filter((event) => eventOverlapsDate(event, selectedDate))
+    : sortedAllEvents;
+
   const openCreate = (date?: string) => {
     setEditEvent(null);
     setSelectedDate(date || null);
@@ -204,167 +222,204 @@ export default function EventCalendarView() {
     }
   };
 
+  const navButtonClass =
+    'inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50';
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => shiftMonth(-1)}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
-            aria-label="Previous month"
-          >
-            <FiChevronLeft />
-          </button>
-          <h2 className="text-lg font-semibold text-gray-900 min-w-[10rem] text-center">{monthLabel}</h2>
-          <button
-            type="button"
-            onClick={() => shiftMonth(1)}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
-            aria-label="Next month"
-          >
-            <FiChevronRight />
-          </button>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-medium text-gray-900">Event Calendar</h1>
+          <p className="mt-0.5 text-xs text-gray-500">
+            School events and holidays for parents and staff.
+          </p>
         </div>
         <button
           type="button"
-          onClick={() => openCreate()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          onClick={() => openCreate(selectedDate || undefined)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700"
         >
-          <FiPlus /> Add Event / Holiday
+          <FiPlus size={14} />
+          Add Event / Holiday
         </button>
       </div>
 
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
-        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-          <div className="grid grid-cols-7 border-b bg-gray-50">
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(18rem,0.9fr)]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-3 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => shiftMonth(-1)} className={navButtonClass} aria-label="Previous month">
+                <FiChevronLeft size={16} />
+              </button>
+              <h2 className="min-w-[9.5rem] text-center text-sm font-semibold text-gray-900">{monthLabel}</h2>
+              <button type="button" onClick={() => shiftMonth(1)} className={navButtonClass} aria-label="Next month">
+                <FiChevronRight size={16} />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={goToToday}
+              className={`rounded-md border px-2.5 py-1.5 text-xs ${
+                isViewingCurrentMonth && selectedDate === todayKey
+                  ? 'border-primary-200 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Today
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-px bg-gray-200 p-px">
             {WEEKDAYS.map((day) => (
-              <div key={day} className="px-2 py-3 text-xs font-semibold text-gray-500 text-center">
+              <div
+                key={day}
+                className="bg-gray-50 px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+              >
                 {day}
               </div>
             ))}
-          </div>
-          <div className="grid grid-cols-7">
             {calendarCells.map((cell, index) => {
               if (!cell.date || !cell.day) {
-                return <div key={`empty-${index}`} className="min-h-[6.5rem] border-b border-r bg-gray-50/40" />;
+                return <div key={`empty-${index}`} className="min-h-[6.75rem] bg-gray-50" />;
               }
 
               const dayEvents = eventsByDate.get(cell.date) || [];
               const isToday = cell.date === todayKey;
               const isSelected = cell.date === selectedDate;
+              const isWeekend = index % 7 === 0 || index % 7 === 6;
 
               return (
                 <button
                   key={cell.date}
                   type="button"
-                  onClick={() => setSelectedDate(cell.date)}
+                  onClick={() => setSelectedDate((current) => (current === cell.date ? null : cell.date))}
                   onDoubleClick={() => openCreate(cell.date)}
-                  className={`min-h-[6.5rem] border-b border-r p-2 text-left transition-colors ${
-                    isSelected ? 'bg-primary-50' : 'hover:bg-gray-50'
+                  className={`flex min-h-[6.75rem] flex-col p-1.5 text-left transition-colors ${
+                    isSelected
+                      ? 'bg-primary-50 ring-1 ring-inset ring-primary-300'
+                      : isWeekend
+                        ? 'bg-gray-50/80 hover:bg-gray-50'
+                        : 'bg-white hover:bg-gray-50'
                   }`}
                 >
                   <span
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${
-                      isToday ? 'bg-primary-600 text-white font-semibold' : 'text-gray-800'
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
+                      isToday ? 'bg-primary-600 font-semibold text-white' : 'text-gray-800'
                     }`}
                   >
                     {cell.day}
                   </span>
                   <div className="mt-1 space-y-1">
-                    {dayEvents.slice(0, 2).map((event) => (
-                      <div
-                        key={`${event.kind}-${event.id}-${cell.date}`}
-                        className={`truncate rounded px-1.5 py-0.5 text-[10px] border ${eventColor(event)}`}
-                      >
-                        {event.title}
-                      </div>
-                    ))}
-                    {dayEvents.length > 2 && (
-                      <p className="text-[10px] text-gray-500">+{dayEvents.length - 2} more</p>
+                    {loadingMonth
+                      ? null
+                      : dayEvents.slice(0, 2).map((event) => (
+                          <div
+                            key={`${event.kind}-${event.id}-${cell.date}`}
+                            className={`truncate rounded-md border px-1.5 py-0.5 text-[11px] leading-4 ${eventColor(event)} ${event.status === 'cancelled' ? 'line-through opacity-70' : ''}`}
+                            title={event.status === 'cancelled' ? `${event.title} (cancelled)` : event.title}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                    {!loadingMonth && dayEvents.length > 2 && (
+                      <p className="px-1 text-[11px] text-gray-500">+{dayEvents.length - 2} more</p>
                     )}
                   </div>
                 </button>
               );
             })}
           </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-gray-200 px-3 py-2 text-[11px] text-gray-500">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary-500" /> Event
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-blue-500" /> PTM
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-amber-500" /> Exam
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Sports
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-rose-500" /> Holiday
+            </span>
+          </div>
         </div>
 
-        <div className="bg-white border rounded-xl shadow-sm p-5 flex flex-col min-h-[28rem] lg:max-h-[calc(100vh-9rem)]">
-          <div className="shrink-0 space-y-4 mb-4">
-            <div>
-              <h3 className="font-semibold text-gray-900">Today&apos;s Events</h3>
-              <p className="text-xs text-gray-500 mt-0.5">{formatDisplayDate(todayKey)}</p>
+        <div className="flex min-h-[28rem] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm lg:max-h-[calc(100vh-7.5rem)]">
+          <div className="border-b border-gray-200 px-4 py-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-sm font-semibold text-gray-900">Today</h3>
+              <p className="text-xs text-gray-500">{formatDisplayDate(todayKey)}</p>
             </div>
-
             {loadingAll ? (
-              <div className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+              <div className="mt-3 h-14 animate-pulse rounded-lg bg-gray-100" />
             ) : todayEvents.length > 0 ? (
-              <ul className="divide-y divide-gray-100 max-h-52 overflow-y-auto -mx-1">
+              <ul className="mt-2 divide-y divide-gray-100">
                 {todayEvents.map((event, index) => (
                   <CalendarEventListRow
                     key={`today-${event.kind}-${event.id}`}
                     event={event}
                     index={index}
-                    highlighted
+                    compact
                     onEdit={openEdit}
                     onDelete={handleDelete}
                   />
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center">
-                No events or holidays scheduled for today.
+              <p className="mt-3 rounded-lg border border-dashed border-gray-200 px-3 py-3 text-center text-xs text-gray-500">
+                Nothing scheduled for today.
               </p>
             )}
-
-            <div className="pt-3 border-t border-gray-100">
-              <h3 className="font-semibold text-gray-900">All Events & Holidays</h3>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                {loadingAll ? '…' : `${allEvents.length} total ${allEvents.length === 1 ? 'entry' : 'entries'}`}
-                {!loadingMonth && (
-                  <span className="normal-case font-normal text-gray-400">
-                    {' '}
-                    · {monthEventsInView.length} in {monthLabel}
-                  </span>
-                )}
-              </p>
-              {selectedDate ? (
-                <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 px-3 py-2">
-                  <p className="text-sm text-primary-900">
-                    <span className="font-medium">{formatDisplayDate(selectedDate)}</span>
-                    <span className="text-primary-700">
-                      {' '}
-                      · {selectedEvents.length} {selectedEvents.length === 1 ? 'entry' : 'entries'} this day
-                    </span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => openCreate(selectedDate)}
-                    className="text-xs text-primary-700 hover:text-primary-800 font-medium shrink-0"
-                  >
-                    Add on this day
-                  </button>
-                </div>
-              ) : (
-                <p className="mt-2 text-sm text-gray-500">
-                  Every event and holiday across all months. Click a date on the calendar to highlight its entries.
-                </p>
-              )}
-            </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1">
+          <div className="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-gray-900">
+                {selectedDate ? 'Selected day' : 'All events'}
+              </h3>
+              <p className="mt-0.5 truncate text-xs text-gray-500">
+                {loadingAll
+                  ? 'Loading…'
+                  : selectedDate
+                    ? `${formatDisplayDate(selectedDate)} · ${selectedEvents.length} ${selectedEvents.length === 1 ? 'entry' : 'entries'}`
+                    : `${allEvents.length} ${allEvents.length === 1 ? 'entry' : 'entries'} · ${monthEventsInView.length} in ${monthLabel}`}
+              </p>
+            </div>
+            {selectedDate ? (
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openCreate(selectedDate)}
+                  className="text-xs font-medium text-primary-700 hover:text-primary-800"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(null)}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Show all
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
             {loadingAll ? (
-              <div className="space-y-3">
+              <div className="space-y-2 p-2">
                 {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="h-20 rounded-lg bg-gray-100 animate-pulse" />
+                  <div key={index} className="h-16 animate-pulse rounded-lg bg-gray-100" />
                 ))}
               </div>
-            ) : sortedAllEvents.length > 0 ? (
-              <ul className="divide-y divide-gray-100 pb-1 -mx-1">
-                {sortedAllEvents.map((event, index) => {
-                  const isHighlighted = selectedDate ? eventOverlapsDate(event, selectedDate) : false;
+            ) : listedEvents.length > 0 ? (
+              <ul className="divide-y divide-gray-100">
+                {listedEvents.map((event, index) => {
                   const isInViewedMonth = monthEventsInView.some(
                     (item) => item.kind === event.kind && item.id === event.id,
                   );
@@ -373,8 +428,7 @@ export default function EventCalendarView() {
                       key={`${event.kind}-${event.id}`}
                       event={event}
                       index={index}
-                      highlighted={isHighlighted}
-                      muted={!isInViewedMonth && !isHighlighted}
+                      muted={!selectedDate && !isInViewedMonth}
                       onEdit={openEdit}
                       onDelete={handleDelete}
                     />
@@ -382,16 +436,20 @@ export default function EventCalendarView() {
                 })}
               </ul>
             ) : (
-              <div className="flex h-full min-h-[12rem] items-center justify-center rounded-lg border border-dashed border-gray-200 px-4 text-center">
+              <div className="flex h-full min-h-[12rem] items-center justify-center px-4 text-center">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">No events or holidays yet</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Use &quot;Add Event / Holiday&quot; to create your first entry.
+                  <p className="text-sm font-medium text-gray-700">
+                    {selectedDate ? 'Nothing on this date' : 'No events or holidays yet'}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {selectedDate
+                      ? 'Add an event or holiday for this day.'
+                      : 'Create the first entry for the school calendar.'}
                   </p>
                   <button
                     type="button"
-                    onClick={() => openCreate()}
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    onClick={() => openCreate(selectedDate || undefined)}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700"
                   >
                     <FiPlus size={14} /> Add entry
                   </button>

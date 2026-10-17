@@ -16,7 +16,7 @@ export default function TransportPageHeader({
   showSetupHint = false,
 }: TransportPageHeaderProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-medium text-gray-900">{title}</h1>
@@ -49,7 +49,7 @@ export default function TransportPageHeader({
             </div>
           )}
         </div>
-        {/* {description && <p className="text-sm text-gray-600 mt-1">{description}</p>} */}
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
       </div>
       {action}
     </div>

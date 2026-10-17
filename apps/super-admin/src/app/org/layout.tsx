@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 import { FiGrid, FiHome, FiSettings, FiUsers } from 'react-icons/fi';
 
 const NAV = [
@@ -17,30 +18,28 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <DashboardLayout>
-      <div className="mb-4 flex flex-wrap gap-2 border-b border-gray-200 pb-3">
-        {NAV.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
-                active
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Icon size={15} />
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className={moduleTabBarClass}>
+          {NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`inline-flex items-center gap-1.5 ${moduleTabClass(active)}`}
+              >
+                <Icon size={14} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
         <Link
           href="/admin"
-          className="ml-auto inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50"
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary-600 hover:bg-primary-50"
         >
-          School ERP →
+          School ERP
         </Link>
       </div>
       {children}

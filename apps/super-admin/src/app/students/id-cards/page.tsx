@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
@@ -10,16 +10,14 @@ import { buildStudentIdCardSchoolInfo } from '@/features/students/utils/student-
 import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
 import type { Student } from '@/shared/types';
-import {
-  FiChevronDown,
-  FiChevronUp,
-  FiCreditCard,
-  FiFilter,
-  FiInfo,
-  FiPrinter,
-  FiSearch,
-  FiX,
-} from 'react-icons/fi';
+import { FiPrinter, FiSearch, FiX } from 'react-icons/fi';
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700 disabled:opacity-40';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40';
+const fieldClass =
+  'w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20';
 
 const STUDENTS_FETCH_LIMIT = 50000;
 const UNASSIGNED_CLASS_FILTER = 'unassigned';
@@ -41,7 +39,7 @@ export default function StudentIdCardsPage() {
     <Suspense
       fallback={
         <DashboardLayout>
-          <div className="flex items-center justify-center py-16 text-gray-500">Loading…</div>
+          <div className="py-12 text-center text-xs text-gray-500">Loading…</div>
         </DashboardLayout>
       }
     >
@@ -62,7 +60,6 @@ function StudentIdCardsPageContent() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [reportSettings, setReportSettings] = useState<{
     counsellor_name?: string;
@@ -214,99 +211,66 @@ function StudentIdCardsPageContent() {
     ? `${students.length} shown`
     : `${totalStudents} student${totalStudents !== 1 ? 's' : ''} · all classes`;
 
+  const selectionLabel =
+    selectedStudents.length > 0
+      ? `${selectedStudents.length}/${MAX_ID_CARD_SELECTION}`
+      : '';
+
   return (
     <DashboardLayout>
       <div className="flex min-h-[calc(100dvh-7rem)] flex-col gap-3">
-        <div className="flex shrink-0 flex-wrap items-start justify-between gap-3 print:hidden">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 print:hidden">
           <div>
-            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              {/* <FiCreditCard className="text-primary-600" /> */}
-              Student ID Cards
-              {!loading && (
-                <span className="text-xs font-normal text-gray-500">{listScopeLabel}</span>
-              )}
-              <span className="relative group/tip">
-                <button
-                  type="button"
-                  aria-label="ID card printing tips"
-                  className="text-gray-400 hover:text-primary-600 transition-colors rounded-full p-0.5"
-                >
-                  <FiInfo size={18} />
-                </button>
-                <span
-                  role="tooltip"
-                  className="absolute left-0 top-full z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-normal text-gray-700 shadow-lg opacity-0 pointer-events-none transition-opacity group-hover/tip:opacity-100 group-hover/tip:pointer-events-auto group-focus-within/tip:opacity-100 group-focus-within/tip:pointer-events-auto"
-                >
-                  Tip: Select up to {MAX_ID_CARD_SELECTION} students at a time, then preview or
-                  print. Cards are sized for CR80 (credit-card) format — use &quot;Actual
-                  size&quot; in print settings for best results.
-                </span>
-              </span>
-            </h1>
-            {/* <p className="text-sm text-gray-600 mt-1">
-              Select students and print standard CR80 identity cards.
-            </p> */}
+            <h1 className="text-lg font-medium text-gray-900">Student ID Cards</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Select up to {MAX_ID_CARD_SELECTION} students. Cards print at CR80 size — use Actual size in print settings.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFiltersExpanded((p) => !p)}
-            className={`border px-3 py-2 rounded-lg flex items-center gap-2 text-sm ${
-              hasActiveFilters
-                ? 'border-primary-300 bg-primary-50 text-primary-700'
-                : 'hover:bg-gray-50'
-            }`}
-          >
-            <FiFilter size={15} />
-            Filters
-            {filtersExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-          </button>
-
             <button
               type="button"
               onClick={handlePreview}
               disabled={selectedStudents.length === 0}
-              className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+              className={quietButtonClass}
             >
-              Preview Cards
-              {selectedStudents.length > 0
-                ? ` (${selectedStudents.length}/${MAX_ID_CARD_SELECTION})`
-                : ''}
+              Preview{selectionLabel ? ` (${selectionLabel})` : ''}
             </button>
             <button
               type="button"
               onClick={handlePrint}
               disabled={selectedStudents.length === 0}
-              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm disabled:opacity-40"
+              className={primaryButtonClass}
             >
-              <FiPrinter size={16} />
-              Print
-              {selectedStudents.length > 0
-                ? ` (${selectedStudents.length}/${MAX_ID_CARD_SELECTION})`
-                : ''}
+              <FiPrinter size={14} />
+              Print{selectionLabel ? ` (${selectionLabel})` : ''}
             </button>
           </div>
         </div>
 
-        <div className="shrink-0 space-y-3 print:hidden">
-          {filtersExpanded && (
-            <div className="bg-white border rounded-lg px-4 py-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="md:col-span-2 relative">
-                <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm print:hidden">
+          <div className="flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-gray-200 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Students</h2>
+              <p className="mt-0.5 text-xs text-gray-500">{loading ? 'Loading…' : listScopeLabel}</p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-[minmax(14rem,18rem)_9rem_9rem_auto]">
+              <div className="relative sm:col-span-2 lg:col-span-1">
+                <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                 <input
-                  type="text"
-                  placeholder="Search name or admission no..."
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm"
+                  type="search"
+                  placeholder="Name or admission no."
+                  className={`${fieldClass} pl-8`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
               <select
-                className="border rounded-lg px-3 py-2 text-sm"
+                className={fieldClass}
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
+                aria-label="Class"
               >
-                <option value="">All Classes</option>
+                <option value="">All classes</option>
                 <option value={UNASSIGNED_CLASS_FILTER}>Unassigned</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -315,19 +279,20 @@ function StudentIdCardsPageContent() {
                 ))}
               </select>
               <select
-                className="border rounded-lg px-3 py-2 text-sm"
+                className={fieldClass}
                 value={sectionFilter}
                 onChange={(e) => setSectionFilter(e.target.value)}
                 disabled={!classFilter || classFilter === UNASSIGNED_CLASS_FILTER}
+                aria-label="Section"
               >
-                <option value="">All Sections</option>
+                <option value="">All sections</option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-              {hasActiveFilters && (
+              {hasActiveFilters ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -335,19 +300,19 @@ function StudentIdCardsPageContent() {
                     setClassFilter('');
                     setSectionFilter('');
                   }}
-                  className="md:col-span-4 text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                  className={`${quietButtonClass} justify-center`}
                 >
-                  <FiX size={14} /> Clear filters
+                  <FiX size={12} />
+                  Clear
                 </button>
-              )}
+              ) : null}
             </div>
-          )}
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow print:hidden">
+          </div>
           {loading ? (
-            <div className="flex flex-1 items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+            <div className="flex-1 space-y-2 p-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="h-10 animate-pulse rounded bg-gray-100" />
+              ))}
             </div>
           ) : (
             <VirtualizedStudentSelectTable
@@ -362,49 +327,49 @@ function StudentIdCardsPageContent() {
         </div>
       </div>
 
-      {showPreviewModal && selectedStudents.length > 0 && (
-        <AppModal open={showPreviewModal} onClose={() => setShowPreviewModal(false)}>
-          <div className={APP_MODAL_PANEL}>
-            <div className="flex shrink-0 items-center justify-between border-b px-4 print:hidden">
-              <div>
-                <h2 className="text-lg font-medium text-gray-900">ID Card Preview</h2>
-                <p className="text-sm text-gray-500">
-                  {selectedStudents.length} card{selectedStudents.length !== 1 ? 's' : ''} selected
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
-                >
-                  <FiPrinter size={16} />
-                  Print
-                </button>
+      <AppModal open={showPreviewModal && selectedStudents.length > 0} onClose={() => setShowPreviewModal(false)}>
+        {showPreviewModal && selectedStudents.length > 0 && (
+          <AppModalShell
+            header={
+              <>
+                <div className="print:hidden">
+                  <h2 className="text-lg font-medium text-gray-900">ID card preview</h2>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {selectedStudents.length} card{selectedStudents.length === 1 ? '' : 's'}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowPreviewModal(false)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 print:hidden"
                   aria-label="Close preview"
                 >
-                  <FiX size={20} />
+                  <FiX size={18} />
+                </button>
+              </>
+            }
+            footer={
+              <div className="flex w-full justify-end gap-2 print:hidden">
+                <button type="button" onClick={() => setShowPreviewModal(false)} className={quietButtonClass}>
+                  Close
+                </button>
+                <button type="button" onClick={handlePrint} className={primaryButtonClass}>
+                  <FiPrinter size={14} />
+                  Print
                 </button>
               </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 print:overflow-visible print:p-0">
-              <div
-                id="id-cards-print-root"
-                className="id-cards-grid flex flex-wrap justify-center gap-4"
-              >
+            }
+          >
+            <div className="p-4 print:p-0 sm:p-6">
+              <div id="id-cards-print-root" className="id-cards-grid flex flex-wrap justify-center gap-4">
                 {selectedStudents.map((student) => (
                   <StudentIdCard key={student.id} student={student} school={schoolInfo} />
                 ))}
               </div>
             </div>
-          </div>
-        </AppModal>
-      )}
+          </AppModalShell>
+        )}
+      </AppModal>
 
       <style jsx global>{`
         @media print {

@@ -1,12 +1,18 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiUser, FiX } from 'react-icons/fi'
 import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal'
 import {
   ATTENDANCE_STATUS_OPTIONS,
   registerCodeToStatus,
 } from '@/features/attendance/utils/attendance-status'
+import {
+  clockInputValue,
+  DEFAULT_ATTENDANCE_WINDOW,
+  deriveAttendanceFromTimes,
+  type AttendanceWindow,
+} from '@/features/attendance/utils/attendance-time'
 
 export interface RegisterCellEditContext {
   personId: number
@@ -14,6 +20,10 @@ export interface RegisterCellEditContext {
   date: string
   code: string
   remarks?: string
+  checkIn?: string | null
+  checkOut?: string | null
+  workStart?: string | null
+  workEnd?: string | null
 }
 
 interface RegisterCellAttendanceModalProps {
@@ -35,17 +45,64 @@ export default function RegisterCellAttendanceModal({
 }: RegisterCellAttendanceModalProps) {
   const [status, setStatus] = useState('present')
   const [remarks, setRemarks] = useState('')
+  const [checkIn, setCheckIn] = useState('')
+  const [checkOut, setCheckOut] = useState('')
+  const [reason, setReason] = useState('')
+  const [dayWindow, setDayWindow] = useState<AttendanceWindow>(DEFAULT_ATTENDANCE_WINDOW)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const statusTouched = useRef(false)
 
   const label = entityLabel ?? (variant === 'student' ? 'Student' : 'Staff')
 
   useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    fetch('/api/attendance/window')
+      .then((response) => response.json())
+      .then((data) => {
+        if (cancelled || !data.success || !data.data) return
+        setDayWindow({
+          workStart: clockInputValue(data.data.work_start_time) || DEFAULT_ATTENDANCE_WINDOW.workStart,
+          workEnd: clockInputValue(data.data.work_end_time) || DEFAULT_ATTENDANCE_WINDOW.workEnd,
+          lateToleranceMinutes: Number(data.data.late_tolerance_minutes) || DEFAULT_ATTENDANCE_WINDOW.lateToleranceMinutes,
+          halfDayHours: Number(data.data.half_day_threshold_hours) || DEFAULT_ATTENDANCE_WINDOW.halfDayHours,
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen])
+
+  useEffect(() => {
     if (!context) return
+    statusTouched.current = false
     setStatus(registerCodeToStatus(context.code))
     setRemarks(context.remarks ?? '')
+    setCheckIn(clockInputValue(context.checkIn))
+    setCheckOut(clockInputValue(context.checkOut))
+    setReason('')
     setError('')
   }, [context, isOpen])
+
+  useEffect(() => {
+    if (!isOpen || statusTouched.current) return
+    const derived = deriveAttendanceFromTimes({
+      checkIn,
+      checkOut,
+      workStart: context?.workStart || dayWindow.workStart,
+      workEnd: context?.workEnd || dayWindow.workEnd,
+      lateToleranceMinutes: dayWindow.lateToleranceMinutes,
+      halfDayHours: dayWindow.halfDayHours,
+    })
+    if (!derived) {
+      setReason('')
+      return
+    }
+    setStatus(derived.status)
+    setReason(derived.reason)
+  }, [isOpen, checkIn, checkOut, dayWindow, context?.workStart, context?.workEnd])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +120,8 @@ export default function RegisterCellAttendanceModal({
               date: context.date,
               status,
               remarks: remarks || null,
+              check_in_time: checkIn || null,
+              check_out_time: checkOut || null,
             }
           : {
               staff_id: context.personId,
@@ -70,6 +129,8 @@ export default function RegisterCellAttendanceModal({
               status,
               attendance_type: 'manual',
               remarks: remarks || null,
+              check_in_time: checkIn || null,
+              check_out_time: checkOut || null,
             }
 
       const response = await fetch(url, {
@@ -137,6 +198,34 @@ export default function RegisterCellAttendanceModal({
               </p>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">In time</label>
+                <input
+                  type="time"
+                  value={checkIn}
+                  onChange={(e) => {
+                    statusTouched.current = false
+                    setCheckIn(e.target.value)
+                  }}
+                  className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Out time</label>
+                <input
+                  type="time"
+                  value={checkOut}
+                  onChange={(e) => {
+                    statusTouched.current = false
+                    setCheckOut(e.target.value)
+                  }}
+                  className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs"
+                />
+              </div>
+            </div>
+            {reason && <p className="text-xs text-gray-500">{reason}</p>}
+
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-2">Status</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -144,7 +233,10 @@ export default function RegisterCellAttendanceModal({
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setStatus(option.value)}
+                    onClick={() => {
+                      statusTouched.current = true
+                      setStatus(option.value)
+                    }}
                     className={`inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                       status === option.value
                         ? `${option.style} border-current ring-2 ring-primary-500 ring-offset-1`

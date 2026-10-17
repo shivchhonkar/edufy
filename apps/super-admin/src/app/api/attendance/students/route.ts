@@ -121,6 +121,13 @@ export async function GET(request: NextRequest) {
 
 import type { RequestDb } from '@/lib/request-db';
 
+function optionalClock(value: unknown): string | null {
+  if (value == null) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  return text.length === 5 ? `${text}:00` : text;
+}
+
 async function upsertAttendanceRecord(
   db: RequestDb,
   params: {
@@ -130,6 +137,9 @@ async function upsertAttendanceRecord(
     remarks?: string | null;
     marked_by?: number | null;
     enrollment_id?: number | null;
+    check_in_time?: string | null;
+    check_out_time?: string | null;
+    include_times?: boolean;
   }
 ) {
   const writeCtx =
@@ -155,7 +165,9 @@ async function upsertAttendanceRecord(
           status = $1,
           remarks = $2,
           marked_by = COALESCE($3, marked_by),
-          student_id = $4
+          student_id = $4,
+          check_in_time = CASE WHEN $9 THEN $7::time ELSE check_in_time END,
+          check_out_time = CASE WHEN $9 THEN $8::time ELSE check_out_time END
         WHERE enrollment_id = $5 AND date = $6
         RETURNING *`,
         [
@@ -165,6 +177,9 @@ async function upsertAttendanceRecord(
           params.student_id,
           enrollmentId,
           params.date,
+          params.check_in_time ?? null,
+          params.check_out_time ?? null,
+          Boolean(params.include_times),
         ]
       );
       return updateResult.rows[0];
@@ -182,7 +197,9 @@ async function upsertAttendanceRecord(
         status = $1,
         remarks = $2,
         marked_by = COALESCE($3, marked_by),
-        enrollment_id = COALESCE($4, enrollment_id)
+        enrollment_id = COALESCE($4, enrollment_id),
+        check_in_time = CASE WHEN $9 THEN $7::time ELSE check_in_time END,
+        check_out_time = CASE WHEN $9 THEN $8::time ELSE check_out_time END
       WHERE student_id = $5 AND date = $6
       RETURNING *`,
       [
@@ -192,14 +209,17 @@ async function upsertAttendanceRecord(
         enrollmentId,
         params.student_id,
         params.date,
+        params.check_in_time ?? null,
+        params.check_out_time ?? null,
+        Boolean(params.include_times),
       ]
     );
     return updateResult.rows[0];
   }
 
   const insertResult = await db.query(
-    `INSERT INTO attendance (student_id, enrollment_id, date, status, remarks, marked_by)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO attendance (student_id, enrollment_id, date, status, remarks, marked_by, check_in_time, check_out_time)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       params.student_id,
@@ -208,6 +228,8 @@ async function upsertAttendanceRecord(
       params.status || 'present',
       params.remarks || null,
       params.marked_by || null,
+      params.check_in_time ?? null,
+      params.check_out_time ?? null,
     ]
   );
   return insertResult.rows[0];
@@ -218,7 +240,7 @@ export async function POST(request: NextRequest) {
     const { db } = await getRequestDb(request);
     await prepareEnrollmentSchema(db);
     const body = await request.json();
-    const { student_id, date, status, remarks, marked_by, enrollment_id } = body;
+    const { student_id, date, status, remarks, marked_by, enrollment_id, check_in_time, check_out_time } = body;
 
     if (!student_id || !date) {
       return NextResponse.json(
@@ -234,6 +256,9 @@ export async function POST(request: NextRequest) {
       remarks,
       marked_by,
       enrollment_id,
+      check_in_time: optionalClock(check_in_time),
+      check_out_time: optionalClock(check_out_time),
+      include_times: 'check_in_time' in body || 'check_out_time' in body,
     });
 
     return NextResponse.json({
@@ -270,7 +295,7 @@ export async function PUT(request: NextRequest) {
       const results = [];
 
       for (const record of attendance_records) {
-        const { student_id, date, status, remarks, enrollment_id } = record;
+        const { student_id, date, status, remarks, enrollment_id, check_in_time, check_out_time } = record;
 
         if (!student_id || !date) continue;
 
@@ -280,6 +305,9 @@ export async function PUT(request: NextRequest) {
           status,
           remarks,
           enrollment_id,
+          check_in_time: optionalClock(check_in_time),
+          check_out_time: optionalClock(check_out_time),
+          include_times: 'check_in_time' in record || 'check_out_time' in record,
         });
         results.push(row);
       }

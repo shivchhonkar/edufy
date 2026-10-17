@@ -62,20 +62,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'staff_id, class_id, academic_year required' }, { status: 400 });
     }
 
-    if (is_class_teacher && section_id) {
+    const sectionId = section_id || null;
+    const subjectId = subject_id || null;
+
+    const existing = await db.query(
+      `SELECT id FROM teacher_assignments
+       WHERE staff_id = $1
+         AND class_id = $2
+         AND academic_year = $3
+         AND section_id IS NOT DISTINCT FROM $4
+         AND subject_id IS NOT DISTINCT FROM $5
+       LIMIT 1`,
+      [staff_id, class_id, academic_year, sectionId, subjectId],
+    );
+    if (existing.rows.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'This teacher is already assigned to that class, section, and subject for this year.' },
+        { status: 409 },
+      );
+    }
+
+    if (is_class_teacher && sectionId) {
       await db.query(
         `UPDATE sections SET class_teacher_id = $1 WHERE id = $2`,
-        [staff_id, section_id]
+        [staff_id, sectionId]
       ).catch(() => {});
     }
 
     const result = await db.query(
       `INSERT INTO teacher_assignments (staff_id, class_id, section_id, subject_id, academic_year, is_class_teacher)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (staff_id, class_id, section_id, subject_id, academic_year)
-       DO UPDATE SET is_class_teacher = $6
        RETURNING *`,
-      [staff_id, class_id, section_id || null, subject_id || null, academic_year, is_class_teacher ?? false]
+      [staff_id, class_id, sectionId, subjectId, academic_year, is_class_teacher ?? false]
     );
     return NextResponse.json({ success: true, data: result.rows[0] }, { status: 201 });
   } catch (error) {

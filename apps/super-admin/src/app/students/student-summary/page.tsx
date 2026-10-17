@@ -54,8 +54,8 @@ export default function StudentSummaryPage() {
 
   const printReport = () => {
     printHtmlDocument(
-      'Student Summary',
-      `<h1>Student Summary</h1>
+      'Student Register',
+      `<h1>Student Register</h1>
        <table>
          <thead><tr><th>Adm. No.</th><th>Name</th><th>Class</th><th>Gender</th><th>DOB</th><th>Parent</th><th>Phone</th></tr></thead>
          <tbody>
@@ -79,7 +79,7 @@ export default function StudentSummaryPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900">Student Summary</h1>
+            <h1 className="text-lg font-medium text-gray-900">Student Register</h1>
             <p className="mt-1 text-sm text-gray-500">Printable student-wise register with class and parent details.</p>
           </div>
           <button type="button" onClick={printReport} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm">

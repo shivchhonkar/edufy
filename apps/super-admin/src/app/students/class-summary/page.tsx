@@ -42,8 +42,8 @@ export default function ClassSummaryPage() {
 
   const printReport = () => {
     printHtmlDocument(
-      'Class-wise Student Summary',
-      `<h1>Class-wise Student Summary</h1>
+      'Class Summary',
+      `<h1>Class Summary</h1>
        <table>
          <thead><tr><th>Class</th><th>Section</th><th>Total</th><th>Boys</th><th>Girls</th><th>GEN</th><th>OBC</th><th>SC</th><th>ST</th><th>EWS</th></tr></thead>
          <tbody>
@@ -63,7 +63,7 @@ export default function ClassSummaryPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900">Class-wise Student Summary</h1>
+            <h1 className="text-lg font-medium text-gray-900">Class Summary</h1>
             <p className="mt-1 text-sm text-gray-500">Strength by class, section, gender, and category.</p>
           </div>
           <button type="button" onClick={printReport} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm">

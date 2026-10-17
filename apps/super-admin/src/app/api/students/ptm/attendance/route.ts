@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
 
     const result = await auth.db.query(
       `SELECT s.id AS student_id, s.first_name, s.last_name, s.admission_number,
+              COALESCE(ce.class_id, s.class_id) AS class_id,
+              COALESCE(ce.section_id, s.section_id) AS section_id,
               c.name AS class_name, sec.name AS section_name,
               a.id AS attendance_id, COALESCE(a.parent_attended, false) AS parent_attended,
               a.remarks

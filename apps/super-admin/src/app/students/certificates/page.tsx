@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiPlus, FiPrinter, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiPrinter, FiTrash2, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 import StudentPickSelect, { STUDENT_OPS_INPUT } from '@/features/students/components/StudentPickSelect';
 import IssuedCertificateDocument, {
   issuedCertificateHtml,
@@ -30,6 +31,21 @@ interface ActivityRow {
   admission_number: string;
 }
 
+function todayInputDate() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700 disabled:opacity-50';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50';
+
+const tableHeadClass =
+  'border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500';
+
 export default function CertificatesPage() {
   const { confirm, alert } = useDialog();
   const { settings } = useSettings();
@@ -41,12 +57,14 @@ export default function CertificatesPage() {
   const [records, setRecords] = useState<IssuedCertificateRecord & { id: number }[]>([]);
   const [preview, setPreview] = useState<(IssuedCertificateRecord & { id: number }) | null>(null);
   const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [savingActivity, setSavingActivity] = useState(false);
   const [activityForm, setActivityForm] = useState({
     student_id: '',
     title: '',
     category: '',
     award: '',
-    activity_date: new Date().toISOString().split('T')[0],
+    activity_date: todayInputDate(),
   });
 
   const schoolSnapshot = useMemo(
@@ -115,168 +133,228 @@ export default function CertificatesPage() {
 
   const saveActivity = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/students/activities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...activityForm, academic_year: selectedAcademicYear?.name }),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      await alert(data.error || 'Failed to save activity');
-      return;
+    setSavingActivity(true);
+    try {
+      const res = await fetch('/api/students/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...activityForm, academic_year: selectedAcademicYear?.name }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        await alert(data.error || 'Failed to save activity');
+        return;
+      }
+      setActivityForm({
+        student_id: '',
+        title: '',
+        category: '',
+        award: '',
+        activity_date: todayInputDate(),
+      });
+      setActivityOpen(false);
+      loadActivities();
+    } finally {
+      setSavingActivity(false);
     }
-    setActivityForm({ ...activityForm, title: '', award: '' });
-    loadActivities();
   };
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-lg font-medium text-gray-900">Certificates</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Issue Date of Birth, Character, and Study certificates. Transfer certificates stay under TC.
-          </p>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-2">
-          {[
-            ['issue', 'Issue'],
-            ['register', 'Register'],
-            ['activities', 'Activities'],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id as typeof tab)}
-              className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                tab === id ? 'bg-primary-600 text-white' : 'border bg-white text-gray-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {(tab === 'issue' || tab === 'register') && (
-          <div className="mb-4">
-            <select
-              className={`${STUDENT_OPS_INPUT} max-w-xs`}
-              value={type}
-              onChange={(e) => setType(e.target.value as IssuedCertificateType)}
-            >
-              {CERTIFICATE_TYPES.map((value) => (
-                <option key={value} value={value}>
-                  {CERTIFICATE_TYPE_LABELS[value]}
-                </option>
-              ))}
-            </select>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Certificates</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Issue Date of Birth, Character, and Study certificates. Transfer certificates stay under TC.
+            </p>
           </div>
-        )}
+          <div className={moduleTabBarClass}>
+            {([
+              ['issue', 'Issue'],
+              ['register', 'Register'],
+              ['activities', 'Activities'],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={moduleTabClass(tab === id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {tab === 'issue' && (
-          <div className="max-w-xl space-y-4 rounded-xl border border-gray-200 bg-white p-6">
-            <StudentPickSelect value={studentId} onChange={setStudentId} />
-            <label className="block text-sm">
-              Purpose
-              <input className={`${STUDENT_OPS_INPUT} mt-1`} value={purpose} onChange={(e) => setPurpose(e.target.value)} />
-            </label>
-            <button type="button" onClick={issue} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm text-white">
-              <FiPlus /> Issue certificate
-            </button>
+          <div className="w-full max-w-3xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="border-b border-gray-200 px-4 py-3">
+              <h2 className="text-sm font-semibold text-gray-900">Issue certificate</h2>
+              <p className="mt-0.5 text-xs text-gray-500">Choose a type, then the student it is issued for.</p>
+            </div>
+            <div className="space-y-4 p-4">
+              <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+                {CERTIFICATE_TYPES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setType(value)}
+                    className={`${moduleTabClass(type === value)} border border-gray-200 px-3 py-2 text-center`}
+                  >
+                    {CERTIFICATE_TYPE_LABELS[value]}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="block text-xs font-medium text-gray-700">
+                  Student
+                  <div className="mt-1">
+                    <StudentPickSelect value={studentId} onChange={setStudentId} />
+                  </div>
+                </label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Purpose
+                  <input
+                    className={`${STUDENT_OPS_INPUT} mt-1`}
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    placeholder="Optional, for example school admission"
+                  />
+                </label>
+              </div>
+              <div className="flex justify-stretch sm:justify-end">
+                <button type="button" onClick={issue} className={`${primaryButtonClass} w-full justify-center sm:w-auto`}>
+                  <FiPlus size={14} />
+                  Issue certificate
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         {tab === 'register' && (
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Number</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Student</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Issued</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((row) => (
-                  <tr key={row.id} className="border-t">
-                    <td className="px-4 py-2.5 font-mono text-xs">{row.certificate_number}</td>
-                    <td className="px-4 py-2.5">{row.student_snapshot?.full_name}</td>
-                    <td className="px-4 py-2.5">{row.issue_date?.slice(0, 10)}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <button
-                        type="button"
-                        className="mr-2 rounded p-1.5 hover:bg-gray-100"
-                        onClick={() => printHtmlDocument(row.certificate_number, issuedCertificateHtml(row))}
-                      >
-                        <FiPrinter />
-                      </button>
-                      <button type="button" className="rounded p-1.5 text-red-600 hover:bg-red-50" onClick={() => removeCert(row.id)}>
-                        <FiTrash2 />
-                      </button>
-                    </td>
-                  </tr>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Register</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {records.length} {records.length === 1 ? 'certificate' : 'certificates'}
+                </p>
+              </div>
+              <select
+                className={`${STUDENT_OPS_INPUT} sm:w-56`}
+                value={type}
+                onChange={(e) => setType(e.target.value as IssuedCertificateType)}
+              >
+                {CERTIFICATE_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {CERTIFICATE_TYPE_LABELS[value]}
+                  </option>
                 ))}
-                {records.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-gray-400">
-                      No certificates in this register.
-                    </td>
+              </select>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={tableHeadClass}>
+                    <th className="px-4 py-2.5 font-semibold">Number</th>
+                    <th className="px-4 py-2.5 font-semibold">Student</th>
+                    <th className="px-4 py-2.5 font-semibold">Issued</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {records.map((row) => (
+                    <tr key={row.id} className="border-t border-gray-100">
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{row.certificate_number}</td>
+                      <td className="px-4 py-2.5 font-medium text-gray-900">{row.student_snapshot?.full_name}</td>
+                      <td className="px-4 py-2.5 text-gray-600">{row.issue_date?.slice(0, 10)}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-primary-600"
+                            aria-label="Print"
+                            onClick={() => printHtmlDocument(row.certificate_number, issuedCertificateHtml(row))}
+                          >
+                            <FiPrinter size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            aria-label="Delete"
+                            onClick={() => removeCert(row.id)}
+                          >
+                            <FiTrash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {records.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-12 text-center">
+                        <p className="text-sm font-medium text-gray-700">No certificates yet</p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Issue a {CERTIFICATE_TYPE_LABELS[type]} to see it in this register.
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {tab === 'activities' && (
-          <div className="space-y-4">
-            <form onSubmit={saveActivity} className="grid grid-cols-1 gap-3 rounded-xl border bg-white p-4 md:grid-cols-5">
-              <div className="md:col-span-2">
-                <StudentPickSelect
-                  value={activityForm.student_id}
-                  onChange={(student_id) => setActivityForm({ ...activityForm, student_id })}
-                />
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Activities</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {activities.length} {activities.length === 1 ? 'record' : 'records'}
+                </p>
               </div>
-              <input
-                required
-                placeholder="Activity title"
-                className={STUDENT_OPS_INPUT}
-                value={activityForm.title}
-                onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
-              />
-              <input
-                placeholder="Award"
-                className={STUDENT_OPS_INPUT}
-                value={activityForm.award}
-                onChange={(e) => setActivityForm({ ...activityForm, award: e.target.value })}
-              />
-              <button type="submit" className="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white">
-                Add
+              <button type="button" onClick={() => setActivityOpen(true)} className={primaryButtonClass}>
+                <FiPlus size={14} />
+                New activity
               </button>
-            </form>
-            <div className="overflow-x-auto rounded-xl border bg-white">
+            </div>
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Student</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Activity</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Award</th>
+                <thead>
+                  <tr className={tableHeadClass}>
+                    <th className="px-4 py-2.5 font-semibold">Date</th>
+                    <th className="px-4 py-2.5 font-semibold">Student</th>
+                    <th className="px-4 py-2.5 font-semibold">Activity</th>
+                    <th className="px-4 py-2.5 font-semibold">Award</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activities.map((row) => (
-                    <tr key={row.id} className="border-t">
-                      <td className="px-4 py-2.5">{row.activity_date?.slice(0, 10)}</td>
-                      <td className="px-4 py-2.5">
+                    <tr key={row.id} className="border-t border-gray-100">
+                      <td className="px-4 py-2.5 text-gray-600">{row.activity_date?.slice(0, 10)}</td>
+                      <td className="px-4 py-2.5 font-medium text-gray-900">
                         {row.first_name} {row.last_name}
+                        <div className="text-xs font-normal text-gray-500">{row.admission_number}</div>
                       </td>
-                      <td className="px-4 py-2.5">{row.title}</td>
-                      <td className="px-4 py-2.5">{row.award || '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-700">
+                        {row.title}
+                        {row.category && <div className="text-xs text-gray-500">{row.category}</div>}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-600">{row.award || '—'}</td>
                     </tr>
                   ))}
+                  {activities.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-12 text-center">
+                        <p className="text-sm font-medium text-gray-700">No activities yet</p>
+                        <p className="mt-1 text-xs text-gray-500">Add a student activity or award.</p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -284,22 +362,120 @@ export default function CertificatesPage() {
         )}
       </div>
 
-      <AppModal open={preview != null} onClose={() => setPreview(null)}>
-        <div className={APP_MODAL_PANEL}>
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <h2 className="text-lg font-medium">Certificate issued</h2>
-            {preview && (
+      <AppModal open={activityOpen} onClose={() => !savingActivity && setActivityOpen(false)}>
+        <AppModalShell
+          header={
+            <>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">New activity</h2>
+                <p className="mt-0.5 text-xs text-gray-500">Record a student activity or award.</p>
+              </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-                onClick={() => printHtmlDocument(preview.certificate_number, issuedCertificateHtml(preview))}
+                onClick={() => setActivityOpen(false)}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                aria-label="Close"
               >
-                <FiPrinter /> Print
+                <FiX size={18} />
               </button>
-            )}
-          </div>
-          <div className="overflow-y-auto p-6">{preview && <IssuedCertificateDocument record={preview} />}</div>
-        </div>
+            </>
+          }
+          footer={
+            <>
+              <button type="button" onClick={() => setActivityOpen(false)} className={quietButtonClass}>
+                Cancel
+              </button>
+              <button type="submit" form="activity-form" disabled={savingActivity} className={primaryButtonClass}>
+                {savingActivity ? 'Saving…' : 'Save'}
+              </button>
+            </>
+          }
+        >
+          <form id="activity-form" onSubmit={saveActivity} className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
+            <label className="text-xs font-medium text-gray-700 sm:col-span-2">
+              Student
+              <div className="mt-1">
+                <StudentPickSelect
+                  value={activityForm.student_id}
+                  onChange={(student_id) => setActivityForm({ ...activityForm, student_id })}
+                />
+              </div>
+            </label>
+            <label className="text-xs font-medium text-gray-700 sm:col-span-2">
+              Activity
+              <input
+                required
+                placeholder="Activity title"
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={activityForm.title}
+                onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-700">
+              Category
+              <input
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={activityForm.category}
+                onChange={(e) => setActivityForm({ ...activityForm, category: e.target.value })}
+                placeholder="Sports, cultural, academic"
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-700">
+              Award
+              <input
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={activityForm.award}
+                onChange={(e) => setActivityForm({ ...activityForm, award: e.target.value })}
+                placeholder="Optional"
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-700">
+              Date
+              <input
+                type="date"
+                required
+                className={`${STUDENT_OPS_INPUT} mt-1`}
+                value={activityForm.activity_date}
+                onChange={(e) => setActivityForm({ ...activityForm, activity_date: e.target.value })}
+              />
+            </label>
+          </form>
+        </AppModalShell>
+      </AppModal>
+
+      <AppModal open={preview != null} onClose={() => setPreview(null)}>
+        <AppModalShell
+          header={
+            <>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">Certificate issued</h2>
+                <p className="mt-0.5 text-xs text-gray-500">{preview?.certificate_number}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {preview && (
+                  <button
+                    type="button"
+                    className={quietButtonClass}
+                    onClick={() => printHtmlDocument(preview.certificate_number, issuedCertificateHtml(preview))}
+                  >
+                    <FiPrinter size={14} />
+                    Print
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreview(null)}
+                  className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                  aria-label="Close"
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+            </>
+          }
+        >
+          <div className="p-6">{preview && <IssuedCertificateDocument record={preview} />}</div>
+        </AppModalShell>
       </AppModal>
     </DashboardLayout>
   );

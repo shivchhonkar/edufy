@@ -2,7 +2,6 @@
 
 import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import VirtualizedStaffSelectTable from '@/features/staff/components/VirtualizedStaffSelectTable';
 import type { StaffListItem } from '@/features/staff/components/VirtualizedStaffTable';
@@ -10,7 +9,14 @@ import StaffIdCard from '@/features/staff/components/StaffIdCard';
 import { resolveAssetUrl, resolveDocumentWatermarkUrl, resolveSchoolLogoUrl } from '@/features/students/utils/school-document-utils';
 import { useSettings } from '@/shared/SettingsContext';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiArrowLeft, FiCreditCard, FiPrinter, FiSearch, FiX } from 'react-icons/fi';
+import { FiPrinter, FiSearch, FiX } from 'react-icons/fi';
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700 disabled:opacity-40';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40';
+const fieldClass =
+  'w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20';
 
 const STAFF_FETCH_LIMIT = 5000;
 
@@ -145,78 +151,94 @@ export default function StaffIdCardsPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-7xl space-y-4 print:hidden">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className='flex gap-2'>
-            {/* <Link
-              href="/staff"
-              className="mb-2 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
-            >
-              <FiArrowLeft size={14} /> Back to Staff
-            </Link> */}
-            <div className='flex flex-col gap-1'>
-            <h1 className="flex items-center gap-2 text-lg font-medium text-gray-900">
-              {/* <FiCreditCard className="text-primary-600" /> */}
-              Employee ID Cards
-            </h1>
-            {/* <p className="mt-1 text-sm text-gray-600">
-              Select staff members and print identity cards.
-            </p> */}
-            </div>
+      <div className="flex min-h-[calc(100dvh-7rem)] flex-col gap-3 print:hidden">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Employee ID Cards</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Select staff, then preview or print their identity cards.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setShowPreviewModal(true)}
               disabled={selectedStaff.length === 0}
-              className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40"
+              className={quietButtonClass}
             >
-              Preview {selectedStaff.length > 0 ? `(${selectedStaff.length})` : ''}
+              Preview{selectedStaff.length > 0 ? ` (${selectedStaff.length})` : ''}
             </button>
             <button
               type="button"
               onClick={handlePrint}
               disabled={selectedStaff.length === 0}
-              className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700 disabled:opacity-40"
+              className={primaryButtonClass}
             >
-              <FiPrinter size={16} />
-              Print {selectedStaff.length > 0 ? `(${selectedStaff.length})` : ''}
+              <FiPrinter size={14} />
+              Print{selectedStaff.length > 0 ? ` (${selectedStaff.length})` : ''}
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1 max-w-md">
-            <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name or employee ID..."
-              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-gray-200 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Staff</h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {loading
+                  ? 'Loading…'
+                  : `${filteredStaff.length} ${filteredStaff.length === 1 ? 'member' : 'members'}`}
+              </p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(14rem,18rem)_11rem_auto] lg:w-auto">
+              <div className="relative">
+                <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="search"
+                  placeholder="Name or employee ID"
+                  className={`${fieldClass} pl-8`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <select
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className={fieldClass}
+                aria-label="Department"
+              >
+                <option value="">All departments</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
+              {search || departmentId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setDepartmentId('');
+                  }}
+                  className={`${quietButtonClass} justify-center`}
+                >
+                  <FiX size={12} />
+                  Clear
+                </button>
+              ) : null}
+            </div>
           </div>
-          <label className="block w-full sm:w-auto sm:min-w-[200px] sm:max-w-xs">
-            <span className="sr-only">Department</span>
-            <select
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">All departments</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
           {loading ? (
-            <div className="flex h-[calc(100dvh-14rem)] min-h-[480px] items-center justify-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary-600" />
+            <div className="flex-1 space-y-2 p-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="h-10 animate-pulse rounded bg-gray-100" />
+              ))}
+            </div>
+          ) : filteredStaff.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <p className="text-sm font-medium text-gray-700">No staff found</p>
+              <p className="mt-1 text-xs text-gray-500">Try another name, employee ID, or department.</p>
             </div>
           ) : (
             <VirtualizedStaffSelectTable
@@ -224,6 +246,7 @@ export default function StaffIdCardsPage() {
               selectedIds={selectedIds}
               onToggle={toggleStaff}
               onToggleAll={toggleAll}
+              scrollClassName="h-[calc(100dvh-16rem)] min-h-[360px]"
             />
           )}
         </div>

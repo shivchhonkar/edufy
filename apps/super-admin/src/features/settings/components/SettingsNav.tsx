@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 
 /** Horizontal nav shared across all settings pages — kept in sync with Settings sidebar group. */
 export const SETTINGS_NAV_LINKS = [
@@ -20,9 +21,7 @@ export const SETTINGS_NAV_LINKS = [
 ] as const;
 
 function navLinkClass(active: boolean) {
-  return `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-    active ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-  }`;
+  return moduleTabClass(active);
 }
 
 function isSettingsNavActive(pathname: string, searchParams: URLSearchParams | null, href: string) {
@@ -36,7 +35,7 @@ function SettingsNavFallback() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 mb-6">
+    <div className={moduleTabBarClass}>
       {SETTINGS_NAV_LINKS.map((link) => {
         const basePath = link.href.split('?')[0];
         const active = pathname === link.href || pathname.startsWith(`${basePath}/`);
@@ -55,7 +54,7 @@ function SettingsNavInner() {
   const searchParams = useSearchParams();
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 mb-6">
+    <div className={moduleTabBarClass}>
       {SETTINGS_NAV_LINKS.map((link) => (
         <Link
           key={link.href}

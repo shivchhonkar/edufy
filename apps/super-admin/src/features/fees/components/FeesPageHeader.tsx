@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { FiArrowLeft } from 'react-icons/fi';
-
 interface FeesPageHeaderProps {
   title: string;
   description?: string;
@@ -14,8 +11,6 @@ interface FeesPageHeaderProps {
 export default function FeesPageHeader({
   title,
   description,
-  backHref = '/fees/dashboard',
-  backLabel = 'Back',
   actions,
 }: FeesPageHeaderProps) {
   return (
@@ -28,16 +23,12 @@ export default function FeesPageHeader({
         {backLabel}
       </Link> */}
 
-      <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1">
-        <h1 className="col-start-1 row-start-1 text-lg font-medium text-gray-900">{title}</h1>
-        {actions && (
-          <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end">
-            {actions}
-          </div>
-        )}
-        {/* {description && (
-          <p className="col-span-2 row-start-2 text-sm text-gray-600">{description}</p>
-        )} */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-medium text-gray-900">{title}</h1>
+          {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+        </div>
+        {actions && <div className="flex shrink-0 items-center justify-end gap-2">{actions}</div>}
       </div>
     </header>
   );

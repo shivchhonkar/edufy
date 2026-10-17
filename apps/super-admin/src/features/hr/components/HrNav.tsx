@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 
 const links = [
   { href: '/hr/dashboard', label: 'Dashboard' },
@@ -10,16 +11,12 @@ const links = [
 export default function HrNav() {
   const pathname = usePathname();
   return (
-    <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 mb-6">
+    <div className={moduleTabBarClass}>
       {links.length>0&&links.map((link) => (
         <Link
           key={link.href}
           href={link.href}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-            pathname === link.href || pathname.startsWith(`${link.href}/`)
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={moduleTabClass(pathname === link.href || pathname.startsWith(`${link.href}/`))}
         >
           {link.label}
         </Link>

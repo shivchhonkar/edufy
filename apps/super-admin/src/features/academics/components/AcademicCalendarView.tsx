@@ -261,7 +261,7 @@ export default function AcademicCalendarView() {
           <div className="grid grid-cols-7">
             {calendarCells.map((cell, index) => {
               if (!cell.date || !cell.day) {
-                return <div key={`empty-${index}`} className="min-h-[6.5rem] border-b border-r bg-gray-50/40" />;
+                return <div key={`empty-${index}`} className="min-h-[6rem] border-b border-r bg-gray-50/40" />;
               }
 
               const dayEntries = eventsByDate.get(cell.date) || [];
@@ -274,7 +274,7 @@ export default function AcademicCalendarView() {
                   type="button"
                   onClick={() => setSelectedDate(cell.date!)}
                   onDoubleClick={() => openCreate(cell.date!)}
-                  className={`min-h-[6.5rem] border-b border-r p-2 text-left transition-colors ${
+                  className={`min-h-[6rem] border-b border-r p-2 text-left transition-colors ${
                     isSelected ? 'bg-primary-50' : 'hover:bg-gray-50'
                   }`}
                 >
@@ -308,7 +308,7 @@ export default function AcademicCalendarView() {
           </div>
         </div>
 
-        <div className="flex min-h-[28rem] flex-col rounded-xl border bg-white p-5 shadow-sm lg:max-h-[calc(100vh-9rem)]">
+        <div className="flex min-h-[30rem] flex-col rounded-xl border bg-white p-5 shadow-sm lg:max-h-[calc(100vh-6rem)]">
           <div className="mb-4 shrink-0">
             <h3 className="font-semibold text-gray-900">
               {selectedDate

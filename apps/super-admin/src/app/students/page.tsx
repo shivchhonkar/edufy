@@ -327,7 +327,7 @@ function StudentsPageContent() {
           )}
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-baseline gap-2">
-              <h1 className="text-lg font-medium text-gray-900">Students</h1>
+              <h1 className="text-lg font-medium text-gray-900">Student Directory</h1>
               {loading ? (
                 <StudentsTotalSkeleton />
               ) : (
@@ -529,12 +529,10 @@ function StudentsPageContent() {
           onClose={() => setViewingStudent(null)}
           student={viewingStudent}
           onViewSibling={setViewingStudent}
-          onEdit={() => {
-            if (viewingStudent) {
-              setEditingStudent(viewingStudent);
-              setViewingStudent(null);
-              setShowModal(true);
-            }
+          onEdit={(student) => {
+            setEditingStudent(student);
+            setViewingStudent(null);
+            setShowModal(true);
           }}
         />
 
@@ -591,7 +589,7 @@ export default function StudentsPage() {
         <DashboardLayout>
           <div className="space-y-3">
             <div className="flex items-baseline gap-2">
-              <h1 className="text-lg font-medium text-gray-900">Students</h1>
+              <h1 className="text-lg font-medium text-gray-900">Student Directory</h1>
               <StudentsTotalSkeleton />
             </div>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

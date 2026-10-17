@@ -1,4 +1,8 @@
-import type { GatePassDocumentData, GatePassSchoolInfo } from '@/features/students/components/GatePassDocument';
+import {
+  parentDetails,
+  type GatePassDocumentData,
+  type GatePassSchoolInfo,
+} from '@/features/students/components/GatePassDocument';
 import { GATE_PASS_APPROVAL_LABELS } from '@/lib/gate-pass-utils';
 
 function escapeHtml(value: unknown): string {
@@ -218,7 +222,8 @@ const PRINT_STYLES = `
   }
   .gp-photo-wrap {
     text-align: center;
-    min-width: 0;
+    width: 42mm;
+    flex: 0 0 42mm;
   }
   .gp-photo-sublabel {
     font-size: 7.5pt;
@@ -229,9 +234,42 @@ const PRINT_STYLES = `
     text-overflow: ellipsis;
   }
   .gp-photos-grid {
-    display: grid;
-    gap: 2px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4mm;
     margin-top: 2px;
+    margin-bottom: 4mm;
+  }
+  .gp-collector {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e2e8f0;
+    margin-top: 2mm;
+  }
+  .gp-collector-photo {
+    width: 72%;
+    vertical-align: middle;
+    background: #f8fafc;
+    padding: 2mm;
+    border-right: 1px solid #e2e8f0;
+  }
+  .gp-collector-photo img {
+    display: block;
+    width: 100%;
+    height: 95mm;
+    object-fit: contain;
+    object-position: center;
+  }
+  .gp-collector-details {
+    width: 28%;
+    vertical-align: middle;
+    padding: 4mm 5mm;
+  }
+  .gp-collector-details .gp-fields {
+    display: block;
+  }
+  .gp-collector-details .gp-fields > div {
+    margin-bottom: 3mm;
   }
   .gp-photo-label {
     font-size: 8pt;
@@ -242,8 +280,8 @@ const PRINT_STYLES = `
     margin-bottom: 2px;
   }
   .gp-photo-box {
-    width: 100%;
-    height: 38mm;
+    width: 42mm;
+    height: 56mm;
     border: 2px solid #cbd5e1;
     border-radius: 6px;
     overflow: hidden;
@@ -255,7 +293,8 @@ const PRINT_STYLES = `
   .gp-photo-box img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
   }
   .gp-photo-empty {
     font-size: 8.5pt;
@@ -319,15 +358,6 @@ function buildPhotoSlotsHtml(record: GatePassDocumentData): string {
     });
   }
 
-  slots.push({
-    label: 'Collector',
-    sublabel: record.collector_name,
-    url: toAbsoluteUrl(record.collector_photo_url),
-    emptyText: 'Capture at gate',
-  });
-
-  const cols = Math.min(slots.length, 4);
-
   const cells = slots
     .map((slot) => {
       const photoInner = slot.url
@@ -341,11 +371,39 @@ function buildPhotoSlotsHtml(record: GatePassDocumentData): string {
     })
     .join('');
 
+  const collectorUrl = toAbsoluteUrl(record.collector_photo_url);
+  const collectorPhoto = collectorUrl
+    ? `<img src="${escapeHtml(collectorUrl)}" alt="Collector" />`
+    : `<span class="gp-photo-empty">Capture at gate</span>`;
+  const otherPhotos = cells
+    ? `<div class="gp-photos-grid">${cells}</div>`
+    : '';
+
   return `<div class="gp-section">
-    <div class="gp-section-title">Photographs</div>
-    <div class="gp-photos-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr));">
-      ${cells}
-    </div>
+    <div class="gp-section-title">Collector photograph and details</div>
+    ${otherPhotos}
+    <table class="gp-collector">
+      <tr>
+        <td class="gp-collector-photo">${collectorPhoto}</td>
+        <td class="gp-collector-details">
+          <div class="gp-section-title">Collector details</div>
+          <div class="gp-fields">
+            <div>
+              <div class="gp-field-label">Name</div>
+              <div class="gp-field-value">${escapeHtml(record.collector_name)}</div>
+            </div>
+            <div>
+              <div class="gp-field-label">Relationship</div>
+              <div class="gp-field-value">${escapeHtml(relationshipLabel(record.collector_relationship))}</div>
+            </div>
+            <div>
+              <div class="gp-field-label">Mobile</div>
+              <div class="gp-field-value mono">${escapeHtml(record.collector_mobile)}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
   </div>`;
 }
 
@@ -435,19 +493,15 @@ export function buildGatePassPrintHtml(
         </div>
 
         <div class="gp-section">
-          <div class="gp-section-title">Person Collecting Student</div>
+          <div class="gp-section-title">Parent Details</div>
           <div class="gp-fields">
             <div>
               <div class="gp-field-label">Name</div>
-              <div class="gp-field-value">${escapeHtml(record.collector_name)}</div>
+              <div class="gp-field-value">${escapeHtml(parentDetails(record).name)}</div>
             </div>
             <div>
-              <div class="gp-field-label">Relationship</div>
-              <div class="gp-field-value">${escapeHtml(relationshipLabel(record.collector_relationship))}</div>
-            </div>
-            <div class="gp-field-full">
               <div class="gp-field-label">Mobile</div>
-              <div class="gp-field-value mono">${escapeHtml(record.collector_mobile)}</div>
+              <div class="gp-field-value mono">${escapeHtml(parentDetails(record).phone)}</div>
             </div>
           </div>
         </div>

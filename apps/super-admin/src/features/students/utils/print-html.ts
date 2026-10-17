@@ -34,20 +34,23 @@ export function printHtmlDocument(title: string, bodyHtml: string) {
 </html>`);
   doc.close();
 
-  const cleanup = () => {
-    setTimeout(() => {
-      if (frame.parentNode) frame.parentNode.removeChild(frame);
-    }, 400);
+  let printed = false;
+  const printOnce = () => {
+    if (printed) return;
+    const win = frame.contentWindow;
+    if (!win) return;
+    printed = true;
+    const removeFrame = () => {
+      window.setTimeout(() => {
+        frame.remove();
+      }, 500);
+    };
+    win.onafterprint = removeFrame;
+    win.focus();
+    win.print();
+    removeFrame();
   };
 
-  frame.onload = () => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    cleanup();
-  };
-  setTimeout(() => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    cleanup();
-  }, 350);
+  frame.onload = printOnce;
+  window.setTimeout(printOnce, 300);
 }

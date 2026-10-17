@@ -1,8 +1,8 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
 import VirtualizedStudentSelectTable from '@/features/students/components/VirtualizedStudentSelectTable';
 import TransferCertificateModal from '@/features/students/components/TransferCertificateModal';
 import { usePreselectExitStudentFromUrl } from '@/features/students/hooks/usePreselectStudentFromUrl';
@@ -22,19 +22,25 @@ import {
 } from '@/lib/student-exit-utils';
 import type { Student } from '@/shared/types';
 import {
-  FiArrowLeft,
   FiCheck,
   FiCheckCircle,
-  FiChevronDown,
-  FiChevronUp,
   FiClock,
   FiFileText,
-  FiFilter,
+  FiPlus,
   FiRefreshCw,
   FiSearch,
-  FiUserMinus,
+  FiX,
   FiXCircle,
 } from 'react-icons/fi';
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700 disabled:opacity-50';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50';
+const fieldClass =
+  'w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20';
+const tableHeadClass =
+  'border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500';
 
 const STUDENTS_FETCH_LIMIT = 50000;
 const UNASSIGNED_CLASS_FILTER = 'unassigned';
@@ -138,7 +144,9 @@ export default function ExitStudentsPage() {
 function ExitStudentsPageContent() {
   const { alert, confirm } = useDialog();
   const { settings } = useSettings();
-  const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
+  const [activeTab, setActiveTab] = useState<'process' | 'history'>('history');
+  const [startOpen, setStartOpen] = useState(false);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [search, setSearch] = useState('');
@@ -146,9 +154,7 @@ function ExitStudentsPageContent() {
   const [sectionFilter, setSectionFilter] = useState('');
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [sections, setSections] = useState<SectionOption[]>([]);
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  const [pickerExpanded, setPickerExpanded] = useState(true);
 
   const [exitReasonCode, setExitReasonCode] = useState('TRANSFER');
   const [exitDate, setExitDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -206,13 +212,15 @@ function ExitStudentsPageContent() {
     try {
       const response = await fetch(`/api/students/exits?student_id=${studentId}&active=true`);
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setActiveExit(data.data);
         if (data.data?.certificates) {
           setTransferCertificate(data.data.certificates.transfer_certificate ?? true);
           setCharacterCertificate(data.data.certificates.character_certificate ?? true);
           setBonafide(data.data.certificates.bonafide ?? false);
         }
+      } else if (data.success) {
+        setActiveExit((current) => (current?.student_id === studentId ? current : null));
       } else {
         setActiveExit(null);
       }
@@ -302,17 +310,39 @@ function ExitStudentsPageContent() {
   useEffect(() => {
     if (selectedStudentId) {
       void loadActiveExit(selectedStudentId);
-      setPickerExpanded(false);
     } else {
       setActiveExit(null);
     }
   }, [selectedStudentId, loadActiveExit]);
 
   useEffect(() => {
-    if (activeTab === 'history') {
-      void loadHistory();
+    void loadHistory();
+  }, [loadHistory]);
+
+  useEffect(() => {
+    if (activeTab === 'process') setStartOpen(true);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeExit && startOpen) {
+      setStartOpen(false);
+      setWorkflowOpen(true);
     }
-  }, [activeTab, loadHistory]);
+  }, [activeExit, startOpen]);
+
+  const openHistoryRecord = (item: StudentExitRecord) => {
+    setSelectedStudentId(item.student_id);
+    setActiveExit(item);
+    setStartOpen(false);
+    setWorkflowOpen(true);
+  };
+
+  const closeWorkflow = () => {
+    setWorkflowOpen(false);
+    setSelectedStudentId(null);
+    setActiveExit(null);
+    void loadHistory();
+  };
 
   const handleSelectStudent = (studentId: number) => {
     setSelectedStudentId((prev) => (prev === studentId ? null : studentId));
@@ -409,9 +439,11 @@ function ExitStudentsPageContent() {
     const ok = await patchExit('complete');
     if (ok) {
       await alert('Student exit completed successfully.', { title: 'Exit completed', type: 'success' });
+      setWorkflowOpen(false);
       setSelectedStudentId(null);
       setActiveExit(null);
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudentId));
+      void loadHistory();
     }
   };
 
@@ -424,145 +456,209 @@ function ExitStudentsPageContent() {
     if (!proceed) return;
     const ok = await patchExit('cancel');
     if (ok) {
+      setWorkflowOpen(false);
+      setSelectedStudentId(null);
       setActiveExit(null);
+      void loadHistory();
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            {/* <Link
-              href="/students"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 mb-1"
-            >
-              <FiArrowLeft size={14} />
-              Back to Students
-            </Link> */}
-            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              {/* <FiUserMinus className="text-primary-600" /> */}
-              Exit Student
-            </h1>
-            {/* <p className="text-sm text-gray-500 mt-0.5">
-              Initiate exit, run clearance checks, and complete student withdrawal.
-            </p> */}
+            <h1 className="text-lg font-medium text-gray-900">Student Exit</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Review exit records, or start a new withdrawal.
+            </p>
           </div>
-        </div>
-
-        <div className="flex gap-2 border-b border-gray-200">
           <button
             type="button"
-            onClick={() => setActiveTab('process')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-              activeTab === 'process'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            onClick={() => {
+              setSelectedStudentId(null);
+              setActiveExit(null);
+              setStartOpen(true);
+            }}
+            className={primaryButtonClass}
           >
-            Process Exit
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-              activeTab === 'history'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Exit History
+            <FiPlus size={14} />
+            Start exit
           </button>
         </div>
 
-        {activeTab === 'process' ? (
-          <div className="space-y-4">
-            <ExitStepIndicator currentStep={currentStep} />
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-gray-200 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Exit register</h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {historyLoading ? 'Loading…' : `${historyItems.length} ${historyItems.length === 1 ? 'record' : 'records'}`}
+              </p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(12rem,18rem)_10rem_auto] lg:w-auto">
+              <div className="relative">
+                <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="search"
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder="Student or admission no."
+                  className={`${fieldClass} pl-8`}
+                />
+              </div>
+              <select
+                value={historyStatus}
+                onChange={(e) => setHistoryStatus(e.target.value)}
+                className={fieldClass}
+                aria-label="Status"
+              >
+                <option value="">All statuses</option>
+                {Object.entries(EXIT_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={() => void loadHistory()} className={`${quietButtonClass} justify-center`}>
+                <FiRefreshCw size={14} />
+                Refresh
+              </button>
+            </div>
+          </div>
+          {historyLoading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="h-10 animate-pulse rounded bg-gray-100" />
+              ))}
+            </div>
+          ) : historyItems.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <p className="text-sm font-medium text-gray-700">No exit records</p>
+              <p className="mt-1 text-xs text-gray-500">Start an exit to see it in this register.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className={tableHeadClass}>
+                    <th className="px-4 py-2.5 font-semibold">Student</th>
+                    <th className="px-4 py-2.5 font-semibold">Reason</th>
+                    <th className="px-4 py-2.5 font-semibold">Exit date</th>
+                    <th className="px-4 py-2.5 font-semibold">Status</th>
+                    <th className="px-4 py-2.5 font-semibold">Initiated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyItems.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
+                      onClick={() => openHistoryRecord(item)}
+                    >
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-gray-900">
+                          {(item.student_snapshot as { full_name?: string }).full_name || '—'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(item.student_snapshot as { admission_number?: string }).admission_number || '—'}
+                        </p>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-600">{item.exit_reason_label}</td>
+                      <td className="px-4 py-2.5 text-gray-600">
+                        {new Date(item.exit_date).toLocaleDateString('en-IN')}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusBadgeClass(item.status)}`}>
+                          {EXIT_STATUS_LABELS[item.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-500">{formatDateTime(item.initiated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <AppModal open={startOpen} onClose={() => setStartOpen(false)}>
+        <AppModalShell
+          header={
+            <>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">Start exit</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {selectedStudent ? studentFullName(selectedStudent) : 'Select a student, then confirm the exit details.'}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setPickerExpanded((prev) => !prev)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                onClick={() => setStartOpen(false)}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                aria-label="Close"
               >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {selectedStudent
-                      ? `Selected: ${studentFullName(selectedStudent)}`
-                      : 'Search & select student'}
-                  </p>
-                  {selectedStudent && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {selectedStudent.class_name || '—'}
-                      {selectedStudent.section_name ? ` · ${selectedStudent.section_name}` : ''}
-                    </p>
-                  )}
-                </div>
-                {pickerExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+                <FiX size={18} />
               </button>
-
-              {pickerExpanded && (
-                <div className="border-t border-gray-100 p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div className="relative md:col-span-2">
-                      <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search name, admission no., phone..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
-                      />
-                    </div>
-                    <select
-                      value={classFilter}
-                      onChange={(e) => setClassFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    >
-                      <option value="">All Classes</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={sectionFilter}
-                      onChange={(e) => setSectionFilter(e.target.value)}
-                      disabled={!classFilter || classFilter === UNASSIGNED_CLASS_FILTER}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:bg-gray-50"
-                    >
-                      <option value="">All Sections</option>
-                      {sections.map((section) => (
-                        <option key={section.id} value={section.id}>
-                          {section.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="border rounded-lg overflow-hidden" style={{ height: 320 }}>
-                    {loadingStudents ? (
-                      <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                        Loading students…
-                      </div>
-                    ) : (
-                      <VirtualizedStudentSelectTable
-                        students={students}
-                        selectedIds={
-                          selectedStudentId ? new Set([selectedStudentId]) : new Set()
-                        }
-                        onToggle={handleSelectStudent}
-                        onToggleAll={() => undefined}
-                        fillHeight
-                        maxSelection={1}
-                      />
-                    )}
-                  </div>
-                </div>
+            </>
+          }
+          footer={
+            selectedStudent && !activeExit && !loadingExit ? (
+              <button type="button" onClick={handleInitiateExit} disabled={submitting} className={primaryButtonClass}>
+                {submitting ? 'Starting…' : 'Initiate exit'}
+              </button>
+            ) : (
+              <button type="button" onClick={() => setStartOpen(false)} className={quietButtonClass}>
+                Close
+              </button>
+            )
+          }
+        >
+          <div className="space-y-4 p-4 sm:p-6">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="relative sm:col-span-2">
+                <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Name, admission no., or phone"
+                  className={`${fieldClass} pl-8`}
+                />
+              </div>
+              <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={fieldClass} aria-label="Class">
+                <option value="">All classes</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>{cls.name}</option>
+                ))}
+              </select>
+              <select
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+                disabled={!classFilter || classFilter === UNASSIGNED_CLASS_FILTER}
+                className={fieldClass}
+                aria-label="Section"
+              >
+                <option value="">All sections</option>
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>{section.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="h-72 overflow-hidden rounded-lg border border-gray-200">
+              {loadingStudents ? (
+                <div className="flex h-full items-center justify-center text-xs text-gray-500">Loading students…</div>
+              ) : (
+                <VirtualizedStudentSelectTable
+                  students={students}
+                  selectedIds={selectedStudentId ? new Set([selectedStudentId]) : new Set()}
+                  onToggle={handleSelectStudent}
+                  onToggleAll={() => undefined}
+                  fillHeight
+                  maxSelection={1}
+                />
               )}
             </div>
-
             {selectedStudent && !activeExit && !loadingExit && (
               <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-4">
                 <h2 className="text-sm font-semibold text-gray-900">Step 2 — Initiate Exit</h2>
@@ -601,17 +697,35 @@ function ExitStudentsPageContent() {
                     />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleInitiateExit}
-                  disabled={submitting}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm"
-                >
-                  {submitting ? 'Initiating…' : 'Initiate Exit'}
-                </button>
               </div>
             )}
+          </div>
+        </AppModalShell>
+      </AppModal>
 
+      <AppModal open={workflowOpen && Boolean(selectedStudentId)} onClose={closeWorkflow}>
+        <AppModalShell
+          header={
+            <>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">Exit workflow</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {selectedStudent ? studentFullName(selectedStudent) : 'Clearance and certificates'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeWorkflow}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4 p-4 sm:p-6">
+            <ExitStepIndicator currentStep={currentStep} />
             {loadingExit && selectedStudent && (
               <div className="bg-white border rounded-lg p-8 text-center text-gray-500 text-sm">
                 Loading exit workflow…
@@ -625,7 +739,7 @@ function ExitStudentsPageContent() {
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
                         {(activeExit.student_snapshot as { full_name?: string }).full_name ||
-                          studentFullName(selectedStudent!)}
+                          (selectedStudent ? studentFullName(selectedStudent) : '')}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {activeExit.exit_reason_label} · Exit date{' '}
@@ -840,93 +954,8 @@ function ExitStudentsPageContent() {
               </div>
             )}
           </div>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-            <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3">
-              <div className="relative flex-1 min-w-[200px]">
-                <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
-                <input
-                  type="text"
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                  placeholder="Search student, admission no..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <select
-                value={historyStatus}
-                onChange={(e) => setHistoryStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              >
-                <option value="">All statuses</option>
-                {Object.entries(EXIT_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => void loadHistory()}
-                className="border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-2"
-              >
-                <FiRefreshCw size={14} />
-                Refresh
-              </button>
-            </div>
-
-            {historyLoading ? (
-              <div className="p-8 text-center text-gray-500 text-sm">Loading history…</div>
-            ) : historyItems.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No exit records found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-4 py-2 font-medium text-gray-600">Student</th>
-                      <th className="text-left px-4 py-2 font-medium text-gray-600">Reason</th>
-                      <th className="text-left px-4 py-2 font-medium text-gray-600">Exit Date</th>
-                      <th className="text-left px-4 py-2 font-medium text-gray-600">Status</th>
-                      <th className="text-left px-4 py-2 font-medium text-gray-600">Initiated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historyItems.map((item) => (
-                      <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-2">
-                          <p className="font-medium text-gray-900">
-                            {(item.student_snapshot as { full_name?: string }).full_name || '—'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {(item.student_snapshot as { admission_number?: string }).admission_number ||
-                              '—'}
-                          </p>
-                        </td>
-                        <td className="px-4 py-2">{item.exit_reason_label}</td>
-                        <td className="px-4 py-2">
-                          {new Date(item.exit_date).toLocaleDateString('en-IN')}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass(item.status)}`}
-                          >
-                            {EXIT_STATUS_LABELS[item.status]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-gray-500">
-                          {formatDateTime(item.initiated_at)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
+        </AppModalShell>
+      </AppModal>
       {selectedStudent && (
         <TransferCertificateModal
           isOpen={showTcModal}

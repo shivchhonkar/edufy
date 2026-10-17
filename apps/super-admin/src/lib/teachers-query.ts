@@ -32,14 +32,25 @@ export const NON_TEACHING_ROLE_SQL = `
   ])
 `;
 
-/** Teaching staff: Teaching department or Type = TEACHER, excluding known non-teaching roles. */
+/** Teaching staff, a Teacher designation, or anyone already assigned to a class or subject. */
 export const TEACHER_WHERE_CLAUSE = `
   (
-    d.code = 'TCH'
-    OR LOWER(TRIM(COALESCE(d.name, ''))) = 'teaching'
-    OR UPPER(TRIM(COALESCE(s.staff_type, ''))) = 'TEACHER'
+    (
+      (
+        d.code = 'TCH'
+        OR LOWER(TRIM(COALESCE(d.name, ''))) = 'teaching'
+        OR UPPER(TRIM(COALESCE(s.staff_type, ''))) = 'TEACHER'
+        OR COALESCE(s.designation, '') ILIKE '%teacher%'
+        OR COALESCE(des.name, '') ILIKE '%teacher%'
+      )
+      AND NOT (${NON_TEACHING_ROLE_SQL})
+    )
+    OR EXISTS (
+      SELECT 1 FROM teacher_assignments ta
+      WHERE ta.staff_id = s.id
+        AND (ta.class_id IS NOT NULL OR ta.subject_id IS NOT NULL)
+    )
   )
-  AND NOT (${NON_TEACHING_ROLE_SQL})
 `;
 
 export const TEACHER_LIST_SELECT = `

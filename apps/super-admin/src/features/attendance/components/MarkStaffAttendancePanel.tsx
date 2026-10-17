@@ -22,6 +22,12 @@ import {
   FiX,
 } from 'react-icons/fi';
 import { useDialog } from '@/shared/context/DialogContext';
+import {
+  clockInputValue,
+  DEFAULT_ATTENDANCE_WINDOW,
+  deriveAttendanceFromTimes,
+  type AttendanceWindow,
+} from '@/features/attendance/utils/attendance-time';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
 type MarkMode = 'manual' | 'bulk';
@@ -41,11 +47,15 @@ interface StaffOption {
   department_name?: string;
   designation_name?: string;
   photo_url?: string | null;
+  in_time?: string | null;
+  out_time?: string | null;
 }
 
 interface StaffMarkRow extends StaffOption {
   status: AttendanceStatus | null;
   selected: boolean;
+  checkIn: string;
+  checkOut: string;
 }
 
 interface MarkStaffAttendancePanelProps {
@@ -339,12 +349,32 @@ const MarkStaffAttendancePanel = forwardRef<
   const [individualSearch, setIndividualSearch] = useState('');
   const [individualStatus, setIndividualStatus] = useState<AttendanceStatus>('present');
   const [individualRemarks, setIndividualRemarks] = useState('');
+  const [individualCheckIn, setIndividualCheckIn] = useState('');
+  const [individualCheckOut, setIndividualCheckOut] = useState('');
+  const [dayWindow, setDayWindow] = useState<AttendanceWindow>(DEFAULT_ATTENDANCE_WINDOW);
   const [showIndividualDropdown, setShowIndividualDropdown] = useState(false);
   const [staffSearch, setStaffSearch] = useState('');
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [markMode, setMarkMode] = useState<MarkMode>('manual');
   const [bulkStatus, setBulkStatus] = useState<AttendanceStatus>('present');
   const moreActionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/attendance/window')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success || !data.data) return;
+        setDayWindow({
+          workStart: clockInputValue(data.data.work_start_time) || DEFAULT_ATTENDANCE_WINDOW.workStart,
+          workEnd: clockInputValue(data.data.work_end_time) || DEFAULT_ATTENDANCE_WINDOW.workEnd,
+          lateToleranceMinutes:
+            Number(data.data.late_tolerance_minutes) || DEFAULT_ATTENDANCE_WINDOW.lateToleranceMinutes,
+          halfDayHours:
+            Number(data.data.half_day_threshold_hours) || DEFAULT_ATTENDANCE_WINDOW.halfDayHours,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/departments?active_only=true')
@@ -368,8 +398,21 @@ const MarkStaffAttendancePanel = forwardRef<
       try {
         const raw = localStorage.getItem(draftKey(markDate, departmentId));
         if (!raw) return nextRows;
-        const draft = JSON.parse(raw) as Record<string, AttendanceStatus>;
-        return nextRows.map((r) => (draft[r.id] ? { ...r, status: draft[r.id] } : r));
+        const draft = JSON.parse(raw) as Record<
+          string,
+          AttendanceStatus | { status: AttendanceStatus; checkIn?: string; checkOut?: string }
+        >;
+        return nextRows.map((r) => {
+          const entry = draft[r.id];
+          if (!entry) return r;
+          if (typeof entry === 'string') return { ...r, status: entry };
+          return {
+            ...r,
+            status: entry.status,
+            checkIn: entry.checkIn ?? r.checkIn,
+            checkOut: entry.checkOut ?? r.checkOut,
+          };
+        });
       } catch {
         return nextRows;
       }
@@ -404,18 +447,30 @@ const MarkStaffAttendancePanel = forwardRef<
         staffList = staffList.filter((s) => s.department_id === deptId);
       }
 
-      const existingByStaff = new Map<number, AttendanceStatus>();
+      const existingByStaff = new Map<
+        number,
+        { status: AttendanceStatus; checkIn: string; checkOut: string }
+      >();
       if (attendanceData.success) {
         for (const record of attendanceData.data) {
-          existingByStaff.set(record.staff_id, record.status as AttendanceStatus);
+          existingByStaff.set(record.staff_id, {
+            status: record.status as AttendanceStatus,
+            checkIn: clockInputValue(record.check_in_time),
+            checkOut: clockInputValue(record.check_out_time),
+          });
         }
       }
 
-      let nextRows: StaffMarkRow[] = staffList.map((s) => ({
-        ...s,
-        status: (existingByStaff.get(s.id) as AttendanceStatus) || null,
-        selected: false,
-      }));
+      let nextRows: StaffMarkRow[] = staffList.map((s) => {
+        const existing = existingByStaff.get(s.id);
+        return {
+          ...s,
+          status: existing?.status || null,
+          checkIn: existing?.checkIn || '',
+          checkOut: existing?.checkOut || '',
+          selected: false,
+        };
+      });
 
       nextRows = applyDraft(nextRows);
       setRows(nextRows);
@@ -447,9 +502,13 @@ const MarkStaffAttendancePanel = forwardRef<
           const record = data.data[0];
           setIndividualStatus((record.status as AttendanceStatus) || 'present');
           setIndividualRemarks(record.remarks || '');
+          setIndividualCheckIn(clockInputValue(record.check_in_time));
+          setIndividualCheckOut(clockInputValue(record.check_out_time));
         } else {
           setIndividualStatus('present');
           setIndividualRemarks('');
+          setIndividualCheckIn('');
+          setIndividualCheckOut('');
         }
       })
       .catch(console.error);
@@ -499,8 +558,39 @@ const MarkStaffAttendancePanel = forwardRef<
 
   const selectedIndividual = allStaff.find((s) => s.id.toString() === individualStaffId);
 
+  const statusFromTimes = (
+    member: { in_time?: string | null; out_time?: string | null },
+    checkIn: string,
+    checkOut: string,
+  ) =>
+    deriveAttendanceFromTimes({
+      checkIn,
+      checkOut,
+      workStart: clockInputValue(member.in_time) || dayWindow.workStart,
+      workEnd: clockInputValue(member.out_time) || dayWindow.workEnd,
+      lateToleranceMinutes: dayWindow.lateToleranceMinutes,
+      halfDayHours: dayWindow.halfDayHours,
+    });
+
   const setRowStatus = (staffId: number, status: AttendanceStatus) => {
     setRows((prev) => prev.map((r) => (r.id === staffId ? { ...r, status } : r)));
+  };
+
+  const setRowTimes = (staffId: number, checkIn: string, checkOut: string) => {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== staffId) return r;
+        const derived = statusFromTimes(r, checkIn, checkOut);
+        return { ...r, checkIn, checkOut, status: derived?.status ?? r.status };
+      }),
+    );
+  };
+
+  const applyIndividualTimes = (checkIn: string, checkOut: string) => {
+    setIndividualCheckIn(checkIn);
+    setIndividualCheckOut(checkOut);
+    const derived = statusFromTimes(selectedIndividual ?? {}, checkIn, checkOut);
+    if (derived) setIndividualStatus(derived.status);
   };
 
   const toggleRowSelected = (staffId: number) => {
@@ -538,14 +628,22 @@ const MarkStaffAttendancePanel = forwardRef<
   };
 
   const clearAll = () => {
-    setRows((prev) => prev.map((r) => ({ ...r, status: null, selected: false })));
+    setRows((prev) =>
+      prev.map((r) => ({ ...r, status: null, selected: false, checkIn: '', checkOut: '' })),
+    );
   };
 
   const saveDraft = () => {
     if (rows.length === 0) return;
-    const draft: Record<string, AttendanceStatus> = {};
+    const draft: Record<string, { status: AttendanceStatus; checkIn: string; checkOut: string }> = {};
     for (const r of rows) {
-      if (r.status) draft[r.id] = r.status;
+      if (r.status || r.checkIn || r.checkOut) {
+        draft[r.id] = {
+          status: r.status || 'present',
+          checkIn: r.checkIn,
+          checkOut: r.checkOut,
+        };
+      }
     }
     localStorage.setItem(draftKey(markDate, departmentId), JSON.stringify(draft));
     alert('Draft saved on this device. Submit when ready to record attendance.', {
@@ -576,6 +674,8 @@ const MarkStaffAttendancePanel = forwardRef<
         attendance_date: markDate,
         status: r.status || 'absent',
         attendance_type: 'manual',
+        check_in_time: r.checkIn || null,
+        check_out_time: r.checkOut || null,
       }));
 
       const response = await fetch('/api/attendance', {
@@ -624,6 +724,8 @@ const MarkStaffAttendancePanel = forwardRef<
           status: individualStatus,
           attendance_type: 'manual',
           remarks: individualRemarks || null,
+          check_in_time: individualCheckIn || null,
+          check_out_time: individualCheckOut || null,
         }),
       });
 
@@ -661,7 +763,16 @@ const MarkStaffAttendancePanel = forwardRef<
         else void submitBulk();
       },
     }),
-    [variant, individualStaffId, rows, markDate, individualStatus, individualRemarks]
+    [
+      variant,
+      individualStaffId,
+      rows,
+      markDate,
+      individualStatus,
+      individualRemarks,
+      individualCheckIn,
+      individualCheckOut,
+    ]
   );
 
   if (variant === 'individual') {
@@ -734,6 +845,27 @@ const MarkStaffAttendancePanel = forwardRef<
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3 max-w-sm">
+          <label className="block text-sm">
+            <span className="text-gray-700">In time</span>
+            <input
+              type="time"
+              value={individualCheckIn}
+              onChange={(e) => applyIndividualTimes(e.target.value, individualCheckOut)}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-gray-700">Out time</span>
+            <input
+              type="time"
+              value={individualCheckOut}
+              onChange={(e) => applyIndividualTimes(individualCheckIn, e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
 
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">Attendance status</p>
@@ -1011,7 +1143,7 @@ const MarkStaffAttendancePanel = forwardRef<
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed">
+            <table className="w-full min-w-[58rem] text-sm">
               <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-2 w-10">
@@ -1036,13 +1168,16 @@ const MarkStaffAttendancePanel = forwardRef<
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider">
                     Employee
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider w-28">
-                    Employee ID
-                  </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider w-32">
                     Department
                   </th>
-                  <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider w-[20rem]">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider w-[8.5rem]">
+                    In time
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider w-[8.5rem]">
+                    Out time
+                  </th>
+                  <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider whitespace-nowrap w-[22rem]">
                     Attendance Status
                   </th>
                 </tr>
@@ -1062,16 +1197,34 @@ const MarkStaffAttendancePanel = forwardRef<
                     <td className="px-3 py-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <StaffAvatar staff={row} />
-                        <span className="font-medium text-gray-900 truncate">
-                          {staffName(row)}
-                        </span>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{staffName(row)}</div>
+                          <div className="text-xs text-gray-500 truncate">{row.employee_id}</div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-gray-700">{row.employee_id}</td>
                     <td className="px-3 py-2 text-gray-600 truncate">
                       {staffDepartment(row)}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2">
+                      <input
+                        type="time"
+                        value={row.checkIn}
+                        onChange={(e) => setRowTimes(row.id, e.target.value, row.checkOut)}
+                        aria-label={`In time for ${staffName(row)}`}
+                        className="h-8 w-[7.25rem] rounded-md border border-gray-200 px-1.5 text-xs"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="time"
+                        value={row.checkOut}
+                        onChange={(e) => setRowTimes(row.id, row.checkIn, e.target.value)}
+                        aria-label={`Out time for ${staffName(row)}`}
+                        className="h-8 w-[7.25rem] rounded-md border border-gray-200 px-1.5 text-xs"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
                       <StatusButtons
                         value={row.status}
                         onChange={(status) => setRowStatus(row.id, status)}

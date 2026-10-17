@@ -54,10 +54,52 @@ export async function ensureStudentOperationsSchema(db: RequestDb): Promise<void
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    ALTER TABLE student_physical_reports
+      ADD COLUMN IF NOT EXISTS health_issue TEXT,
+      ADD COLUMN IF NOT EXISTS attended_by VARCHAR(200),
+      ADD COLUMN IF NOT EXISTS medicine_given TEXT,
+      ADD COLUMN IF NOT EXISTS issue_status VARCHAR(20) NOT NULL DEFAULT 'none';
+
     CREATE INDEX IF NOT EXISTS idx_physical_reports_student
       ON student_physical_reports (student_id, report_date DESC);
     CREATE INDEX IF NOT EXISTS idx_physical_reports_date
       ON student_physical_reports (report_date DESC);
+
+    CREATE TABLE IF NOT EXISTS student_health_issues (
+      id SERIAL PRIMARY KEY,
+      student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      physical_report_id INTEGER REFERENCES student_physical_reports(id) ON DELETE SET NULL,
+      academic_year VARCHAR(20),
+      issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      health_issue TEXT NOT NULL,
+      attended_by VARCHAR(200),
+      medicine_given TEXT,
+      issue_status VARCHAR(20) NOT NULL DEFAULT 'open',
+      recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      recorded_by_name VARCHAR(200),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_health_issues_student
+      ON student_health_issues (student_id, issue_date DESC);
+    CREATE INDEX IF NOT EXISTS idx_health_issues_report
+      ON student_health_issues (physical_report_id);
+
+    INSERT INTO student_health_issues (
+      student_id, physical_report_id, academic_year, issue_date,
+      health_issue, attended_by, medicine_given, issue_status,
+      recorded_by, recorded_by_name
+    )
+    SELECT p.student_id, p.id, p.academic_year, p.report_date,
+           p.health_issue, p.attended_by, p.medicine_given,
+           CASE WHEN p.issue_status IN ('open', 'resolved') THEN p.issue_status ELSE 'open' END,
+           p.recorded_by, p.recorded_by_name
+    FROM student_physical_reports p
+    WHERE NULLIF(BTRIM(p.health_issue), '') IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM student_health_issues h WHERE h.physical_report_id = p.id
+      );
 
     CREATE TABLE IF NOT EXISTS ptm_schedules (
       id SERIAL PRIMARY KEY,
@@ -78,6 +120,9 @@ export async function ensureStudentOperationsSchema(db: RequestDb): Promise<void
 
     CREATE INDEX IF NOT EXISTS idx_ptm_schedules_date
       ON ptm_schedules (scheduled_date DESC, class_id);
+
+    ALTER TABLE ptm_schedules ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'scheduled';
+    ALTER TABLE ptm_schedules ADD COLUMN IF NOT EXISTS calendar_event_id INTEGER;
 
     CREATE TABLE IF NOT EXISTS ptm_attendance (
       id SERIAL PRIMARY KEY,

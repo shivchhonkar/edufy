@@ -94,15 +94,21 @@ export async function enrichGatePassStudentSnapshot(
   const base = snapshot as GatePassStudentSnapshot;
   const needsStudentPhoto = !base.photo_url?.trim();
   const needsGuardians = !base.guardian_photos?.length;
+  const needsParent = !base.parent_name?.trim() || !base.parent_phone?.trim();
 
-  if (!needsStudentPhoto && !needsGuardians) {
+  if (!needsStudentPhoto && !needsGuardians && !needsParent) {
     return base;
   }
 
-  const studentResult = await db.query<{ photo_url: string | null }>(
-    'SELECT photo_url FROM students WHERE id = $1',
+  const studentResult = await db.query<{
+    photo_url: string | null;
+    parent_name: string | null;
+    parent_phone: string | null;
+  }>(
+    'SELECT photo_url, parent_name, parent_phone FROM students WHERE id = $1',
     [studentId]
   );
+  const student = studentResult.rows[0];
 
   const guardianPhotos = needsGuardians
     ? await fetchGuardianPhotosForStudent(db, studentId)
@@ -110,7 +116,9 @@ export async function enrichGatePassStudentSnapshot(
 
   return {
     ...base,
-    photo_url: base.photo_url?.trim() || studentResult.rows[0]?.photo_url?.trim() || null,
+    photo_url: base.photo_url?.trim() || student?.photo_url?.trim() || null,
+    parent_name: base.parent_name?.trim() || student?.parent_name || null,
+    parent_phone: base.parent_phone?.trim() || student?.parent_phone || null,
     guardian_photos: guardianPhotos,
   };
 }

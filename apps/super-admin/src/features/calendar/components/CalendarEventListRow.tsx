@@ -22,6 +22,7 @@ function eventBadgeColor(
     case 'exam':
       return 'bg-amber-500';
     case 'meeting':
+    case 'ptm':
       return 'bg-blue-500';
     case 'sports':
       return 'bg-emerald-500';
@@ -65,6 +66,7 @@ function formatEventSubtitle(event: CalendarEvent): string {
 
 function eventTypeLabel(event: CalendarEvent): string {
   if (event.kind === 'holiday') return `Holiday · ${event.event_type}`;
+  if (event.event_type === 'ptm') return 'PTM';
   return event.event_type;
 }
 
@@ -74,6 +76,7 @@ function eventTypePillClass(event: CalendarEvent): string {
     case 'exam':
       return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'meeting':
+    case 'ptm':
       return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'sports':
       return 'bg-green-100 text-green-800 border-green-200';
@@ -87,15 +90,13 @@ function EventDateBadge({ date, headerColor }: { date: string; headerColor: stri
 
   return (
     <div
-      className="shrink-0 w-[3.25rem] sm:w-14 overflow-hidden rounded-lg border border-gray-200 bg-white text-center shadow-sm"
+      className="w-11 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white text-center"
       aria-hidden
     >
-      <div
-        className={`${headerColor} px-1 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide text-white`}
-      >
+      <div className={`${headerColor} px-1 py-0.5 text-[10px] font-semibold tracking-wide text-white`}>
         {month}
       </div>
-      <div className="py-1.5 sm:py-2 text-lg sm:text-xl font-bold leading-none text-gray-900">{day}</div>
+      <div className="py-1.5 text-base font-semibold leading-none text-gray-900">{day}</div>
     </div>
   );
 }
@@ -105,6 +106,7 @@ export default function CalendarEventListRow({
   index = 0,
   highlighted = false,
   muted = false,
+  compact = false,
   onEdit,
   onDelete,
 }: {
@@ -112,6 +114,7 @@ export default function CalendarEventListRow({
   index?: number;
   highlighted?: boolean;
   muted?: boolean;
+  compact?: boolean;
   onEdit: (event: CalendarEvent) => void;
   onDelete: (event: CalendarEvent) => void;
 }) {
@@ -120,47 +123,53 @@ export default function CalendarEventListRow({
 
   return (
     <li
-      className={`flex items-start gap-3 sm:gap-3.5 py-2.5 sm:py-3 transition-colors ${
-        highlighted ? 'rounded-xl bg-primary-50 px-2 -mx-2' : ''
-      } ${muted ? 'opacity-70' : ''}`}
+      className={`flex items-center gap-3 px-2 py-2.5 ${
+        highlighted ? 'rounded-lg bg-primary-50' : ''
+      } ${muted ? 'opacity-60' : ''}`}
     >
       <EventDateBadge date={event.start_date} headerColor={badgeColor} />
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+        <div className="flex items-center gap-1.5">
+          <p
+            className={`min-w-0 truncate text-sm font-medium leading-5 ${
+              event.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'
+            }`}
+          >
+            {event.title}
+          </p>
           <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize ${eventTypePillClass(event)}`}
+            className={`inline-flex shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium capitalize ${eventTypePillClass(event)}`}
           >
             {eventTypeLabel(event)}
           </span>
           {event.status && event.status !== 'published' && (
-            <span className="text-[10px] uppercase tracking-wide text-gray-500">{event.status}</span>
+            <span className="shrink-0 text-[10px] uppercase tracking-wide text-gray-400">{event.status}</span>
           )}
         </div>
-        <p className="font-semibold text-gray-900 text-sm sm:text-[15px] leading-snug">{event.title}</p>
-        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{subtitle}</p>
-        {event.location && (
-          <p className="text-xs text-gray-500 mt-1 truncate">Venue: {event.location}</p>
+        <p className="mt-0.5 truncate text-xs text-gray-500">{subtitle}</p>
+        {!compact && event.location && (
+          <p className="mt-0.5 truncate text-xs text-gray-500">Venue: {event.location}</p>
         )}
-        {event.description && (
-          <p className="text-xs text-gray-600 mt-1 line-clamp-2 leading-relaxed">{event.description}</p>
+        {!compact && event.description && (
+          <p className="mt-0.5 line-clamp-1 text-xs leading-5 text-gray-500">{event.description}</p>
         )}
       </div>
-      <div className="flex gap-0.5 shrink-0 pt-0.5">
+      <div className="flex shrink-0 items-center">
         <button
           type="button"
           onClick={() => onEdit(event)}
-          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded-lg"
+          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-primary-600"
           aria-label="Edit"
         >
-          <FiEdit2 size={16} />
+          <FiEdit2 size={15} />
         </button>
         <button
           type="button"
           onClick={() => onDelete(event)}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+          className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
           aria-label="Delete"
         >
-          <FiTrash2 size={16} />
+          <FiTrash2 size={15} />
         </button>
       </div>
     </li>

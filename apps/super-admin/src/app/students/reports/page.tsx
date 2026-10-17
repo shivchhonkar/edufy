@@ -251,7 +251,7 @@ export default function StudentReportsPage() {
             <div>
               <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 {/* <FiBarChart2 className="text-primary-600" /> */}
-                Student Reports
+                Document Completeness
               </h1>
               {/* <p className="text-sm text-gray-600 mt-0.5">
                 Pending documents by class and section

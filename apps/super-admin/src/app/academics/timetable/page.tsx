@@ -11,7 +11,8 @@ import TimetablePeriodMasterTab from '@/features/timetable/components/TimetableP
 import TimetableSetupTab from '@/features/timetable/components/TimetableSetupTab';
 import TimetableTeacherViewTab from '@/features/timetable/components/TimetableTeacherViewTab';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import { FiBook, FiCalendar } from 'react-icons/fi';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
+import { FiBook } from 'react-icons/fi';
 
 const TABS: { id: TimetableTab; label: string; step?: string }[] = [
   { id: 'setup', label: 'School Working Days', step: '1' },
@@ -28,55 +29,44 @@ export default function TimetablePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 min-w-0 max-w-full">
-        <div className="flex flex-wrap justify-between items-start gap-4">
+      <div className="min-w-0 max-w-full space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              {/* <FiCalendar className="text-primary-600" /> */}
-              Timetable
-            </h1>
-            {/* <p className="text-sm text-gray-600 mt-1">
-              Three layers: curriculum allocation, teacher assignments, and drag-and-drop scheduling with conflict checks.
-            </p> */}
+            <h1 className="text-lg font-medium text-gray-900">Timetable</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Set working days and periods, then drag subjects onto the class routine.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/academics/assignments"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
               Assignments
             </Link>
             <Link
               href="/academics/subjects"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
-              <FiBook className="w-4 h-4" />
+              <FiBook size={14} />
               Subjects
             </Link>
           </div>
         </div>
 
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className="flex gap-1 min-w-max" aria-label="Timetable tabs">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-primary-600 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.label}
-                {tab.step && (
-                  <span className="ml-1.5 text-[10px] font-normal text-gray-400">({tab.step})</span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
+        <nav className={moduleTabBarClass} aria-label="Timetable tabs">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={moduleTabClass(activeTab === tab.id)}
+            >
+              {tab.step && <span className="mr-1 text-[10px] opacity-70">{tab.step}</span>}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
         {activeTab === 'setup' && <TimetableSetupTab />}
         {activeTab === 'periods' && <TimetablePeriodMasterTab />}

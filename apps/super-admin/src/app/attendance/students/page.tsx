@@ -12,6 +12,7 @@ import {
   FiChevronUp,
 } from 'react-icons/fi';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
+import { clockInputValue } from '@/features/attendance/utils/attendance-time';
 import RecordStudentAttendanceModal from '@/features/attendance/components/RecordStudentAttendanceModal';
 import MarkStudentAttendancePanel, {
   type MarkStudentAttendancePanelHandle,
@@ -45,6 +46,8 @@ interface AttendanceRecord {
   date: string;
   status: string;
   remarks?: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
   first_name: string;
   last_name: string;
   admission_number: string;
@@ -278,6 +281,22 @@ export default function StudentAttendancePage() {
         headerClassName: HISTORY_TABLE_HEAD,
         cellClassName: 'text-gray-600 whitespace-nowrap',
         render: (record) => new Date(record.date).toLocaleDateString('en-IN'),
+      },
+      {
+        key: 'checkIn',
+        header: 'In time',
+        width: '5.5rem',
+        headerClassName: HISTORY_TABLE_HEAD,
+        cellClassName: 'text-gray-600 whitespace-nowrap tabular-nums',
+        render: (record) => clockInputValue(record.check_in_time) || '—',
+      },
+      {
+        key: 'checkOut',
+        header: 'Out time',
+        width: '5.5rem',
+        headerClassName: HISTORY_TABLE_HEAD,
+        cellClassName: 'text-gray-600 whitespace-nowrap tabular-nums',
+        render: (record) => clockInputValue(record.check_out_time) || '—',
       },
       {
         key: 'status',

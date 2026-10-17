@@ -725,7 +725,7 @@ function GatePassPageContent() {
           </Link> */}
           <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
             {/* <FiShield className="text-primary-600" /> */}
-            Gate Pass Exit
+            Gate Passes
           </h1>
           {/* <p className="text-sm text-gray-500 mt-1">
             Authorize early student exit with parent OTP or principal/staff approval. Full audit

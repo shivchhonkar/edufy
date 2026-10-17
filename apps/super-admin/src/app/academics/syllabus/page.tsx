@@ -8,15 +8,18 @@ import AppModal, {
 } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
-import TeacherNav from '@/features/teachers/components/TeacherNav';
 import { useDialog } from '@/shared/context/DialogContext';
-import { FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+import { sortClassesByName } from '@/lib/class-sort';
+import { FiChevronDown, FiChevronRight, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500';
+const fieldClass =
+  'w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-gray-50 disabled:text-gray-500';
 
-const inputClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500';
+const STATUS_LABEL: Record<string, string> = {
+  not_started: 'Waiting',
+  in_progress: 'In progress',
+  completed: 'Done',
+};
 
 interface Chapter {
   id: number;
@@ -44,16 +47,17 @@ export default function SyllabusProgressPage() {
   >([]);
   const [staff, setStaff] = useState<{ id: number; first_name: string; last_name: string }[]>([]);
   const [filterClass, setFilterClass] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [coverage, setCoverage] = useState<'all' | 'open'>('all');
+  const [expandedClassId, setExpandedClassId] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showProgress, setShowProgress] = useState<Chapter | null>(null);
   const [addForm, setAddForm] = useState({ class_id: '', subject_id: '', title: '', total_periods: '5', sort_order: '0' });
   const [progressForm, setProgressForm] = useState({ staff_id: '', periods_completed: '0', status: 'not_started', notes: '' });
 
   const fetchData = useCallback(async () => {
-    let url = '/api/syllabus';
-    if (filterClass) url += `?class_id=${filterClass}`;
     const [cRes, clsRes, csRes, subRes, stRes] = await Promise.all([
-      fetch(url),
+      fetch('/api/syllabus'),
       fetch('/api/classes?active_only=true'),
       fetch('/api/class-subjects'),
       fetch('/api/subjects'),
@@ -71,7 +75,7 @@ export default function SyllabusProgressPage() {
     if (csData.success) setClassSubjects(csData.data);
     if (subData.success) setSubjects(subData.data);
     if (stData.success) setStaff(stData.data);
-  }, [filterClass]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -104,8 +108,76 @@ export default function SyllabusProgressPage() {
 
   const canAddChapter = Boolean(addForm.class_id && addForm.subject_id && addForm.title.trim());
 
-  const openAddModal = () => {
-    setAddForm({ class_id: '', subject_id: '', title: '', total_periods: '5', sort_order: '0' });
+  const subjectOptions = useMemo(() => {
+    const seen = new Set<number>();
+    return classSubjects
+      .filter((row) => {
+        if (filterClass && String(row.class_id) !== filterClass) return false;
+        if (seen.has(Number(row.subject_id))) return false;
+        seen.add(Number(row.subject_id));
+        return true;
+      })
+      .map((row) => ({ id: Number(row.subject_id), name: row.subject_name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [classSubjects, filterClass]);
+
+  const grouped = useMemo(() => {
+    return sortClassesByName(classes)
+      .filter((cls) => !filterClass || String(cls.id) === filterClass)
+      .map((cls) => {
+        const seen = new Set<number>();
+        const subjectsForClass = classSubjects
+          .filter((row) => {
+            if (Number(row.class_id) !== cls.id || seen.has(Number(row.subject_id))) return false;
+            if (filterSubject && String(row.subject_id) !== filterSubject) return false;
+            seen.add(Number(row.subject_id));
+            return true;
+          })
+          .map((row) => ({
+            subject_id: Number(row.subject_id),
+            subject_name: row.subject_name,
+            chapters: chapters
+              .filter((chapter) => chapter.class_id === cls.id && chapter.subject_id === Number(row.subject_id))
+              .sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title)),
+          }))
+          .sort((a, b) => a.subject_name.localeCompare(b.subject_name));
+        const chapterCount = subjectsForClass.reduce((sum, subject) => sum + subject.chapters.length, 0);
+        return { ...cls, subjects: subjectsForClass, chapterCount };
+      })
+      .filter((cls) => (coverage === 'all' || cls.chapterCount === 0) && (filterSubject ? cls.subjects.length > 0 : true));
+  }, [chapters, classes, classSubjects, coverage, filterClass, filterSubject]);
+
+  useEffect(() => {
+    if (grouped.length === 0) {
+      setExpandedClassId(null);
+      return;
+    }
+    setExpandedClassId((current) =>
+      current != null && grouped.some((cls) => cls.id === current) ? current : grouped[0].id,
+    );
+  }, [grouped]);
+
+  const summary = useMemo(() => {
+    const waiting = chapters.filter((chapter) => (chapter.progress_status || 'not_started') === 'not_started').length;
+    const active = chapters.filter((chapter) => chapter.progress_status === 'in_progress').length;
+    const done = chapters.filter((chapter) => chapter.progress_status === 'completed').length;
+    const classesWithChapters = new Set(chapters.map((chapter) => chapter.class_id));
+    return {
+      waiting,
+      active,
+      done,
+      openClasses: classes.filter((cls) => !classesWithChapters.has(cls.id)).length,
+    };
+  }, [chapters, classes]);
+
+  const openAddModal = (classId = '', subjectId = '') => {
+    setAddForm({
+      class_id: classId,
+      subject_id: subjectId,
+      title: '',
+      total_periods: '5',
+      sort_order: '0',
+    });
     setShowAdd(true);
   };
 
@@ -179,67 +251,159 @@ export default function SyllabusProgressPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        <TeacherNav />
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-          <h1 className="text-lg font-medium text-gray-900">Syllabus Progress Tracking</h1>
-          <div className="flex gap-2">
-            <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">All classes</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">Syllabus</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Chapters by class and subject. {summary.openClasses} class{summary.openClasses === 1 ? '' : 'es'} still have no chapters.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => openAddModal(filterClass, filterSubject)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
+          >
+            <FiPlus size={14} /> Add chapter
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: 'Waiting', value: summary.waiting, tone: 'bg-gray-50 text-gray-900' },
+            { label: 'In progress', value: summary.active, tone: 'bg-amber-50 text-amber-900' },
+            { label: 'Done', value: summary.done, tone: 'bg-green-50 text-green-900' },
+            { label: 'Classes open', value: summary.openClasses, tone: 'bg-white text-gray-900' },
+          ].map((card) => (
+            <div key={card.label} className={`rounded-xl border border-gray-200 px-3 py-2 shadow-sm ${card.tone}`}>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{card.label}</p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums">{card.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+          <label className="min-w-[10rem] flex-1">
+            <span className="mb-1 block text-[11px] font-medium text-gray-600">Class</span>
+            <select
+              value={filterClass}
+              onChange={(event) => {
+                setFilterClass(event.target.value);
+                setFilterSubject('');
+              }}
+              className={fieldClass}
             >
-              <FiPlus /> Add Chapter
-            </button>
+              <option value="">All classes</option>
+              {sortClassesByName(classes).map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="min-w-[10rem] flex-1">
+            <span className="mb-1 block text-[11px] font-medium text-gray-600">Subject</span>
+            <select value={filterSubject} onChange={(event) => setFilterSubject(event.target.value)} className={fieldClass}>
+              <option value="">All subjects</option>
+              {subjectOptions.map((subject) => (
+                <option key={subject.id} value={subject.id}>{subject.name}</option>
+              ))}
+            </select>
+          </label>
+          <div className="inline-flex rounded-md border border-gray-200 p-0.5 text-[11px]">
+            <button type="button" onClick={() => setCoverage('all')} className={`rounded px-2 py-1 ${coverage === 'all' ? 'bg-gray-900 text-white' : 'text-gray-600'}`}>All</button>
+            <button type="button" onClick={() => setCoverage('open')} className={`rounded px-2 py-1 ${coverage === 'open' ? 'bg-gray-900 text-white' : 'text-gray-600'}`}>No chapters</button>
           </div>
         </div>
 
-        <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-5 py-3">Class</th>
-                <th className="text-left px-5 py-3">Subject</th>
-                <th className="text-left px-5 py-3">Chapter</th>
-                <th className="text-left px-5 py-3">Progress</th>
-                <th className="text-left px-5 py-3">Teacher</th>
-                <th className="text-left px-5 py-3">Status</th>
-                <th className="px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chapters.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No syllabus chapters defined. Add chapters to start tracking progress.</td></tr>
-              ) : chapters.map((ch) => (
-                <tr key={ch.id} className="border-b">
-                  <td className="px-5 py-3">{ch.class_name}</td>
-                  <td className="px-5 py-3">{ch.subject_name}</td>
-                  <td className="px-5 py-3 font-medium">{ch.title}</td>
-                  <td className="px-5 py-3 min-w-[140px]">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary-600 rounded-full" style={{ width: `${progressPct(ch)}%` }} />
+        {grouped.length === 0 ? (
+          <p className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-xs text-gray-500 shadow-sm">
+            No classes match these filters.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {grouped.map((cls) => {
+              const open = expandedClassId === cls.id;
+              return (
+              <section key={cls.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setExpandedClassId(open ? null : cls.id)}
+                  className={`flex w-full flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-gray-50 ${open ? 'border-b border-gray-100' : ''}`}
+                  aria-expanded={open}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    {open ? <FiChevronDown className="shrink-0 text-gray-400" size={14} /> : <FiChevronRight className="shrink-0 text-gray-400" size={14} />}
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">{cls.name}</span>
+                      <span className="block text-[11px] text-gray-500">{cls.chapterCount} chapter{cls.chapterCount === 1 ? '' : 's'}</span>
+                    </span>
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cls.chapterCount > 0 ? 'border border-green-200 bg-green-50 text-green-800' : 'border border-amber-200 bg-amber-50 text-amber-800'}`}>
+                    {cls.chapterCount > 0 ? 'Started' : 'No chapters'}
+                  </span>
+                </button>
+                {!open ? null : cls.subjects.length === 0 ? (
+                  <div className="flex items-center justify-between gap-3 px-4 py-4">
+                    <p className="text-xs text-gray-500">Map subjects to this class before adding chapters.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {cls.subjects.map((subject) => (
+                      <div key={subject.subject_id} className="px-4 py-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-gray-900">{subject.subject_name}</p>
+                          <button
+                            type="button"
+                            onClick={() => openAddModal(String(cls.id), String(subject.subject_id))}
+                            className="text-[11px] font-medium text-primary-600 hover:text-primary-700"
+                          >
+                            Add chapter
+                          </button>
+                        </div>
+                        {subject.chapters.length === 0 ? (
+                          <p className="rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">No chapters yet.</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {subject.chapters.map((chapter) => {
+                              const status = chapter.progress_status || 'not_started';
+                              return (
+                                <li key={chapter.id} className="rounded-md bg-gray-50 px-2.5 py-2">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-medium text-gray-900">{chapter.title}</p>
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${status === 'completed' ? 'bg-green-100 text-green-800' : status === 'in_progress' ? 'bg-amber-100 text-amber-800' : 'bg-gray-200 text-gray-700'}`}>
+                                      {STATUS_LABEL[status] || status}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+                                      <div className="h-full rounded-full bg-primary-600" style={{ width: `${progressPct(chapter)}%` }} />
+                                    </div>
+                                    <span className="shrink-0 text-[11px] tabular-nums text-gray-500">
+                                      {chapter.periods_completed}/{chapter.total_periods}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-gray-500">
+                                    <span className="truncate">{chapter.teacher_name || 'No teacher on this chapter'}</span>
+                                    <span className="flex shrink-0 items-center gap-2">
+                                      <button type="button" onClick={() => openProgress(chapter)} className="font-medium text-primary-600 hover:text-primary-700">Update</button>
+                                      <button type="button" onClick={() => removeChapter(chapter.id)} className="text-red-600 hover:text-red-700" aria-label="Remove chapter">
+                                        <FiTrash2 size={13} />
+                                      </button>
+                                    </span>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
                       </div>
-                      <span className="text-xs text-gray-500">{ch.periods_completed}/{ch.total_periods}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">{ch.teacher_name || '—'}</td>
-                  <td className="px-5 py-3 capitalize">{ch.progress_status?.replace('_', ' ')}</td>
-                  <td className="px-5 py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button type="button" onClick={() => openProgress(ch)} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">Update</button>
-                      <button type="button" onClick={() => removeChapter(ch.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><FiTrash2 /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              );
+            })}
+          </div>
+        )}
 
         <AppModal open={showAdd} onClose={closeAddModal}>
           <div className="flex min-h-full items-center justify-center p-4">
@@ -269,7 +433,7 @@ export default function SyllabusProgressPage() {
                     onChange={(e) =>
                       setAddForm({ ...addForm, class_id: e.target.value, subject_id: '' })
                     }
-                    className={selectClass}
+                    className={fieldClass}
                   >
                     <option value="">Select class</option>
                     {classes.map((c) => (
@@ -287,7 +451,7 @@ export default function SyllabusProgressPage() {
                   <select
                     value={addForm.subject_id}
                     onChange={(e) => setAddForm({ ...addForm, subject_id: e.target.value })}
-                    className={selectClass}
+                    className={fieldClass}
                     disabled={!addForm.class_id}
                   >
                     <option value="">
@@ -319,7 +483,7 @@ export default function SyllabusProgressPage() {
                     type="text"
                     value={addForm.title}
                     onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
-                    className={inputClass}
+                    className={fieldClass}
                     placeholder="e.g. Introduction to Algebra"
                   />
                 </div>
@@ -334,7 +498,7 @@ export default function SyllabusProgressPage() {
                       min={1}
                       value={addForm.total_periods}
                       onChange={(e) => setAddForm({ ...addForm, total_periods: e.target.value })}
-                      className={inputClass}
+                      className={fieldClass}
                     />
                   </div>
                   <div>
@@ -346,7 +510,7 @@ export default function SyllabusProgressPage() {
                       min={0}
                       value={addForm.sort_order}
                       onChange={(e) => setAddForm({ ...addForm, sort_order: e.target.value })}
-                      className={inputClass}
+                      className={fieldClass}
                     />
                   </div>
                 </div>
@@ -356,7 +520,7 @@ export default function SyllabusProgressPage() {
                 <button
                   type="button"
                   onClick={closeAddModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -364,7 +528,7 @@ export default function SyllabusProgressPage() {
                   type="button"
                   onClick={addChapter}
                   disabled={!canAddChapter}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Add
                 </button>
@@ -400,7 +564,7 @@ export default function SyllabusProgressPage() {
                     <select
                       value={progressForm.staff_id}
                       onChange={(e) => setProgressForm({ ...progressForm, staff_id: e.target.value })}
-                      className={selectClass}
+                      className={fieldClass}
                     >
                       <option value="">Select teacher</option>
                       {staff.map((s) => (
@@ -420,10 +584,13 @@ export default function SyllabusProgressPage() {
                       min={0}
                       max={showProgress.total_periods}
                       value={progressForm.periods_completed}
-                      onChange={(e) =>
-                        setProgressForm({ ...progressForm, periods_completed: e.target.value })
-                      }
-                      className={inputClass}
+                      onChange={(e) => {
+                        const periods = Math.max(0, parseInt(e.target.value || '0', 10) || 0);
+                        const status =
+                          periods <= 0 ? 'not_started' : periods >= showProgress.total_periods ? 'completed' : 'in_progress';
+                        setProgressForm({ ...progressForm, periods_completed: String(periods), status });
+                      }}
+                      className={fieldClass}
                     />
                     <p className="mt-1 text-xs text-gray-500">
                       Out of {showProgress.total_periods} total periods
@@ -435,7 +602,7 @@ export default function SyllabusProgressPage() {
                     <select
                       value={progressForm.status}
                       onChange={(e) => setProgressForm({ ...progressForm, status: e.target.value })}
-                      className={selectClass}
+                      className={fieldClass}
                     >
                       <option value="not_started">Not started</option>
                       <option value="in_progress">In progress</option>
@@ -448,7 +615,7 @@ export default function SyllabusProgressPage() {
                     <textarea
                       value={progressForm.notes}
                       onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })}
-                      className={`${inputClass} resize-none`}
+                      className={`${fieldClass} resize-none`}
                       rows={3}
                       placeholder="Optional notes"
                     />
@@ -459,14 +626,14 @@ export default function SyllabusProgressPage() {
                   <button
                     type="button"
                     onClick={() => setShowProgress(null)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={saveProgress}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                    className="rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
                   >
                     Save
                   </button>

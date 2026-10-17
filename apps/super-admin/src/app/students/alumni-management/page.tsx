@@ -81,7 +81,7 @@ function AlumniManagementPageContent() {
           </Link> */}
           <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
             {/* <FiUserCheck className="text-primary-600" /> */}
-            Alumni Management
+            Alumni
           </h1>
           {/* <p className="text-sm text-gray-500 mt-0.5">{TAB_DESCRIPTIONS[activeTab]}</p> */}
         </div>

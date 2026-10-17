@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { NavGroup } from '@/shared/navigation/sidebar-navigation';
-import { isNavItemTreeActive, isNavLinkActive, nestedNavKey } from '@/shared/navigation/sidebar-navigation';
+import {
+  isGroupOnlyNavItem,
+  isNavItemTreeActive,
+  isNavLinkActive,
+  nestedNavKey,
+} from '@/shared/navigation/sidebar-navigation';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 
 interface CollapsedNavGroupFlyoutProps {
@@ -137,24 +142,25 @@ export default function CollapsedNavGroupFlyout({
                 childItems.length > 0
                   ? isNavItemTreeActive(pathname, item)
                   : isNavLinkActive(pathname, item.path);
+              const groupOnly = isGroupOnlyNavItem(item);
 
               return (
                 <div key={`${group.id}-${item.path}`}>
-                  <div className="flex items-center">
-                    <Link
-                      href={item.path}
-                      role="menuitem"
-                      onClick={() => {
-                        if (childItems.length > 0) {
-                          setExpandedNested((prev) => ({ ...prev, [nestedKey]: true }));
-                        }
-                        setOpen(false);
-                        onNavigate?.();
-                      }}
-                      className={`flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors ${
+                  {groupOnly ? (
+                    <button
+                      type="button"
+                      aria-label={nestedOpen ? `Collapse ${item.name}` : `Expand ${item.name}`}
+                      aria-expanded={nestedOpen}
+                      onClick={() =>
+                        setExpandedNested((prev) => ({
+                          ...prev,
+                          [nestedKey]: !nestedOpen,
+                        }))
+                      }
+                      className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] uppercase tracking-wide transition-colors ${
                         itemActive
-                          ? 'bg-primary-50 font-medium text-primary-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'font-medium text-primary-700'
+                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
                       }`}
                     >
                       <ItemIcon
@@ -163,33 +169,64 @@ export default function CollapsedNavGroupFlyout({
                         }`}
                       />
                       <span className="min-w-0 flex-1">{item.name}</span>
-                      {item.comingSoon && (
-                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
-                          Soon
-                        </span>
+                      {nestedOpen ? (
+                        <FiChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <FiChevronRight className="h-3.5 w-3.5 shrink-0" />
                       )}
-                    </Link>
-                    {childItems.length > 0 && (
-                      <button
-                        type="button"
-                        aria-label={nestedOpen ? `Collapse ${item.name}` : `Expand ${item.name}`}
-                        aria-expanded={nestedOpen}
-                        onClick={() =>
-                          setExpandedNested((prev) => ({
-                            ...prev,
-                            [nestedKey]: !nestedOpen,
-                          }))
-                        }
-                        className="mr-1 rounded p-1 text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                    </button>
+                  ) : (
+                    <div className="flex items-center">
+                      <Link
+                        href={item.path}
+                        role="menuitem"
+                        onClick={() => {
+                          if (childItems.length > 0) {
+                            setExpandedNested((prev) => ({ ...prev, [nestedKey]: true }));
+                          }
+                          setOpen(false);
+                          onNavigate?.();
+                        }}
+                        className={`flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors ${
+                          itemActive
+                            ? 'bg-primary-50 font-medium text-primary-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
                       >
-                        {nestedOpen ? (
-                          <FiChevronDown className="h-3.5 w-3.5" />
-                        ) : (
-                          <FiChevronRight className="h-3.5 w-3.5" />
+                        <ItemIcon
+                          className={`sidebar-nav-icon h-3.5 w-3.5 shrink-0 ${
+                            itemActive ? 'sidebar-nav-icon-active' : 'sidebar-nav-icon-muted'
+                          }`}
+                        />
+                        <span className="min-w-0 flex-1">{item.name}</span>
+                        {item.comingSoon && (
+                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                            Soon
+                          </span>
                         )}
-                      </button>
-                    )}
-                  </div>
+                      </Link>
+                      {childItems.length > 0 && (
+                        <button
+                          type="button"
+                          aria-label={nestedOpen ? `Collapse ${item.name}` : `Expand ${item.name}`}
+                          aria-expanded={nestedOpen}
+                          onClick={() =>
+                            setExpandedNested((prev) => ({
+                              ...prev,
+                              [nestedKey]: !nestedOpen,
+                            }))
+                          }
+                          className="mr-1 rounded p-1 text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                        >
+                          {nestedOpen ? (
+                            <FiChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <FiChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {childItems.length > 0 && nestedOpen
                     ? childItems.map((child) => {
                         const ChildIcon = child.icon;

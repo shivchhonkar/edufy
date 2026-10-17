@@ -19,6 +19,27 @@ export async function POST(request: NextRequest) {
 
     const uniqueClassIds = [...new Set(classIds.map((id) => parseInt(String(id), 10)).filter(Boolean))];
 
+    if (uniqueClassIds.length > 0) {
+      const clashes = await db.query<{ class_name: string }>(
+        `SELECT DISTINCT c.name AS class_name
+         FROM class_subjects cs
+         JOIN classes c ON c.id = cs.class_id
+         JOIN subjects existing ON existing.id = cs.subject_id
+         JOIN subjects incoming ON incoming.id = $1
+         WHERE cs.class_id = ANY($2::int[])
+           AND cs.subject_id <> $1
+           AND LOWER(TRIM(existing.name)) = LOWER(TRIM(incoming.name))`,
+        [subjectId, uniqueClassIds],
+      );
+      if (clashes.rows.length > 0) {
+        const names = clashes.rows.map((row) => row.class_name).join(', ');
+        return NextResponse.json(
+          { success: false, error: `This subject is already on ${names}.` },
+          { status: 400 },
+        );
+      }
+    }
+
     await db.query('BEGIN');
     try {
       await db.query('DELETE FROM class_subjects WHERE subject_id = $1', [subjectId]);

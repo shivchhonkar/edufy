@@ -37,9 +37,9 @@ function genderLabel(gender?: string | null): string {
   return 'Child';
 }
 
-function infoLine(label: string, value?: string | null): string {
-  const display = value?.trim() || '';
-  return `<p class="info-line"><span class="info-label">${escapeHtml(label)}:</span> ${escapeHtml(display)}</p>`;
+function particularsRow(index: number, label: string, value?: string | null): string {
+  const display = value?.trim() || '—';
+  return `<tr><td class="idx">${index}</td><td class="label">${escapeHtml(label)}</td><td class="value">${escapeHtml(display)}</td></tr>`;
 }
 
 function buildSingleCertificateHtml(
@@ -71,78 +71,72 @@ function buildSingleCertificateHtml(
     ? ` and Roll No. <strong>${escapeHtml(student.roll_number)}</strong>`
     : '';
 
-  const classText = classPhrase
-    ? ` in <strong>${escapeHtml(classPhrase)}</strong>`
-    : '';
-
   const logoBlock = logoUrl
     ? `<img src="${escapeHtml(logoUrl)}" alt="" class="logo-img" />`
-    : `<div class="logo-placeholder">LOGO</div>`;
+    : '<div class="logo-spacer"></div>';
 
   const signatureBlock = signatureUrl
     ? `<img src="${escapeHtml(signatureUrl)}" alt="Principal signature" class="signature-img" />`
     : school.principalName
       ? `<p class="signature-name">${escapeHtml(school.principalName)}</p>`
-      : '';
+      : '<div class="signature-gap"></div>';
 
   const photoBlock = photoUrl
     ? `<img src="${escapeHtml(photoUrl)}" alt="" class="student-photo" />`
-    : '';
+    : '<div class="logo-spacer"></div>';
+
+  const contact = [school.phone, school.email].filter(Boolean).join('  ·  ');
+  const rows = [
+    particularsRow(1, 'Date of birth', formatStudentDate(student.date_of_birth)),
+    particularsRow(2, 'Gender', student.gender),
+    particularsRow(3, 'Admission number', student.admission_number),
+    particularsRow(4, 'Date of admission', formatStudentDate(student.admission_date)),
+    particularsRow(5, 'Class last attended', classPhrase),
+    particularsRow(6, 'Date of leaving', formatStudentDate(options.dateOfLeaving)),
+    particularsRow(7, 'Qualified for promotion', options.qualifiedForPromotion),
+    particularsRow(8, 'Conduct and character', options.conduct),
+    particularsRow(9, 'Reason for leaving', options.reasonForLeaving),
+  ].join('');
 
   return `
     <section class="tc-sheet">
-      <div class="tc-page">
-        ${photoBlock}
+      <div class="tc-frame">
         <header class="tc-header">
           ${logoBlock}
           <div class="tc-header-center">
-            <h1 class="school-name">${escapeHtml(school.name)}</h1>
-            ${school.academicYear ? `<p class="school-year">${escapeHtml(school.academicYear)}</p>` : ''}
+            <p class="school-kicker">${escapeHtml(school.academicYear || 'School record')}</p>
+            <p class="school-name">${escapeHtml(school.name)}</p>
             ${addressHtml}
+            ${contact ? `<p class="school-contact">${escapeHtml(contact)}</p>` : ''}
           </div>
+          ${photoBlock}
         </header>
-        <p class="tc-number-row">
-          <span class="tc-number-label">TC No.</span>
-          <span class="tc-number-value">${escapeHtml(options.tcNumber)}</span>
-        </p>
-
-        <h2 class="tc-title">Transfer Certificate</h2>
-
-        <div class="tc-body">
-          <p class="tc-intro">
-            This is to certify that ${relationText}
-            <strong>${escapeHtml(student.parent_name?.trim() || '')}</strong>, named
-            <strong>${escapeHtml(fullName || '')}</strong>, bearing Admission No.
-            <strong>${escapeHtml(student.admission_number?.trim() || '')}</strong>${rollText},
-            was a bonafide student of this institution${classText}.
-          </p>
-
-          <div class="tc-details">
-            ${infoLine('Date of Birth', formatStudentDate(student.date_of_birth))}
-            ${infoLine('Gender', student.gender)}
-            ${infoLine('Date of Admission', formatStudentDate(student.admission_date))}
-            ${infoLine('Date of Leaving', formatStudentDate(options.dateOfLeaving))}
-            ${infoLine('Qualified for promotion to higher class', options.qualifiedForPromotion)}
-            ${infoLine('Conduct and Character', options.conduct)}
-            ${infoLine('Reason for leaving', options.reasonForLeaving)}
-          </div>
-
-          <p>
-            ${escapeHtml(fullName || 'The student')} has no dues pending against him/her in this
-            school. His/Her character and conduct during the stay were
-            <strong>${escapeHtml(options.conduct || 'satisfactory')}</strong>.
-          </p>
-
-          <p>
-            This certificate is issued at the request of the parent/guardian for the purpose of
-            admission to another school.
-          </p>
+        <div class="tc-title-row">
+          <span class="rule"></span>
+          <h2 class="tc-title">Transfer Certificate</h2>
+          <span class="rule"></span>
         </div>
-
+        <div class="tc-meta">
+          <p><span class="meta-label">TC No.</span> <span class="tc-number-value">${escapeHtml(options.tcNumber)}</span></p>
+          <p><span class="meta-label">Date of issue</span> <strong>${escapeHtml(formatStudentDate(options.issueDate))}</strong></p>
+        </div>
+        <p class="tc-intro">
+          This is to certify that ${relationText}
+          <strong>${escapeHtml(student.parent_name?.trim() || '—')}</strong>, named
+          <strong>${escapeHtml(fullName || '—')}</strong>${rollText},
+          was a bonafide student of this institution.
+        </p>
+        <table class="particulars"><tbody>${rows}</tbody></table>
+        <p class="tc-close">
+          ${escapeHtml(fullName || 'The student')} has no dues pending against him/her in this
+          school. His/Her character and conduct during the stay were
+          <strong>${escapeHtml(options.conduct || 'satisfactory')}</strong>. This certificate is
+          issued at the request of the parent or guardian for admission to another school.
+        </p>
         <footer class="tc-footer">
           <div class="tc-footer-left">
-            <p><span class="info-label">Date of Issue:</span> ${escapeHtml(formatStudentDate(options.issueDate))}</p>
-            <p><span class="info-label">Place:</span> ${escapeHtml(place)}</p>
+            <p><span class="meta-label">Place</span> ${escapeHtml(place || '—')}</p>
+            <p><span class="meta-label">Date</span> ${escapeHtml(formatStudentDate(options.issueDate))}</p>
           </div>
           <div class="tc-footer-right">
             ${signatureBlock}
@@ -156,196 +150,166 @@ function buildSingleCertificateHtml(
 }
 
 const PRINT_STYLES = `
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
+  @page { size: A4 portrait; margin: 8mm; }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     padding: 0;
     background: #fff;
-    color: #111827;
-    font-family: Arial, Helvetica, sans-serif;
+    color: #0f172a;
+    font-family: Georgia, "Times New Roman", serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .tc-sheet {
-    page-break-after: always;
-  }
-  .tc-sheet:last-child {
-    page-break-after: auto;
-  }
-  .tc-page {
+  .tc-sheet { page-break-after: always; }
+  .tc-sheet:last-child { page-break-after: auto; }
+  .tc-frame {
     position: relative;
-    width: 210mm;
-    min-height: 277mm;
-    margin: 0 auto;
-    padding: 12mm 15mm;
+    border: 2.5px solid #0f172a;
+    padding: 10mm 12mm;
+    min-height: 270mm;
+  }
+  .tc-frame:before {
+    content: "";
+    position: absolute;
+    inset: 2mm;
+    border: 1px solid #94a3b8;
+    pointer-events: none;
   }
   .tc-header {
+    position: relative;
     display: flex;
     align-items: flex-start;
-    gap: 16px;
-    border-bottom: 2px solid #155FA8;
-    padding-bottom: 16px;
-    margin-bottom: 8px;
-  }
-  .logo-img {
-    width: 72px;
-    height: 72px;
-    object-fit: contain;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1px;
-    flex-shrink: 0;
-  }
-  .logo-placeholder {
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    background: #EBF5FC;
-    color: #155FA8;
-    font-size: 11px;
-    font-weight: 700;
+    gap: 12px;
+    text-align: center;
+  }
+  .logo-img, .student-photo, .logo-spacer {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
     flex-shrink: 0;
   }
-  .tc-header-center {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
+  .student-photo { object-fit: cover; border: 1px solid #cbd5e1; width: 58px; height: 72px; }
+  .tc-header-center { flex: 1; min-width: 0; }
+  .school-kicker {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: #64748b;
   }
   .school-name {
-    margin: 0;
+    margin: 4px 0 0;
     font-size: 22px;
     font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    line-height: 1.25;
-    color: #0D3D75;
+    line-height: 1.2;
   }
-  .school-year {
-    margin: 8px 0 0;
-    font-size: 13px;
-    font-weight: 500;
-    color: #4b5563;
-  }
-  .school-address {
-    margin: 8px auto 0;
+  .school-address, .school-contact {
+    margin: 4px auto 0;
     max-width: 420px;
     font-size: 11px;
-    line-height: 1.55;
-    color: #4b5563;
+    line-height: 1.45;
+    color: #475569;
   }
-  .tc-number-row {
+  .tc-title-row {
     display: flex;
-    justify-content: flex-end;
-    align-items: baseline;
-    gap: 8px;
-    margin: 16px 0 0;
-    white-space: nowrap;
-    font-size: 14px;
-    color: #111827;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
   }
-  .tc-number-label {
-    font-weight: 600;
-    color: #374151;
-  }
-  .tc-number-value {
-    font-family: Consolas, Monaco, "Courier New", monospace;
+  .rule { flex: 1; height: 1px; background: #0f172a; }
+  .tc-title {
+    margin: 0;
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #0D3D75;
-  }
-  .tc-title {
-    margin: 32px 0 0;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 700;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
-    text-decoration: underline;
-    text-decoration-color: #1A73C7;
-    text-underline-offset: 6px;
   }
-  .tc-body {
-    margin-top: 40px;
-    font-size: 14px;
-    line-height: 1.85;
-    color: #1f2937;
+  .tc-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 6px 0;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
   }
-  .tc-intro { margin: 0 0 20px; }
-  .tc-details {
-    margin: 0 0 20px;
-    padding: 16px 20px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: rgba(249, 250, 251, 0.8);
+  .tc-meta p { margin: 0; }
+  .meta-label {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
   }
-  .info-line {
-    margin: 0 0 6px;
-    font-size: 14px;
-    line-height: 1.65;
+  .tc-number-value {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    font-weight: 700;
   }
-  .info-label { font-weight: 600; }
+  .tc-intro, .tc-close {
+    margin: 16px 0 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    text-align: justify;
+  }
+  table.particulars {
+    width: 100%;
+    margin-top: 14px;
+    border-collapse: collapse;
+    border: 1px solid #cbd5e1;
+  }
+  table.particulars td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    vertical-align: top;
+  }
+  table.particulars tr:last-child td { border-bottom: 0; }
+  td.idx { width: 28px; text-align: center; font-size: 11px; color: #64748b; }
+  td.label {
+    width: 42%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+  td.value { font-size: 13px; }
   .tc-footer {
-    margin-top: 64px;
+    margin-top: 28mm;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: 24px;
   }
-  .tc-footer-left {
-    font-size: 14px;
-    color: #374151;
-  }
-  .tc-footer-left p { margin: 0 0 6px; }
-  .tc-footer-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .signature-img {
-    max-height: 48px;
-    max-width: 140px;
-    object-fit: contain;
-    margin-bottom: 1px;
-  }
+  .tc-footer-left { font-size: 12px; line-height: 1.7; }
+  .tc-footer-left p { margin: 0; }
+  .tc-footer-right { width: 160px; text-align: center; }
+  .signature-img { max-height: 48px; max-width: 140px; object-fit: contain; }
   .signature-name {
-    margin: 0 0 1px;
+    margin: 0 0 2px;
     font-size: 18px;
-    color: #1A73C7;
     font-family: "Segoe Script", "Brush Script MT", cursive;
   }
-  .signature-line {
-    width: 160px;
-    border-top: 1px solid #9ca3af;
-  }
+  .signature-gap { height: 40px; }
+  .signature-line { border-top: 1px solid #0f172a; }
   .principal-label {
-    margin: 1px 0 0;
-    font-size: 14px;
-    font-weight: 600;
+    margin: 4px 0 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
-  .principal-school {
-    margin: 1px 0 0;
-    font-size: 12px;
-    color: #6b7280;
-  }
-  .student-photo {
-    position: absolute;
-    right: 15mm;
-    top: 52mm;
-    width: 80px;
-    height: 96px;
-    object-fit: cover;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-  }
+  .principal-school { margin: 2px 0 0; font-size: 11px; color: #64748b; }
 `;
 
 export function buildTransferCertificatePrintHtml(

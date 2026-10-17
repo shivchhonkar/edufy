@@ -376,7 +376,7 @@ export default function PromotionsPage() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-medium text-gray-900">Students Promotion</h1>
+            <h1 className="text-lg font-medium text-gray-900">Promotion & Transfer</h1>
             {/* <p className="text-sm text-gray-600 mt-1">
               Bulk promote, repeat, or transfer students and update enrollment history.
             </p> */}

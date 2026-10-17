@@ -1,6 +1,6 @@
 'use client';
 
-import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import AppModal, { AppModalShell } from '@/shared/components/common/AppModal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
@@ -18,16 +18,28 @@ import { formatStudentDate } from '@/features/students/utils/student-profile';
 import { useDialog } from '@/shared/context/DialogContext';
 import { useSettings } from '@/shared/SettingsContext';
 import {
-  FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
   FiEye,
-  FiFileText,
+  FiPlus,
   FiPrinter,
   FiRefreshCw,
   FiSearch,
   FiX,
 } from 'react-icons/fi';
+
+const primaryButtonClass =
+  'inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs text-white hover:bg-primary-700';
+const quietButtonClass =
+  'inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50';
+const fieldClass =
+  'w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20';
+const tableHeadClass =
+  'border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500';
+
+function Pulse({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded bg-gray-200/90 ${className}`} />;
+}
 
 interface HistoryResponse {
   items: TransferCertificateGeneration[];
@@ -145,140 +157,149 @@ export default function TransferCertificatesHistoryPage() {
     return [snapshot.class_name, snapshot.section_name].filter(Boolean).join(' · ') || '—';
   };
 
+  const filtersActive = Boolean(search || fromDate || toDate);
+
   return (
     <DashboardLayout>
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            {/* <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-              <Link href="/students" className="hover:text-primary-600 flex items-center gap-1">
-                <FiArrowLeft size={14} />
-                Students
-              </Link>
-            </div> */}
-            <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-              {/* <FiFileText className="text-primary-600" /> */}
-              Transfer Certificates 
-            </h1>
-            {/* <p className="text-sm text-gray-500 mt-1">
-              Review all generated transfer certificates with issuer and timestamp.
-            </p> */}
+            <h1 className="text-lg font-medium text-gray-900">Transfer Certificates</h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Review generated certificates, then reprint or open a record.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={fetchHistory}
-              className="border px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
-            >
-              <FiRefreshCw size={15} />
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={fetchHistory} className={quietButtonClass}>
+              <FiRefreshCw size={14} />
               Refresh
             </button>
-            <Link
-              href="/students/transfer-certificates/generate"
-              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 text-sm"
-            >
-              Generate New TC
+            <Link href="/students/transfer-certificates/generate" className={primaryButtonClass}>
+              <FiPlus size={14} />
+              Generate TC
             </Link>
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="md:col-span-2 relative">
-              <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search TC number, student name, admission no..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-gray-900"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-gray-200 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Register</h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {loading ? 'Loading…' : `${total} ${total === 1 ? 'certificate' : 'certificates'}`}
+              </p>
             </div>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900"
-              aria-label="From date"
-            />
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900"
-              aria-label="To date"
-            />
-          </form>
-          {(search || fromDate || toDate) && (
-            <div className="flex flex-wrap gap-2 text-xs">
+            <form onSubmit={handleSearch} className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-[minmax(16rem,22rem)_9rem_9rem_auto]">
+              <div className="relative sm:col-span-2 lg:col-span-1">
+                <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="search"
+                  placeholder="TC number, name, or admission no."
+                  className={`${fieldClass} pl-8`}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className={fieldClass}
+                aria-label="From date"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className={fieldClass}
+                aria-label="To date"
+              />
+              <button type="submit" className={`${quietButtonClass} justify-center`}>
+                Search
+              </button>
+            </form>
+          </div>
+          {filtersActive && (
+            <div className="flex flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2">
               {search && (
-                <span className="bg-gray-100 px-2 py-1 rounded">
-                  Search: {search}
-                  <button
-                    type="button"
-                    className="ml-1 text-gray-500 hover:text-gray-800"
-                    onClick={() => {
-                      setSearch('');
-                      setSearchInput('');
-                    }}
-                  >
-                    ×
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-600"
+                  onClick={() => {
+                    setSearch('');
+                    setSearchInput('');
+                  }}
+                >
+                  {search}
+                  <FiX size={12} />
+                </button>
               )}
               {fromDate && (
-                <span className="bg-gray-100 px-2 py-1 rounded">
-                  From: {fromDate}
-                  <button
-                    type="button"
-                    className="ml-1 text-gray-500 hover:text-gray-800"
-                    onClick={() => setFromDate('')}
-                  >
-                    ×
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-600"
+                  onClick={() => setFromDate('')}
+                >
+                  From {fromDate}
+                  <FiX size={12} />
+                </button>
               )}
               {toDate && (
-                <span className="bg-gray-100 px-2 py-1 rounded">
-                  To: {toDate}
-                  <button
-                    type="button"
-                    className="ml-1 text-gray-500 hover:text-gray-800"
-                    onClick={() => setToDate('')}
-                  >
-                    ×
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-600"
+                  onClick={() => setToDate('')}
+                >
+                  To {toDate}
+                  <FiX size={12} />
+                </button>
               )}
             </div>
           )}
-        </div>
-
-        <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Generated</th>
-                  <th className="px-4 py-3 font-medium">TC Number</th>
-                  <th className="px-4 py-3 font-medium">Student</th>
-                  <th className="px-4 py-3 font-medium">Class</th>
-                  <th className="px-4 py-3 font-medium">Generated By</th>
-                  <th className="px-4 py-3 font-medium">Issue / Leaving</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className={tableHeadClass}>
+                  <th className="px-4 py-2.5 font-semibold">Generated</th>
+                  <th className="px-4 py-2.5 font-semibold">TC number</th>
+                  <th className="px-4 py-2.5 font-semibold">Student</th>
+                  <th className="px-4 py-2.5 font-semibold">Class</th>
+                  <th className="px-4 py-2.5 font-semibold">Generated by</th>
+                  <th className="px-4 py-2.5 font-semibold">Issue / leaving</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
-                      Loading history...
-                    </td>
-                  </tr>
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <tr key={index} className="border-t border-gray-100">
+                      <td className="px-4 py-2.5"><Pulse className="h-3.5 w-28" /></td>
+                      <td className="px-4 py-2.5"><Pulse className="h-3.5 w-24" /></td>
+                      <td className="px-4 py-2.5">
+                        <Pulse className="h-3.5 w-32" />
+                        <Pulse className="mt-1.5 h-3 w-16" />
+                      </td>
+                      <td className="px-4 py-2.5"><Pulse className="h-3.5 w-20" /></td>
+                      <td className="px-4 py-2.5"><Pulse className="h-3.5 w-24" /></td>
+                      <td className="px-4 py-2.5">
+                        <Pulse className="h-3 w-24" />
+                        <Pulse className="mt-1.5 h-3 w-20" />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex justify-end gap-1">
+                          <Pulse className="h-6 w-6" />
+                          <Pulse className="h-6 w-6" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
-                      No transfer certificates generated yet.
+                    <td colSpan={7} className="px-4 py-12 text-center">
+                      <p className="text-sm font-medium text-gray-700">No transfer certificates yet</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {filtersActive ? 'Try a different search or date range.' : 'Generate a certificate to see it here.'}
+                      </p>
                     </td>
                   </tr>
                 ) : (
@@ -286,46 +307,38 @@ export default function TransferCertificatesHistoryPage() {
                     const options = parseOptionsSnapshot(record.options);
                     const snapshot = record.student_snapshot as { admission_number?: string };
                     return (
-                      <tr key={record.id} className="hover:bg-gray-50/80">
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                      <tr key={record.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+                        <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
                           {formatDateTime(record.generated_at)}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-primary-800">
-                          {record.tc_number}
-                        </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{record.tc_number}</td>
+                        <td className="px-4 py-2.5">
                           <p className="font-medium text-gray-900">{studentLabel(record)}</p>
                           <p className="text-xs text-gray-500">{snapshot.admission_number}</p>
                         </td>
-                        <td className="px-4 py-3 text-gray-700">{classLabel(record)}</td>
-                        <td className="px-4 py-3 text-gray-700">
-                          {record.generated_by_name || '—'}
+                        <td className="px-4 py-2.5 text-gray-600">{classLabel(record)}</td>
+                        <td className="px-4 py-2.5 text-gray-600">{record.generated_by_name || '—'}</td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">
+                          <span className="block text-xs">Issue {formatStudentDate(options.issueDate)}</span>
+                          <span className="block text-xs text-gray-500">Left {formatStudentDate(options.dateOfLeaving)}</span>
                         </td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                          <span className="block text-xs">
-                            Issue: {formatStudentDate(options.issueDate)}
-                          </span>
-                          <span className="block text-xs text-gray-500">
-                            Left: {formatStudentDate(options.dateOfLeaving)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center justify-end">
                             <button
                               type="button"
                               onClick={() => openDetail(record)}
-                              className="p-2 rounded hover:bg-gray-100 text-gray-600"
-                              title="View details"
+                              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-primary-600"
+                              aria-label="View details"
                             >
-                              <FiEye size={16} />
+                              <FiEye size={15} />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleReprint(record)}
-                              className="p-2 rounded hover:bg-gray-100 text-gray-600"
-                              title="Reprint"
+                              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-primary-600"
+                              aria-label="Reprint"
                             >
-                              <FiPrinter size={16} />
+                              <FiPrinter size={15} />
                             </button>
                           </div>
                         </td>
@@ -337,85 +350,87 @@ export default function TransferCertificatesHistoryPage() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
-              <p className="text-gray-500">
-                {total} record{total !== 1 ? 's' : ''} · Page {page} of {totalPages}
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="p-2 rounded border disabled:opacity-40 hover:bg-gray-50"
-                >
-                  <FiChevronLeft size={16} />
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="p-2 rounded border disabled:opacity-40 hover:bg-gray-50"
-                >
-                  <FiChevronRight size={16} />
-                </button>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-2.5">
+            <p className="text-xs text-gray-500">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-md border border-gray-200 p-1.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <FiChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-md border border-gray-200 p-1.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <FiChevronRight size={14} />
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {selected && (
-        <AppModal open={!!selected} onClose={() => setSelected(null)}>
-          <div className={APP_MODAL_PANEL}>
-            <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">Transfer Certificate Record</h2>
-                <p className="text-sm text-gray-500 font-mono">{selected.tc_number}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleReprint(selected)}
-                  className="flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
-                >
-                  <FiPrinter size={16} />
-                  Reprint
-                </button>
+      <AppModal open={!!selected} onClose={() => setSelected(null)}>
+        {selected && (
+          <AppModalShell
+            header={
+              <>
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900">Transfer certificate</h2>
+                  <p className="mt-0.5 font-mono text-xs text-gray-500">{selected.tc_number}</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
                   aria-label="Close"
                 >
-                  <FiX size={20} />
+                  <FiX size={18} />
                 </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500">Generated at</p>
-                  <p className="font-medium text-gray-900">{formatDateTime(selected.generated_at)}</p>
+              </>
+            }
+            footer={
+              <>
+                <button type="button" onClick={() => setSelected(null)} className={quietButtonClass}>
+                  Close
+                </button>
+                <button type="button" onClick={() => handleReprint(selected)} className={primaryButtonClass}>
+                  <FiPrinter size={14} />
+                  Reprint
+                </button>
+              </>
+            }
+          >
+            <div className="space-y-4 p-4 sm:p-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Generated at</p>
+                  <p className="mt-0.5 text-sm font-medium text-gray-900">{formatDateTime(selected.generated_at)}</p>
                 </div>
-                <div className="rounded-lg border bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500">Generated by</p>
-                  <p className="font-medium text-gray-900">{selected.generated_by_name || '—'}</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Generated by</p>
+                  <p className="mt-0.5 text-sm font-medium text-gray-900">{selected.generated_by_name || '—'}</p>
                 </div>
-                <div className="rounded-lg border bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500">Academic year</p>
-                  <p className="font-medium text-gray-900">{selected.academic_year || '—'}</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Academic year</p>
+                  <p className="mt-0.5 text-sm font-medium text-gray-900">{selected.academic_year || '—'}</p>
                 </div>
-                <div className="rounded-lg border bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500">Reason for leaving</p>
-                  <p className="font-medium text-gray-900">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Reason for leaving</p>
+                  <p className="mt-0.5 text-sm font-medium text-gray-900">
                     {parseOptionsSnapshot(selected.options).reasonForLeaving || '—'}
                   </p>
                 </div>
               </div>
-
-              <div className="overflow-x-auto rounded border bg-white">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
                 <TransferCertificate
                   student={snapshotToStudent(parseStudentSnapshot(selected.student_snapshot))}
                   school={currentSchoolInfo}
@@ -423,9 +438,9 @@ export default function TransferCertificatesHistoryPage() {
                 />
               </div>
             </div>
-          </div>
-        </AppModal>
-      )}
+          </AppModalShell>
+        )}
+      </AppModal>
     </DashboardLayout>
   );
 }

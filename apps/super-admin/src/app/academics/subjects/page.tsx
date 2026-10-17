@@ -1,6 +1,7 @@
 'use client';
 
 import AppModal, { APP_MODAL_PANEL } from '@/shared/components/common/AppModal';
+import { moduleTabBarClass, moduleTabClass } from '@/shared/components/common/ModuleTabs';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import QuickAddSubjectsPanel from '@/features/subjects/components/QuickAddSubjectsPanel';
@@ -18,7 +19,6 @@ import {
   FiFilter,
   FiChevronDown,
   FiChevronRight,
-  FiChevronUp,
   FiCheck,
 } from 'react-icons/fi';
 
@@ -33,6 +33,9 @@ interface Class {
   id: number;
   name: string;
 }
+
+const fieldClass =
+  'w-full rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 
 interface ClassSubject {
   id: number;
@@ -150,6 +153,16 @@ export default function SubjectsPage() {
       return;
     }
 
+    const duplicateName = subjects.some(
+      (subject) =>
+        subject.id !== editingSubject?.id &&
+        subject.name.trim().toLowerCase() === subjectForm.name.trim().toLowerCase(),
+    );
+    if (duplicateName) {
+      await alert('A subject with this name already exists.', { title: 'Duplicate subject', type: 'warning' });
+      return;
+    }
+
     setSavingSubject(true);
     try {
       const url = editingSubject ? `/api/subjects/${editingSubject.id}` : '/api/subjects';
@@ -240,21 +253,44 @@ export default function SubjectsPage() {
     setSubjectModalClassIds([]);
   };
 
-  const handleToggleSubjectForClass = (classId: number, subjectId: number) => {
-    setClassSubjectSelections((prev) => {
-      const current = prev[classId] || [];
-      const updated = current.includes(subjectId)
-        ? current.filter((id) => id !== subjectId)
-        : [...current, subjectId];
-      return { ...prev, [classId]: updated };
-    });
+  const handleToggleSubjectForClass = async (classId: number, subjectId: number) => {
+    const current = classSubjectSelections[classId] || [];
+    if (current.includes(subjectId)) {
+      setClassSubjectSelections((prev) => ({
+        ...prev,
+        [classId]: current.filter((id) => id !== subjectId),
+      }));
+      return;
+    }
+
+    const name = subjects.find((subject) => subject.id === subjectId)?.name.trim().toLowerCase();
+    const alreadySelected = current.some(
+      (id) => subjects.find((subject) => subject.id === id)?.name.trim().toLowerCase() === name,
+    );
+    if (name && alreadySelected) {
+      await alert('This subject is already selected for the class.', {
+        title: 'Duplicate subject',
+        type: 'warning',
+      });
+      return;
+    }
+
+    setClassSubjectSelections((prev) => ({
+      ...prev,
+      [classId]: [...current, subjectId],
+    }));
   };
 
   const handleSelectAllForClass = (classId: number) => {
-    setClassSubjectSelections((prev) => ({
-      ...prev,
-      [classId]: subjects.map((s) => s.id),
-    }));
+    const seen = new Set<string>();
+    const ids: number[] = [];
+    subjects.forEach((subject) => {
+      const key = subject.name.trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      ids.push(subject.id);
+    });
+    setClassSubjectSelections((prev) => ({ ...prev, [classId]: ids }));
   };
 
   const handleDeselectAllForClass = (classId: number) => {
@@ -265,13 +301,25 @@ export default function SubjectsPage() {
   };
 
   const handleSaveForClass = async (classId: number) => {
+    const selectedIds = [...new Set(classSubjectSelections[classId] || [])];
+    const names = selectedIds.map((id) =>
+      subjects.find((subject) => subject.id === id)?.name.trim().toLowerCase(),
+    );
+    if (names.filter(Boolean).length !== new Set(names.filter(Boolean)).size) {
+      await alert('This class already includes that subject. Remove the duplicate before saving.', {
+        title: 'Duplicate subject',
+        type: 'warning',
+      });
+      return;
+    }
+
     try {
       const response = await fetch('/api/class-subjects/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           class_id: classId,
-          subject_ids: classSubjectSelections[classId] || [],
+          subject_ids: selectedIds,
         }),
       });
 
@@ -292,96 +340,96 @@ export default function SubjectsPage() {
     setExpandedClassId((prev) => (prev === classId ? null : classId));
   };
 
-  const getAssignedClasses = (subjectId: number) =>
-    classSubjects.filter((cs) => cs.subject_id === subjectId);
+  const getAssignedClasses = (subjectId: number) => {
+    const seen = new Set<number>();
+    return classSubjects.filter((cs) => {
+      if (cs.subject_id !== subjectId || seen.has(cs.class_id)) return false;
+      seen.add(cs.class_id);
+      return true;
+    });
+  };
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                {/* <FiBook className="text-primary-600" size={20} /> */}
-                Subjects
-              </h1>
+              <h1 className="text-lg font-medium text-gray-900">Subjects</h1>
+              <p className="mt-0.5 text-xs text-gray-500">Subject list and which classes each subject belongs to.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setFiltersExpanded((prev) => !prev)}
                 aria-expanded={filtersExpanded}
-                className={`border px-3 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs ${
                   filtersExpanded || hasActiveFilters
                     ? 'border-primary-300 bg-primary-50 text-primary-700'
-                    : 'hover:bg-gray-50 text-gray-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <FiFilter size={15} />
-                <span>Filters</span>
+                <FiFilter size={14} />
+                Filters
                 {hasActiveFilters && (
-                  <span className="text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    1
-                  </span>
+                  <span className="rounded-full bg-primary-600 px-1.5 text-[10px] text-white">1</span>
                 )}
-                {filtersExpanded ? <FiChevronUp size={14} /> : <FiChevronRight size={14} />}
               </button>
               {activeTab === 'subjects' && (
                 <button
+                  type="button"
                   onClick={openAddSubjectModal}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
                 >
-                  <FiPlus size={16} />
+                  <FiPlus size={14} />
                   Add Subject
                 </button>
               )}
             </div>
           </div>
 
-          <div className="flex gap-1 border-b border-gray-200">
+          <div className={moduleTabBarClass}>
             <button
+              type="button"
               onClick={() => {
                 setActiveTab('subjects');
                 setSearch('');
                 setExpandedClassId(null);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                activeTab === 'subjects'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={moduleTabClass(activeTab === 'subjects')}
             >
-              <FiBook size={14} />
-              Subjects ({subjects.length})
+              <span className="inline-flex items-center gap-1.5">
+                <FiBook size={13} />
+                Subjects ({subjects.length})
+              </span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setActiveTab('assignments');
                 setSearch('');
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                activeTab === 'assignments'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={moduleTabClass(activeTab === 'assignments')}
             >
-              <FiUsers size={14} />
-              Class Assignments ({classes.length})
+              <span className="inline-flex items-center gap-1.5">
+                <FiUsers size={13} />
+                Assignments Class wise ({classes.length})
+              </span>
             </button>
           </div>
 
           {filtersExpanded && (
-            <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
               <div className="relative">
-                <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+                <FiSearch className="absolute left-2.5 top-2 text-gray-400" size={14} />
                 <input
                   type="text"
                   placeholder={
                     activeTab === 'subjects'
-                      ? 'Search subjects by name, code...'
-                      : 'Search classes...'
+                      ? 'Search subjects by name or code'
+                      : 'Search classes'
                   }
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm text-gray-900"
+                  className={`${fieldClass} pl-8`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -430,8 +478,8 @@ export default function SubjectsPage() {
           />
         )}
 
-        <div className="bg-white rounded-lg shadow flex flex-col min-h-0">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 text-sm text-gray-600">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2 text-xs text-gray-600">
             {loading ? (
               'Loading...'
             ) : (
@@ -466,24 +514,24 @@ export default function SubjectsPage() {
             ) : (
               <div className="overflow-auto max-h-[calc(100vh-240px)]">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
+                  <thead className="sticky top-0 z-10 bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase w-12">
+                      <th className="w-12 px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         S.N.
                       </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         Subject
                       </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         Code
                       </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         Description
                       </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
-                        Assigned To Classes
+                      <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        Assigned to classes
                       </th>
-                      <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         Actions
                       </th>
                     </tr>
@@ -493,15 +541,15 @@ export default function SubjectsPage() {
                       const assigned = getAssignedClasses(subject.id);
                       return (
                         <tr key={subject.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2.5 text-sm text-gray-500 tabular-nums">{index + 1}</td>
-                          <td className="px-4 py-2.5">
-                            <div className="text-sm font-medium text-gray-900">{subject.name}</div>
+                          <td className="px-4 py-2 text-xs tabular-nums text-gray-500">{index + 1}</td>
+                          <td className="px-4 py-2">
+                            <div className="text-xs font-medium text-gray-900">{subject.name}</div>
                           </td>
-                          <td className="px-4 py-2.5 text-sm text-gray-600 font-mono">{subject.code}</td>
-                          <td className="px-4 py-2.5 text-sm text-gray-600 max-w-xs truncate">
+                          <td className="px-4 py-2 font-mono text-xs text-gray-600">{subject.code}</td>
+                          <td className="max-w-xs truncate px-4 py-2 text-xs text-gray-600">
                             {subject.description || '—'}
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td className="px-4 py-2">
                             {assigned.length > 0 ? (
                               <div className="flex flex-wrap gap-1 max-w-md">
                                 {assigned.map((cs) => (
@@ -562,19 +610,19 @@ export default function SubjectsPage() {
           ) : (
             <div className="overflow-auto max-h-[calc(100vh-240px)]">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+                <thead className="sticky top-0 z-10 bg-gray-50">
                   <tr>
-                    <th className="w-10 px-3 py-2.5" />
-                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="w-10 px-3 py-2" />
+                    <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Class
                     </th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Selected
                     </th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Assigned
                     </th>
-                    <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                       Actions
                     </th>
                   </tr>
@@ -597,12 +645,12 @@ export default function SubjectsPage() {
                               {isExpanded ? <FiChevronDown size={16} /> : <FiChevronRight size={16} />}
                             </button>
                           </td>
-                          <td className="px-4 py-2.5 text-sm font-medium text-gray-900">{cls.name}</td>
-                          <td className="px-4 py-2.5 text-sm text-gray-700">
+                          <td className="px-4 py-2 text-xs font-medium text-gray-900">{cls.name}</td>
+                          <td className="px-4 py-2 text-xs text-gray-700">
                             {selectedForClass.length} / {subjects.length}
                           </td>
-                          <td className="px-4 py-2.5 text-sm text-gray-700">{assignedCount}</td>
-                          <td className="px-4 py-2.5 text-right">
+                          <td className="px-4 py-2 text-xs text-gray-700">{assignedCount}</td>
+                          <td className="px-4 py-2 text-right">
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => handleSelectAllForClass(cls.id)}
@@ -618,7 +666,7 @@ export default function SubjectsPage() {
                               </button>
                               <button
                                 onClick={() => handleSaveForClass(cls.id)}
-                                className="px-2.5 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 inline-flex items-center gap-1"
+                                className="inline-flex items-center gap-1 rounded-md bg-primary-600 px-2.5 py-1 text-xs text-white hover:bg-primary-700"
                               >
                                 <FiSave size={12} />
                                 Save
@@ -700,7 +748,7 @@ export default function SubjectsPage() {
                   type="text"
                   value={subjectForm.name}
                   onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                  className={fieldClass}
                   placeholder="e.g. Mathematics"
                 />
               </div>
@@ -712,7 +760,7 @@ export default function SubjectsPage() {
                   type="text"
                   value={subjectForm.code}
                   onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                  className={fieldClass}
                   placeholder="e.g. MATH"
                 />
               </div>
@@ -722,7 +770,7 @@ export default function SubjectsPage() {
                   value={subjectForm.description}
                   onChange={(e) => setSubjectForm({ ...subjectForm, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900"
+                  className={fieldClass}
                   placeholder="Brief description"
                 />
               </div>
@@ -790,14 +838,14 @@ export default function SubjectsPage() {
                   setEditingSubject(null);
                 }}
                 disabled={savingSubject}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm disabled:opacity-50"
+                className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveSubject}
                 disabled={savingSubject}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
+                className="rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
               >
                 {savingSubject ? 'Saving...' : editingSubject ? 'Update' : 'Create'}
               </button>

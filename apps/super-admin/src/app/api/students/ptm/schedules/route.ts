@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDb } from '@/lib/request-db';
 import { ensureStudentOperationsSchema } from '@/lib/ensure-student-operations-schema';
 import { actorName, parseOptionalNumber } from '@/lib/student-operations-utils';
+import { loadPtmForCalendar, syncPtmCalendarEvent, syncUnlinkedPtmSchedules } from '@/lib/ptm-calendar-sync';
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await getAuthenticatedDb(request);
     if (auth instanceof NextResponse) return auth;
     await ensureStudentOperationsSchema(auth.db);
+    await syncUnlinkedPtmSchedules(auth.db);
 
     const academicYear = request.nextUrl.searchParams.get('academic_year') || '';
     const params: unknown[] = [];
@@ -18,7 +20,9 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await auth.db.query(
-      `SELECT p.*, c.name AS class_name, sec.name AS section_name,
+      `SELECT p.*,
+              to_char(p.scheduled_date, 'YYYY-MM-DD') AS scheduled_date,
+              c.name AS class_name, sec.name AS section_name,
               (SELECT COUNT(*) FROM ptm_attendance a WHERE a.schedule_id = p.id AND a.parent_attended) AS present_count,
               (SELECT COUNT(*) FROM ptm_attendance a WHERE a.schedule_id = p.id) AS marked_count
        FROM ptm_schedules p
@@ -66,7 +70,10 @@ export async function POST(request: NextRequest) {
         actorName(auth.user),
       ]
     );
-    return NextResponse.json({ success: true, data: result.rows[0] }, { status: 201 });
+    const linked = await loadPtmForCalendar(auth.db, result.rows[0].id);
+    if (linked) await syncPtmCalendarEvent(auth.db);
+    const saved = linked ? await loadPtmForCalendar(auth.db, result.rows[0].id) : result.rows[0];
+    return NextResponse.json({ success: true, data: saved }, { status: 201 });
   } catch (error) {
     console.error('Error creating PTM schedule:', error);
     return NextResponse.json({ success: false, error: 'Failed to create PTM schedule' }, { status: 500 });

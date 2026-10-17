@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation'
 import { FiCalendar, FiCheckCircle, FiUsers } from 'react-icons/fi'
 
 const LINKS = [
-  { href: '/attendance', label: 'Student Register', icon: FiUsers, match: (path: string) => path === '/attendance' },
+  { href: '/attendance/register/student', label: 'Student Register', icon: FiUsers, match: (path: string) => path.startsWith('/attendance/register/student') },
   {
-    href: '/attendance/staff/register',
+    href: '/attendance/register/staff',
     label: 'Staff Register',
     icon: FiCalendar,
-    match: (path: string) => path.startsWith('/attendance/staff/register'),
+    match: (path: string) => path.startsWith('/attendance/register/staff'),
   },
   // {
   //   href: '/attendance/students',
@@ -23,7 +23,7 @@ const LINKS = [
   //   label: 'Mark Staff',
   //   icon: FiCheckCircle,
   //   match: (path: string) =>
-  //     path.startsWith('/attendance/staff') && !path.startsWith('/attendance/staff/register'),
+  //     path.startsWith('/attendance/staff') && !path.startsWith('/attendance/register/staff'),
   // },
 ]
 

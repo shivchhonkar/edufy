@@ -27,8 +27,14 @@ import { useDialog } from '@/shared/context/DialogContext';
 import { studentFullName, studentInitials } from '@/features/students/utils/student-profile';
 import { sortClassesByName } from '@/lib/class-sort';
 import { getCalendarDateString } from '@edulakhya/utils';
+import {
+  clockInputValue,
+  DEFAULT_ATTENDANCE_WINDOW,
+  deriveAttendanceFromTimes,
+  type AttendanceWindow,
+} from '@/features/attendance/utils/attendance-time';
 
-type AttendanceStatus = 'present' | 'absent' | 'late' | 'on_leave';
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
 type MarkMode = 'manual' | 'bulk';
 
 interface ClassOption {
@@ -57,6 +63,8 @@ interface StudentOption {
 interface StudentMarkRow extends StudentOption {
   status: AttendanceStatus | null;
   selected: boolean;
+  checkIn: string;
+  checkOut: string;
 }
 
 interface MarkStudentAttendancePanelProps {
@@ -101,6 +109,13 @@ const STATUS_CONFIG: {
     icon: <FiClock size={14} />,
   },
   {
+    value: 'half_day',
+    label: 'Half Day',
+    activeClass: 'bg-orange-500 text-white border-orange-500',
+    idleClass: 'text-orange-700 border-orange-200 hover:bg-orange-50',
+    icon: <FiClock size={14} />,
+  },
+  {
     value: 'on_leave',
     label: 'On Leave',
     activeClass: 'bg-blue-600 text-white border-blue-600',
@@ -139,6 +154,9 @@ function classScopeKey(classId: string, isSuperAdmin: boolean): string {
   return isSuperAdmin ? 'all' : '';
 }
 
+const INLINE_STATUSES: AttendanceStatus[] = ['present', 'absent'];
+const DROPDOWN_STATUSES: AttendanceStatus[] = ['late', 'half_day', 'on_leave'];
+
 function StatusButtons({
   value,
   onChange,
@@ -148,9 +166,15 @@ function StatusButtons({
   onChange: (status: AttendanceStatus) => void;
   compact?: boolean;
 }) {
+  const visible = compact
+    ? STATUS_CONFIG.filter((opt) => INLINE_STATUSES.includes(opt.value))
+    : STATUS_CONFIG;
+  const dropdownValue = value && DROPDOWN_STATUSES.includes(value) ? value : '';
+  const dropdownStatus = STATUS_CONFIG.find((opt) => opt.value === dropdownValue);
+
   return (
-    <div className="flex flex-nowrap gap-1.5 justify-end">
-      {STATUS_CONFIG.map((opt) => {
+    <div className="flex flex-nowrap items-center gap-1.5 justify-end">
+      {visible.map((opt) => {
         const active = value === opt.value;
         return (
           <button
@@ -166,6 +190,26 @@ function StatusButtons({
           </button>
         );
       })}
+      {compact && (
+        <select
+          value={dropdownValue}
+          onChange={(e) => {
+            const next = e.target.value as AttendanceStatus;
+            if (next) onChange(next);
+          }}
+          aria-label="Late, half day, or on leave"
+          className={`h-8 w-[7.25rem] rounded-md border bg-white px-1.5 text-xs font-medium ${
+            dropdownStatus ? dropdownStatus.idleClass : 'border-gray-200 text-gray-600'
+          }`}
+        >
+          <option value="">More</option>
+          {STATUS_CONFIG.filter((opt) => DROPDOWN_STATUSES.includes(opt.value)).map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }
@@ -200,10 +244,30 @@ const MarkStudentAttendancePanel = forwardRef<
   const [individualSearch, setIndividualSearch] = useState('');
   const [individualStatus, setIndividualStatus] = useState<AttendanceStatus>('present');
   const [individualRemarks, setIndividualRemarks] = useState('');
+  const [individualCheckIn, setIndividualCheckIn] = useState('');
+  const [individualCheckOut, setIndividualCheckOut] = useState('');
+  const [dayWindow, setDayWindow] = useState<AttendanceWindow>(DEFAULT_ATTENDANCE_WINDOW);
   const [showIndividualDropdown, setShowIndividualDropdown] = useState(false);
 
   const isAllClassesView = isSuperAdmin && !classId;
   const canLoadStudents = !!classId || isSuperAdmin;
+
+  useEffect(() => {
+    fetch('/api/attendance/window')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success || !data.data) return;
+        setDayWindow({
+          workStart: clockInputValue(data.data.work_start_time) || DEFAULT_ATTENDANCE_WINDOW.workStart,
+          workEnd: clockInputValue(data.data.work_end_time) || DEFAULT_ATTENDANCE_WINDOW.workEnd,
+          lateToleranceMinutes:
+            Number(data.data.late_tolerance_minutes) || DEFAULT_ATTENDANCE_WINDOW.lateToleranceMinutes,
+          halfDayHours:
+            Number(data.data.half_day_threshold_hours) || DEFAULT_ATTENDANCE_WINDOW.halfDayHours,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/students?limit=500&status=active')
@@ -251,10 +315,21 @@ const MarkStudentAttendancePanel = forwardRef<
       try {
         const raw = localStorage.getItem(draftKey(markDate, scopeKey, sectionId));
         if (!raw) return nextRows;
-        const draft = JSON.parse(raw) as Record<string, AttendanceStatus>;
-        return nextRows.map((r) =>
-          draft[r.id] ? { ...r, status: draft[r.id] } : r
-        );
+        const draft = JSON.parse(raw) as Record<
+          string,
+          AttendanceStatus | { status: AttendanceStatus; checkIn?: string; checkOut?: string }
+        >;
+        return nextRows.map((r) => {
+          const entry = draft[r.id];
+          if (!entry) return r;
+          if (typeof entry === 'string') return { ...r, status: entry };
+          return {
+            ...r,
+            status: entry.status,
+            checkIn: entry.checkIn ?? r.checkIn,
+            checkOut: entry.checkOut ?? r.checkOut,
+          };
+        });
       } catch {
         return nextRows;
       }
@@ -297,18 +372,30 @@ const MarkStudentAttendancePanel = forwardRef<
         return;
       }
 
-      const existingByStudent = new Map<number, AttendanceStatus>();
+      const existingByStudent = new Map<
+        number,
+        { status: AttendanceStatus; checkIn: string; checkOut: string }
+      >();
       if (attendanceData.success) {
         for (const record of attendanceData.data) {
-          existingByStudent.set(record.student_id, record.status as AttendanceStatus);
+          existingByStudent.set(record.student_id, {
+            status: record.status as AttendanceStatus,
+            checkIn: clockInputValue(record.check_in_time),
+            checkOut: clockInputValue(record.check_out_time),
+          });
         }
       }
 
-      let nextRows: StudentMarkRow[] = studentsData.data.map((s: StudentOption) => ({
-        ...s,
-        status: (existingByStudent.get(s.id) as AttendanceStatus) || null,
-        selected: false,
-      }));
+      let nextRows: StudentMarkRow[] = studentsData.data.map((s: StudentOption) => {
+        const existing = existingByStudent.get(s.id);
+        return {
+          ...s,
+          status: existing?.status || null,
+          checkIn: existing?.checkIn || '',
+          checkOut: existing?.checkOut || '',
+          selected: false,
+        };
+      });
 
       nextRows = applyDraft(nextRows);
       setRows(nextRows);
@@ -328,8 +415,9 @@ const MarkStudentAttendancePanel = forwardRef<
     const present = rows.filter((r) => r.status === 'present').length;
     const absent = rows.filter((r) => r.status === 'absent').length;
     const late = rows.filter((r) => r.status === 'late').length;
+    const halfDay = rows.filter((r) => r.status === 'half_day').length;
     const onLeave = rows.filter((r) => r.status === 'on_leave').length;
-    return { present, absent, late, onLeave, total: rows.length };
+    return { present, absent, late, halfDay, onLeave, total: rows.length };
   }, [rows]);
 
   const filteredRows = useMemo(() => {
@@ -411,9 +499,13 @@ const MarkStudentAttendancePanel = forwardRef<
           const record = data.data[0];
           setIndividualStatus((record.status as AttendanceStatus) || 'present');
           setIndividualRemarks(record.remarks || '');
+          setIndividualCheckIn(clockInputValue(record.check_in_time));
+          setIndividualCheckOut(clockInputValue(record.check_out_time));
         } else {
           setIndividualStatus('present');
           setIndividualRemarks('');
+          setIndividualCheckIn('');
+          setIndividualCheckOut('');
         }
       })
       .catch(console.error);
@@ -425,6 +517,38 @@ const MarkStudentAttendancePanel = forwardRef<
     setRows((prev) =>
       prev.map((r) => (r.id === studentId ? { ...r, status } : r))
     );
+  };
+
+  const setRowTimes = (studentId: number, checkIn: string, checkOut: string) => {
+    const derived = deriveAttendanceFromTimes({
+      checkIn,
+      checkOut,
+      workStart: dayWindow.workStart,
+      workEnd: dayWindow.workEnd,
+      lateToleranceMinutes: dayWindow.lateToleranceMinutes,
+      halfDayHours: dayWindow.halfDayHours,
+    });
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === studentId
+          ? { ...r, checkIn, checkOut, status: derived?.status ?? r.status }
+          : r
+      )
+    );
+  };
+
+  const applyIndividualTimes = (checkIn: string, checkOut: string) => {
+    setIndividualCheckIn(checkIn);
+    setIndividualCheckOut(checkOut);
+    const derived = deriveAttendanceFromTimes({
+      checkIn,
+      checkOut,
+      workStart: dayWindow.workStart,
+      workEnd: dayWindow.workEnd,
+      lateToleranceMinutes: dayWindow.lateToleranceMinutes,
+      halfDayHours: dayWindow.halfDayHours,
+    });
+    if (derived) setIndividualStatus(derived.status);
   };
 
   const toggleRowSelected = (studentId: number) => {
@@ -450,7 +574,9 @@ const MarkStudentAttendancePanel = forwardRef<
   };
 
   const clearAll = () => {
-    setRows((prev) => prev.map((r) => ({ ...r, status: null, selected: false })));
+    setRows((prev) =>
+      prev.map((r) => ({ ...r, status: null, selected: false, checkIn: '', checkOut: '' }))
+    );
   };
 
   const applyBulkToSelected = () => {
@@ -466,9 +592,15 @@ const MarkStudentAttendancePanel = forwardRef<
   const saveDraft = () => {
     const scopeKey = classScopeKey(classId, isSuperAdmin);
     if (!scopeKey || rows.length === 0) return;
-    const draft: Record<string, AttendanceStatus> = {};
+    const draft: Record<string, { status: AttendanceStatus; checkIn: string; checkOut: string }> = {};
     for (const r of rows) {
-      if (r.status) draft[r.id] = r.status;
+      if (r.status || r.checkIn || r.checkOut) {
+        draft[r.id] = {
+          status: r.status || 'present',
+          checkIn: r.checkIn,
+          checkOut: r.checkOut,
+        };
+      }
     }
     localStorage.setItem(draftKey(markDate, scopeKey, sectionId), JSON.stringify(draft));
     alert('Draft saved on this device. Submit when ready to record attendance.', {
@@ -501,6 +633,8 @@ const MarkStudentAttendancePanel = forwardRef<
         student_id: r.id,
         date: markDate,
         status: r.status || 'absent',
+        check_in_time: r.checkIn || null,
+        check_out_time: r.checkOut || null,
       }));
 
       const response = await fetch('/api/attendance/students', {
@@ -547,6 +681,8 @@ const MarkStudentAttendancePanel = forwardRef<
           date: markDate,
           status: individualStatus,
           remarks: individualRemarks || null,
+          check_in_time: individualCheckIn || null,
+          check_out_time: individualCheckOut || null,
         }),
       });
 
@@ -581,7 +717,17 @@ const MarkStudentAttendancePanel = forwardRef<
         else void submitClassAttendance();
       },
     }),
-    [variant, individualStudentId, classId, rows, markDate, individualStatus, individualRemarks]
+    [
+      variant,
+      individualStudentId,
+      classId,
+      rows,
+      markDate,
+      individualStatus,
+      individualRemarks,
+      individualCheckIn,
+      individualCheckOut,
+    ]
   );
 
   const toggleAllVisible = useCallback(() => {
@@ -658,8 +804,40 @@ const MarkStudentAttendancePanel = forwardRef<
         ),
       },
       {
+        key: 'checkIn',
+        width: '7.5rem',
+        header: 'In time',
+        headerClassName: `${ATT_TABLE_HEAD} text-left whitespace-nowrap`,
+        cellClassName: `${ATT_TABLE_CELL} flex items-center`,
+        render: (row) => (
+          <input
+            type="time"
+            value={row.checkIn}
+            onChange={(e) => setRowTimes(row.id, e.target.value, row.checkOut)}
+            aria-label={`In time for ${studentFullName(row)}`}
+            className="h-8 w-full rounded-md border border-gray-200 px-1.5 text-xs"
+          />
+        ),
+      },
+      {
+        key: 'checkOut',
+        width: '7.5rem',
+        header: 'Out time',
+        headerClassName: `${ATT_TABLE_HEAD} text-left whitespace-nowrap`,
+        cellClassName: `${ATT_TABLE_CELL} flex items-center`,
+        render: (row) => (
+          <input
+            type="time"
+            value={row.checkOut}
+            onChange={(e) => setRowTimes(row.id, row.checkIn, e.target.value)}
+            aria-label={`Out time for ${studentFullName(row)}`}
+            className="h-8 w-full rounded-md border border-gray-200 px-1.5 text-xs"
+          />
+        ),
+      },
+      {
         key: 'status',
-        width: 'minmax(240px, auto)',
+        width: 'minmax(260px, auto)',
         header: 'Attendance Status',
         headerClassName: `${ATT_TABLE_HEAD} text-right`,
         cellClassName: `${ATT_TABLE_CELL} flex items-center justify-end`,
@@ -674,7 +852,7 @@ const MarkStudentAttendancePanel = forwardRef<
     );
 
     return columns;
-  }, [filteredRows, toggleAllVisible, isAllClassesView]);
+  }, [filteredRows, toggleAllVisible, isAllClassesView, dayWindow]);
 
   const classFilterControls = (
     <div className="flex flex-wrap items-end gap-3 flex-1 min-w-0 w-full">
@@ -802,6 +980,27 @@ const MarkStudentAttendancePanel = forwardRef<
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-3 max-w-sm">
+            <label className={ATT_LABEL}>
+              In time
+              <input
+                type="time"
+                value={individualCheckIn}
+                onChange={(e) => applyIndividualTimes(e.target.value, individualCheckOut)}
+                className={ATT_INPUT}
+              />
+            </label>
+            <label className={ATT_LABEL}>
+              Out time
+              <input
+                type="time"
+                value={individualCheckOut}
+                onChange={(e) => applyIndividualTimes(individualCheckIn, e.target.value)}
+                className={ATT_INPUT}
+              />
+            </label>
+          </div>
+
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Attendance status</p>
             <StatusButtons value={individualStatus} onChange={setIndividualStatus} />
@@ -871,6 +1070,7 @@ const MarkStudentAttendancePanel = forwardRef<
                 { label: 'P', count: classCounts.present, className: 'bg-green-100 text-green-800' },
                 { label: 'A', count: classCounts.absent, className: 'bg-red-100 text-red-800' },
                 { label: 'L', count: classCounts.late, className: 'bg-amber-100 text-amber-800' },
+                { label: 'HD', count: classCounts.halfDay, className: 'bg-orange-100 text-orange-800' },
                 { label: 'OL', count: classCounts.onLeave, className: 'bg-blue-100 text-blue-800' },
               ].map((badge) => (
                 <span
@@ -1013,9 +1213,9 @@ const MarkStudentAttendancePanel = forwardRef<
             rows={filteredRows}
             columns={studentListColumns}
             getRowKey={(row) => row.id}
-            rowHeight={52}
+            rowHeight={56}
             maxHeight="min(65vh, 680px)"
-            minWidth={isAllClassesView ? 760 : 680}
+            minWidth={isAllClassesView ? 880 : 800}
             rowClassName="hover:bg-gray-50/80"
           />
         )}

@@ -27,6 +27,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FiBookOpen,
+  FiChevronDown,
+  FiChevronRight,
   FiLayers,
   FiPlus,
   FiRefreshCw,
@@ -626,6 +628,18 @@ function ClassWiseTab({
   onRemove: (id: number) => void;
   onAssign: (classId: number, subjectId: number) => void;
 }) {
+  const [expandedClassId, setExpandedClassId] = useState<number | null>(groups[0]?.class_id ?? null);
+
+  useEffect(() => {
+    if (groups.length === 0) {
+      setExpandedClassId(null);
+      return;
+    }
+    setExpandedClassId((current) =>
+      current != null && groups.some((group) => group.class_id === current) ? current : groups[0].class_id,
+    );
+  }, [groups]);
+
   if (groups.length === 0) {
     return (
       <EmptyState message="No class-subject mappings found. Assign subjects to classes under Academics → Subjects." />
@@ -633,14 +647,27 @@ function ClassWiseTab({
   }
 
   return (
-    <div className="space-y-4">
-      {groups.map((group) => (
-        <div key={group.class_id} className="rounded-lg border border-gray-200">
-          <div className="flex items-center gap-2 border-b bg-gray-50 px-4 py-3">
-            <FiLayers className="text-primary-600" size={16} />
-            <h3 className="font-semibold text-gray-900">{group.class_name}</h3>
-            <span className="text-xs text-gray-500">{group.subjects.length} subject(s)</span>
-          </div>
+    <div className="space-y-2">
+      {groups.map((group) => {
+        const open = expandedClassId === group.class_id;
+        const openCount = group.subjects.filter((subject) => subject.teachers.length === 0).length;
+        return (
+        <div key={group.class_id} className="overflow-hidden rounded-lg border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setExpandedClassId(open ? null : group.class_id)}
+            className={`flex w-full items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 ${open ? 'border-b bg-gray-50' : 'bg-white'}`}
+            aria-expanded={open}
+          >
+            {open ? <FiChevronDown className="shrink-0 text-gray-400" size={14} /> : <FiChevronRight className="shrink-0 text-gray-400" size={14} />}
+            <FiLayers className="shrink-0 text-primary-600" size={14} />
+            <h3 className="text-sm font-semibold text-gray-900">{group.class_name}</h3>
+            <span className="text-xs text-gray-500">{group.subjects.length} subject{group.subjects.length === 1 ? '' : 's'}</span>
+            <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${openCount > 0 ? 'border border-amber-200 bg-amber-50 text-amber-800' : 'border border-green-200 bg-green-50 text-green-800'}`}>
+              {openCount > 0 ? `${openCount} open` : 'Covered'}
+            </span>
+          </button>
+          {open && (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="border-b bg-white text-xs uppercase tracking-wide text-gray-500">
@@ -727,8 +754,10 @@ function ClassWiseTab({
               </tbody>
             </table>
           </div>
+          )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
